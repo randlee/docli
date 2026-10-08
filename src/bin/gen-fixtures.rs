@@ -267,7 +267,11 @@ fn path_for_cargo_toml(path: &Path) -> String {
     if let Some(stripped) = s.strip_prefix(r"\\?\") {
         s = stripped.into();
     }
-    s.replace('\\', "/")
+    s = s.replace('\\', "/");
+    if let Some(rest) = s.strip_prefix("UNC/") {
+        return format!("//{rest}");
+    }
+    s
 }
 
 fn escape_toml_basic_string(s: &str) -> String {
@@ -332,4 +336,26 @@ fn run_dump_test(
         .stderr(Stdio::piped())
         .output()
         .map_err(|err| format!("spawn cargo test -p {package_name}: {err}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    #[test]
+    fn path_for_cargo_toml_strips_extended_drive_prefix() {
+        assert_eq!(
+            path_for_cargo_toml(Path::new(r"\\?\C:\dev\docli")),
+            "C:/dev/docli"
+        );
+    }
+
+    #[test]
+    fn path_for_cargo_toml_rewrites_extended_unc_prefix() {
+        assert_eq!(
+            path_for_cargo_toml(Path::new(r"\\?\UNC\server\share\repo")),
+            "//server/share/repo"
+        );
+    }
 }
