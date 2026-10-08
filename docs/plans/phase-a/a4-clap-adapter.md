@@ -1,7 +1,7 @@
 ---
 id: a.4
 title: clap adapter mapping
-status: planned
+status: complete
 branch: feature/phase-a-a4-clap
 worktree: ../docli-worktrees/feature/phase-a-a4-clap
 target: develop
