@@ -1,0 +1,57 @@
+{
+  "phase": "A",
+  "integration_branch": "integrate/phase-a",
+  "qa_rounds": [
+    {
+      "qa_pass": "qa-1",
+      "sprint": "a.1",
+      "commit": "1913dbe99c63ed8624a029c2cd546614e0bf350f",
+      "verdict": "FAIL",
+      "pr_number": 1,
+      "pr_comment_url": "https://github.com/randlee/docli/pull/1#issuecomment-6052629379",
+      "coordinator_task_id": "9ff64032-eefb-4ab4-80c3-4a3c8132d145",
+      "reviewer_manifest": [
+        {"agent": "req-qa", "task_id": "2c477951-e64f-4307-adff-331a80f67e94", "spawn_actor": "parent-orchestrator"},
+        {"agent": "arch-qa", "task_id": "b0b87b80-7d4e-4b39-9d71-a1e55b94c12f", "spawn_actor": "parent-orchestrator"},
+        {"agent": "rust-qa-agent", "task_id": "640bc521-8bef-440f-bf5b-c03ad81bb806", "spawn_actor": "parent-orchestrator"},
+        {"agent": "rust-best-practices-agent", "task_id": "6e71de3e-5a61-4fcb-8166-67520ee53848", "spawn_actor": "parent-orchestrator"},
+        {"agent": "rust-service-hardening-agent", "task_id": "cd83002f-a3a4-4ff1-88ad-57b0263b13d1", "spawn_actor": "parent-orchestrator"},
+        {"agent": "flaky-test-qa", "task_id": "2b5d8dc6-f167-473c-a5c0-413d73980d79", "spawn_actor": "parent-orchestrator"}
+      ],
+      "triage_ttl_paths": [
+        ".triage/phase-a/findings/ATM-QA-001.ttl",
+        ".triage/phase-a/findings/ATM-QA-002.ttl",
+        ".triage/phase-a/findings/ATM-QA-003.ttl",
+        ".triage/phase-a/findings/ATM-QA-004.ttl",
+        ".triage/phase-a/findings/RBP-F001.ttl",
+        ".triage/phase-a/findings/RBP-F002.ttl"
+      ],
+      "finding_ids": ["ATM-QA-001", "ATM-QA-002", "ATM-QA-003", "ATM-QA-004", "RBP-F001", "RBP-F002"]
+    },
+    {
+      "qa_pass": "qa-2",
+      "sprint": "a.1",
+      "commit": "3c170c3d954df5004beded94b5a9419b00b32811",
+      "verdict": "PASS",
+      "pr_number": 1,
+      "pr_comment_url": "https://github.com/randlee/docli/pull/1#issuecomment-6052729885",
+      "coordinator_task_id": "8da7168b-d2a6-44d9-ace5-dc2a35daa390",
+      "merge_commit": "b61a4a95585ae7bb22829dc963800456de459a47",
+      "reviewer_manifest": [
+        {"agent": "req-qa", "task_id": "6c5257fd-5231-478e-ad41-be9a95a77ddf", "spawn_actor": "parent-orchestrator"},
+        {"agent": "arch-qa", "task_id": "f72fd21c-8ca1-4a5c-a065-0bde5843c5bd", "spawn_actor": "parent-orchestrator"},
+        {"agent": "rust-qa-agent", "task_id": "796957c6-106b-4f5b-a2de-11d5c674e3bd", "spawn_actor": "parent-orchestrator"},
+        {"agent": "flaky-test-qa", "task_id": "ccffd2b5-a100-4c29-ab1e-97e704cfa030", "spawn_actor": "parent-orchestrator"}
+      ],
+      "triage_ttl_paths": [
+        ".triage/phase-a/findings/ATM-QA-001.ttl",
+        ".triage/phase-a/findings/ATM-QA-002.ttl",
+        ".triage/phase-a/findings/ATM-QA-003.ttl",
+        ".triage/phase-a/findings/ATM-QA-004.ttl",
+        ".triage/phase-a/findings/RBP-F001.ttl",
+        ".triage/phase-a/findings/RBP-F002.ttl"
+      ],
+      "finding_ids": []
+    }
+  ]
+}
