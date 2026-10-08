@@ -4,6 +4,12 @@ Language-agnostic CLI documentation generator. `docli` turns a neutral
 command-tree description into a self-contained two-pane HTML reference and a
 Markdown manual — mechanically, never hand-authored.
 
+## Website
+
+<https://randlee.github.io/docli/> — deployed via GitHub Pages from `main`
+(`.github/workflows/pages.yml`); the self-generated CLI reference lives at
+<https://randlee.github.io/docli/cli/>.
+
 ## Why
 
 Every CLI framework knows its own command tree (clap in Rust, cobra in Go,
