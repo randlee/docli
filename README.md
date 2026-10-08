@@ -33,7 +33,7 @@ docli generate --input cli-model.json --html site/cli --markdown docs/manual/cli
 docli generate --html site/cli < cli-model.json
 ```
 
-With no `--html`/`--markdown`, the HTML is written to stdout.
+With no `--html`, HTML is written to `site/cli/index.html` (default). With no `--markdown`, no Markdown file is written.
 
 ## The neutral model
 
