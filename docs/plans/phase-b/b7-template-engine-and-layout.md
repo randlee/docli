@@ -28,34 +28,29 @@ default rendering stays byte-identical to `fixtures/contract/index.html` **witho
 
 - `templates/html/default/` — `template.toml`, `page.html.j2`, `style.css.j2`, `script.js`
 - **MiniJinja** (fixed choice) for pack render; no Askama in Phase B
-- `src/templates/mod.rs` — install root resolution (dev tree vs `share/docli/templates`)
-- `src/render/html.rs` — calls template loader; no `--template` flag (b.9)
+- **ADR-004** in `docs/architecture.md` (amends ADR-001): bundled packs **embedded in the binary** via `include_dir`; `share/docli/templates` holds **optional extra** packs only. `html::render(&CliModel) -> String` uses embedded **default** + default theme (no `--template`). Only `ops::generate` applies caller template/theme and returns envelopes.
+- `src/templates/mod.rs` — `resolve_pack` for bundled id or filesystem directory
+- `src/render/html.rs` — pack render only; delete Phase A inline CSS/JS body
 - `build.rs` or `include_dir` — embed bundled `default` for `cargo install`
 - `REQ-DOCLI-HTML-007` body + section 11 index row (same PR)
 
 ## Explicit code samples
 
 ```rust
-// src/templates/mod.rs
-pub fn install_root() -> std::path::PathBuf;
-pub fn load_pack(id: &str) -> Result<Pack, TemplateLoadError>;
-pub fn render_default(model: &CliModel, theme: &ThemeMap) -> Result<Vec<u8>, RenderError>;
+// src/templates/mod.rs — resolve bundled id OR filesystem pack directory
+pub fn resolve_pack(template: &TemplateRef) -> Result<Pack, PackResolveError>;
+pub fn render_pack(pack: &Pack, model: &CliModel, theme: &ThemeMap) -> Result<String, RenderError>;
 ```
 
-```toml
-# templates/html/default/template.toml (minimal)
-id = "default"
-name = "docli default"
-version = "1"
-theme_schema = { accent = "#007acc", font_body = "system-ui" }
-```
+`theme_schema` in every `template.toml` uses the AUTHOR.md object form (`type`, `default`, `description` per key).
 
-b.7 maps load/render failures to existing `DOCLI.IO` / `DOCLI.INTERNAL` only; **no** `DOCLI.TEMPLATE_*` codes until b.8.
+b.7 embedded-default path: I/O failures → `DOCLI.IO` / `DOCLI.INTERNAL` only. Caller-selected packs use `DOCLI.TEMPLATE_*` from b.8+.
 
 ## Acceptance Criteria
 
-- `cargo test --test render_fixtures` passes; default pack output matches `fixtures/contract/index.html`
-- `docli generate --input fixtures/contract/model.json --html <tmp>` (no `--template`) matches contract bytes
+- `rg` does not find Phase A inline `const CSS:` / `const JS:` in `src/render/html.rs` (deleted)
+- Output includes a marker class/id present only in `templates/html/default/` (named in sprint PR)
+- `cargo test --test render_fixtures` and generate without `--template` match `fixtures/contract/index.html`
 - No external CSS/JS URLs in output
 - `theme_schema` documented in `template.toml`
 

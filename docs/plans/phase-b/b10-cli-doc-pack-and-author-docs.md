@@ -31,10 +31,10 @@ Second bundled pack **`cli-doc`**, `_skeleton` starter, aligned author/agent doc
 
 ## Acceptance Criteria
 
-- `docli templates list --json` includes `default` and `cli-doc`
-- Full three-call flow in AGENT-PREVIEW.md (default + cli-doc + themed default) succeeds
-- AUTHOR.md matches install layout and `theme_schema` rules
-- No `c.1` / `c.4` / `compact` template references remain in `docs/templates/`
+- **REQ-DOCLI-HTML-008:** `cli-doc` render includes layout markers absent from default (two-column + card option markup); still self-contained with `#docli-data` / `#docli-search`
+- **REQ-DOCLI-HTML-009:** `_skeleton` passes `templates validate`; not listed by `templates list`
+- **REQ-DOCLI-HTML-010:** AUTHOR.md install layout + `theme_schema` match ADR-004 / b.7 schema; no `c.*` / `compact`
+- `templates list` includes `default` and `cli-doc`; three-call AGENT-PREVIEW succeeds
 
 ## Required Validation
 

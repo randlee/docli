@@ -40,7 +40,7 @@ b.1 does not re-vendor the skill. After b.0 sync, integrate must contain the ski
 ## Deliverables
 
 - [`docs/requirements.md`](../../requirements.md) — header, `REQ-DOCLI-NORM-001`, section 9 error inventory, `## 11. Requirement index` listing all `REQ-DOCLI-*` ids.
-- [`docs/architecture.md`](../../architecture.md) — `ADR-001`–`ADR-003`, `ARCH-RULE-001`–`008`, error-contract pointer to `tests/error_contract.rs` (b.2).
+- [`docs/architecture.md`](../../architecture.md) — full decision text for **ADR-001**–**ADR-003** (ADR-003 states machine contract version `"1"`, `ok`, `data`/`error`, kind↔exit per b.2). **ARCH-RULE-001**–**008**: one normative sentence each (e.g. 004: envelope types live in `src/contract.rs`; 007: error-shape changes need REQ row + skill). Error-contract section names `tests/error_contract.rs`.
 - [`.claude/agents/req-qa.md`](../../../.claude/agents/req-qa.md) — read `docs/requirements.md` first; `REQ-DOCLI-*` in `source_refs`; missing `error_contract` coverage is **Blocking** for CLI-008–010.
 - [`.claude/agents/arch-qa.md`](../../../.claude/agents/arch-qa.md) — read `docs/architecture.md` first; `ARCH-RULE-*` before generic `RULE-*`; emit `rule`, `adr`, `evidence_refs`.
 - [`.claude/skills/codex-orchestration/SKILL.md`](../../../.claude/skills/codex-orchestration/SKILL.md) — preconditions cite `docs/plans/project-plan.md` and `docs/plans/phase-b/README.md`.
@@ -55,6 +55,8 @@ b.1 does not re-vendor the skill. After b.0 sync, integrate must contain the ski
 ## Acceptance Criteria
 
 - Section 11 index and ADR/ARCH-RULE tables match deliverables above
+- `rg` finds a unique normative phrase per **ARCH-RULE-00N** row (not id-only stubs)
+- ADR-003 body includes the machine-contract version and envelope field names
 - `req-qa.md` / `arch-qa.md` / codex-orchestration preconditions match deliverables
 - `develop` already contains the skill tree; this sprint does not modify `.claude/skills/creating-ai-clis/` except doc links
 

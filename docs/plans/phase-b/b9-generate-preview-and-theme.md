@@ -30,7 +30,9 @@ Extend **`docli generate`** with template selection, theme JSON, and temp previe
 - **`--preview`**: temp dir `docli-preview-{pid}-{nanos}/index.html`; envelope includes `preview_dir`
 - Invalid theme JSON → `DOCLI.INPUT_INVALID`
 - `REQ-DOCLI-CLI-012` + section 11 index update
-- [`docs/requirements.md`](../../requirements.md) section 9 row for **`DOCLI.TEMPLATE_NOT_FOUND`** with **Covered by** test name in `tests/error_contract.rs`
+- Section 9: **`DOCLI.TEMPLATE_NOT_FOUND`** — kind **`not_found`**, exit **3**, details `{ "template": "<id|path>" }`; **Covered by** named test(s)
+- `ErrorBody` / `ErrorCode` in `src/contract.rs`
+- b.9 updates b.8 `example_generate_argv` to include `--preview`, `--template`, `--theme` once flags exist
 - `tests/template_contract.rs` — three `--preview` runs with **default** + different `--theme` only
 - `tests/error_contract.rs` — named test for `DOCLI.TEMPLATE_NOT_FOUND`
 
@@ -38,16 +40,16 @@ Extend **`docli generate`** with template selection, theme JSON, and temp previe
 
 ```rust
 pub struct GenerateRequest {
-    pub input_path: Option<PathBuf>,
+    pub input: InputSource, // unchanged — stdin + file
     pub html_dir: Option<PathBuf>,
     pub preview: bool,
-    pub template_id: Option<String>,
+    pub template: Option<TemplateRef>,
     pub theme_json: Option<String>,
     // … existing markdown/json fields
 }
 ```
 
-Success `generate` `data` adds: `template`, `theme`, `preview_dir` (null when not preview), `html_dir`, `outputs`.
+When `--preview`: write only under temp dir; set **`data.html_dir`** and **`data.preview_dir`** to that dir; do not touch `site/cli`. When not preview: `preview_dir` is null; `html_dir` is resolved output (default `site/cli`).
 
 ## Acceptance Criteria
 

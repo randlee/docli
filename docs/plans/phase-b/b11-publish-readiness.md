@@ -17,7 +17,7 @@ target: integrate/phase-b
 
 ## Hard Dependencies
 
-- b.1–b.10 merged on `integrate/phase-b`
+- b.1, b.2, b.3, b.5, b.7, b.8, b.9, b.10 merged on `integrate/phase-b`
 
 Phase-end **quality-mgr** runs **after** this sprint merges, then **`integrate/phase-b` → `develop`** (see phase-b README).
 

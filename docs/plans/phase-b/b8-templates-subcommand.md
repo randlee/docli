@@ -27,8 +27,8 @@ Agents discover and validate template packs via **`docli templates`** with versi
 
 - `src/ops.rs` — `templates_list`, `templates_show`, `templates_validate`
 - `src/cli.rs` — `Templates { List | Show | Validate }`
-- `REQ-DOCLI-CLI-011` + section 11 index update
-- [`docs/requirements.md`](../../requirements.md) section 9 row for **`DOCLI.TEMPLATE_INVALID`** (kind, exit **2**) with **Covered by** naming the validate test in `tests/error_contract.rs`
+- `REQ-DOCLI-CLI-011` + section 9 row: **`DOCLI.TEMPLATE_INVALID`** — kind **`validation`**, exit **2**, details `{ "cause": "..." }`; **Covered by** named test(s) in `tests/error_contract.rs`
+- `ErrorBody` constructor + `ErrorCode` variant in `src/contract.rs` (b.2 pattern)
 - `tests/template_contract.rs` — list/show/validate success envelopes + **`cargo_docli_templates_list_matches_docli`** (or equivalent) parity test
 - `tests/error_contract.rs` — `templates validate` → `DOCLI.TEMPLATE_INVALID` (named test)
 
@@ -57,8 +57,8 @@ docli templates validate <PATH> [--json]
   "operation": "templates_show",
   "id": "default",
   "manifest": { "id": "default", "version": "1" },
-  "theme_schema": { "accent": "string", "font_body": "string" },
-  "example_generate_argv": ["docli", "generate", "--input", "model.json", "--preview", "--template", "default", "--theme", "{}"]
+  "theme_schema": { "accent": { "type": "color", "default": "#007acc", "description": "Primary accent" } },
+  "example_generate_argv": ["docli", "generate", "--input", "model.json", "--html", "site/cli"]
 }
 ```
 
@@ -71,7 +71,7 @@ docli templates validate <PATH> [--json]
   "data": null,
   "error": {
     "code": "DOCLI.TEMPLATE_INVALID",
-    "kind": "dependency",
+    "kind": "validation",
     "message": "…",
     "details": {},
     "suggested_action": "…",
