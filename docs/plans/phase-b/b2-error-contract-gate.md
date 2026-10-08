@@ -1,7 +1,7 @@
 ---
 id: b.2
 title: error contract integration gate
-status: planned
+status: complete
 branch: feature/phase-b-b2-errors
 worktree: ../docli-worktrees/feature/phase-b-b2-errors
 target: integrate/phase-b

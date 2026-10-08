@@ -1,5 +1,7 @@
 //! Assert version `"1"` envelopes match `REQ-DOCLI-CLI-002` / `REQ-DOCLI-CLI-003`.
+#![allow(dead_code)] // shared across integration test binaries; each crate uses a subset.
 
+use serde::Deserialize;
 use serde_json::Value;
 
 pub fn parse_envelope(stdout: &[u8]) -> Value {
@@ -13,8 +15,13 @@ pub fn parse_envelope(stdout: &[u8]) -> Value {
         !trimmed.contains("\n\n"),
         "stdout must be a single JSON envelope, got multiple blocks: {trimmed}"
     );
-    serde_json::from_str(trimmed)
-        .unwrap_or_else(|err| panic!("stdout is not valid JSON envelope ({err}): {trimmed}"))
+    let mut de = serde_json::Deserializer::from_str(trimmed);
+    let envelope = Value::deserialize(&mut de)
+        .unwrap_or_else(|err| panic!("stdout is not valid JSON envelope ({err}): {trimmed}"));
+    de.end().unwrap_or_else(|err| {
+        panic!("stdout must be a single JSON envelope, trailing content ({err}): {trimmed}")
+    });
+    envelope
 }
 
 pub fn assert_success(envelope: &Value) {
@@ -24,7 +31,19 @@ pub fn assert_success(envelope: &Value) {
     assert!(envelope["data"].is_object(), "data must be an object");
 }
 
-pub fn assert_failure(envelope: &Value, exit_code: i32, kind: &str, code: &str) -> Value {
+/// Asserts `process_exit == Some(expected_exit)`, then the failure envelope.
+pub fn assert_failure(
+    process_exit: Option<i32>,
+    envelope: &Value,
+    expected_exit: i32,
+    kind: &str,
+    code: &str,
+) -> Value {
+    assert_eq!(
+        process_exit,
+        Some(expected_exit),
+        "process exit {process_exit:?} != expected {expected_exit} for {code}"
+    );
     assert_eq!(envelope["version"], "1");
     assert_eq!(envelope["ok"], false);
     assert_eq!(envelope["data"], Value::Null);
@@ -58,7 +77,6 @@ pub fn assert_failure(envelope: &Value, exit_code: i32, kind: &str, code: &str) 
         docs.is_string() || docs.is_null(),
         "docs must be string or null, got {docs}"
     );
-    let _ = exit_code;
     error
 }
 
