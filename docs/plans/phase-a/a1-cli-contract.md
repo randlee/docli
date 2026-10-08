@@ -45,13 +45,35 @@ pub struct Envelope<T> {
 `serde_json` writes `None` as `null`, so both keys are always present. `skip_serializing_if = "Option::is_none"` is forbidden on `data` and `error`. Success JSON contains `"error": null`. Failure JSON contains `"data": null`.
 
 ```rust
+#[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ErrorKind {
+    Validation,
+    NotFound,
+    Dependency,
+    Internal,
+}
+
+pub enum ErrorCode {
+    Usage,
+    InputInvalid,
+    InputNotFound,
+    OutputNotFound,
+    Io,
+    Internal,
+}
+
 pub struct ErrorBody {
-    pub kind: &'static str, // validation | not_found | dependency | internal
-    pub code: &'static str,
+    pub kind: ErrorKind,
+    pub code: ErrorCode,
     pub message: String,
     pub details: serde_json::Value,
     pub suggested_action: String,
+    pub docs: Option<String>,
 }
+```
+
+`ErrorCode` serializes as `DOCLI.USAGE`, `DOCLI.INPUT_INVALID`, `DOCLI.INPUT_NOT_FOUND`, `DOCLI.OUTPUT_NOT_FOUND`, `DOCLI.IO`, or `DOCLI.INTERNAL`. `ErrorKind` serializes as `validation`, `not_found`, `dependency`, or `internal`. `docs` is always present: a URL string or `null`. `skip_serializing_if` is forbidden on `docs`. `details` stays a JSON object because each code has a different shape; the table below is the schema.
 
 pub enum InputSource {
     Stdin,
@@ -174,6 +196,7 @@ Exit codes: `0` success, `2` validation (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`), 
 - Invalid model JSON exits 2 with `error.code` `DOCLI.INPUT_INVALID`
 - `docli show --html <missing> --json` exits 3 with `DOCLI.OUTPUT_NOT_FOUND` and `details` listing each requested artifact
 - `docli::ops::generate(GenerateRequest { input: InputSource::File(model_path), html_dir: Some(tmp), markdown: None })` returns an `Envelope` with `ok: true`, `html_dir` equal to `tmp`, and `tmp/index.html` exists
+- Each failure acceptance criterion above also checks `error.kind`, `error.code`, and `error.details` against the error-inventory row for that code, and checks that `error.docs` is present as a string or `null`
 - `--help` and `--version` exit 0 and print human text
 - A model JSON object with an extra field `"future": 1` on the root, on one option, and on one argument deserializes with those keys in `extra`, and the generated page still renders the known fields
 - `CliModel`, `OptionSpec`, and `ArgumentSpec` expose every field named by `REQ-DOCLI-INPUT-001`, `REQ-DOCLI-INPUT-002`, and `REQ-DOCLI-INPUT-003`

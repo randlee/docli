@@ -167,8 +167,9 @@ prompts.
   Success sets `ok` true, `data` to the response, and `error` null. Failure
   sets `ok` false, `data` null, and `error` to the error object.
 - `REQ-DOCLI-CLI-003`: `error` carries `kind`, `code`, `message`, `details`,
-  and `suggested_action`. `kind` is one of `validation`, `not_found`,
-  `dependency`, or `internal`. `details` is an object. Codes are stable:
+  `suggested_action`, and `docs`. `kind` is one of `validation`, `not_found`,
+  `dependency`, or `internal`. `code` is one of the stable strings below.
+  `details` is an object. `docs` is a string or null. Codes are stable:
 
   | Code | Kind | When |
   |---|---|---|
