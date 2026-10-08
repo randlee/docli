@@ -15,6 +15,8 @@ pub mod schema;
 pub mod search;
 
 #[doc(inline)]
+pub use clap_model::from_clap;
+#[doc(inline)]
 pub use schema::{ArgumentSpec, CliModel, OptionSpec};
 #[doc(inline)]
 pub use search::{matching_anchors, search_index, SearchEntry};
