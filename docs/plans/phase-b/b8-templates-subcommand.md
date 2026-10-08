@@ -29,7 +29,7 @@ Agents discover and validate template packs via **`docli templates`** with versi
 - `src/cli.rs` — `Templates { List | Show | Validate }`
 - `REQ-DOCLI-CLI-011` + section 9 row: **`DOCLI.TEMPLATE_INVALID`** — kind **`validation`**, exit **2**, details `{ "cause": "..." }`; **Covered by** named test(s) in `tests/error_contract.rs`
 - `ErrorBody` constructor + `ErrorCode` variant in `src/contract.rs` (b.2 pattern)
-- `tests/template_contract.rs` — list/show/validate success envelopes + **`cargo_docli_templates_list_matches_docli`** (or equivalent) parity test
+- `tests/template_contract.rs` — list/show/validate success envelopes + parity test **`cargo_docli_templates_list_matches_docli`**
 - `tests/error_contract.rs` — `templates validate` → `DOCLI.TEMPLATE_INVALID` (named test)
 
 ## Subcommand surface

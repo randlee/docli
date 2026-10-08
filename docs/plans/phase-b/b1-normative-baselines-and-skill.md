@@ -27,7 +27,7 @@ b.1 does not re-vendor the skill. After b.0 sync, integrate must contain the ski
 ## Closes
 
 - `REQ-DOCLI-NORM-001` (references vendored skill on `develop`; no skill bytes in this PR)
-- `ADR-001`, `ADR-002`, `ADR-003`
+- `ADR-001`, `ADR-002`, `ADR-003` (decision record text in `docs/architecture.md`)
 - `ARCH-RULE-001` through `ARCH-RULE-008`
 - QA alignment for `req-qa` and `arch-qa` (no new requirement id)
 
@@ -44,7 +44,7 @@ b.1 does not re-vendor the skill. After b.0 sync, integrate must contain the ski
 - [`.claude/agents/req-qa.md`](../../../.claude/agents/req-qa.md) — read `docs/requirements.md` first; `REQ-DOCLI-*` in `source_refs`; missing `error_contract` coverage is **Blocking** for CLI-008–010.
 - [`.claude/agents/arch-qa.md`](../../../.claude/agents/arch-qa.md) — read `docs/architecture.md` first; `ARCH-RULE-*` before generic `RULE-*`; emit `rule`, `adr`, `evidence_refs`.
 - [`.claude/skills/codex-orchestration/SKILL.md`](../../../.claude/skills/codex-orchestration/SKILL.md) — preconditions cite `docs/plans/project-plan.md` and `docs/plans/phase-b/README.md`.
-- Phase A ADR stubs banner → canonical `docs/architecture.md`; [`project-plan.md`](../project-plan.md) and [`README.md`](../../../README.md) link baselines.
+- Phase A ADR stubs banner → canonical `docs/architecture.md`; [`project-plan.md`](../project-plan.md) and [`README.md`](../../../README.md) link baselines and state default `--html` → `site/cli` per **REQ-DOCLI-HTML-006** / **REQ-DOCLI-CLI-005** (not stdout).
 
 ## Out of Scope
 

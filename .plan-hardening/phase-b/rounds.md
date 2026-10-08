@@ -6,4 +6,5 @@
 | 4 | 4 | critical-plan-reviewer (grok) | 546ea61 | FAIL | 6 | 2 | 0 | PLAN-CRIT-001…008 | critical cycle 1 |
 | 5 | 4 | remediation | 715ee18 | PASS | | | | | critical fixes committed |
 | 6 | 5 | arch-ctm (inline) | 715ee18 | PASS | | | | | consistency hardening |
-| 7 | 6 | quality-mgr | 715ee18 | IN-FLIGHT | | | | | plan QA started |
+| 7 | 6 | quality-mgr | 2cb48b1 | FAIL | 1 | 2 | 2 | PHB-QA-001…005 | IN-FLIGHT timeout; req-qa completed separately |
+| 8 | 6 | remediation | pending | pending | | | | | PHB-QA-001 README + plan clarifications |

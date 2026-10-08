@@ -17,7 +17,7 @@ default rendering stays byte-identical to `fixtures/contract/index.html` **witho
 ## Closes
 
 - `REQ-DOCLI-HTML-007`
-- `ADR-004` (template pack boundary in `docs/architecture.md`)
+- Delivers **ADR-004** (template pack boundary in `docs/architecture.md`)
 
 ## Hard Dependencies
 
@@ -49,7 +49,7 @@ b.7 embedded-default path: I/O failures → `DOCLI.IO` / `DOCLI.INTERNAL` only. 
 ## Acceptance Criteria
 
 - `rg` does not find Phase A inline `const CSS:` / `const JS:` in `src/render/html.rs` (deleted)
-- Output includes a marker class/id present only in `templates/html/default/` (named in sprint PR)
+- Output includes `id="docli-default-pack"` (or equivalent single marker documented in the sprint PR) present only in `templates/html/default/`
 - `cargo test --test render_fixtures` and generate without `--template` match `fixtures/contract/index.html`
 - No external CSS/JS URLs in output
 - `theme_schema` documented in `template.toml`

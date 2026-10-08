@@ -18,7 +18,7 @@ Every stable `DOCLI.*` code is integration-tested so `docli --json` and `cargo d
 - `REQ-DOCLI-CLI-008`
 - `REQ-DOCLI-CLI-009`
 - `REQ-DOCLI-CLI-010`
-- `ADR-003` (machine contract; skill reference `.claude/skills/creating-ai-clis/references/error-contracts.md`)
+- `ADR-003` implementation gate (`tests/error_contract.rs` matches decision record from b.1; skill reference `.claude/skills/creating-ai-clis/references/error-contracts.md`)
 - `ARCH-RULE-004` (`Envelope`, `ErrorBody`, and exit codes stay in `src/contract.rs`)
 - `ARCH-RULE-007` (error-shape changes require `REQ-DOCLI-CLI-*` and the vendored skill)
 
