@@ -1,0 +1,48 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/RBP-F001>
+  a triage:Finding ;
+  triage:findingId "RBP-F001" ;
+  triage:title "Human errors omit recovery fields" ;
+  triage:description "Display for ErrorBody prints only code and message. Human stderr must also include suggested_action and details.cause when present, and docs when it is a string." ;
+  triage:phaseId "phase-a" ;
+  triage:triageMode "initial_pass" ;
+  triage:category "RBP-001" ;
+  triage:severity "important" ;
+  triage:repeatable false ;
+  triage:sweepScope "file" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/RBP-F001/phase-a-a1-cli/1> ;
+  triage:openOn <urn:atm:triage:worktree/phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f> ;
+  triage:promoteTo <urn:atm:triage:worktree/phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f> ;
+  triage:originatingSprintDoc "docs/plans/phase-a/a1-cli-contract.md" ;
+  triage:requirementId "REQ-DOCLI-CLI-007" ;
+  triage:adrId "ADR-001" ;
+  triage:triagedAt "2026-10-08T02:59:00Z"^^xsd:dateTime .
+
+<urn:atm:triage:occurrence/RBP-F001/phase-a-a1-cli/1>
+  a triage:Occurrence ;
+  triage:file "src/contract.rs" ;
+  triage:line 131 ;
+  triage:snippet "fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result { write!(f, \"{}: {}\", self.code_name(), self.message) }" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "feature/phase-a-a1-cli" ;
+  triage:headSha "1913dbe99c63ed8624a029c2cd546614e0bf350f" ;
+  triage:occursIn <urn:atm:triage:worktree/phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f> .
+
+<urn:atm:triage:worktree/phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f>
+  a triage:WorktreeSnapshot ;
+  triage:branch "feature/phase-a-a1-cli" ;
+  triage:path "/Users/randlee/github/docli-worktrees/feature/phase-a-a1-cli" ;
+  triage:headSha "1913dbe99c63ed8624a029c2cd546614e0bf350f" ;
+  triage:orderIndex 1 .
+
+<urn:atm:triage:worktree/integrate-phase-a/9d885f59ed85d9d976f47b6a0029384a0c3a358d>
+  a triage:WorktreeSnapshot ;
+  triage:branch "integrate/phase-a" ;
+  triage:path "/Users/randlee/github/docli-worktrees/integrate/phase-a" ;
+  triage:headSha "9d885f59ed85d9d976f47b6a0029384a0c3a358d" ;
+  triage:orderIndex 0 .
