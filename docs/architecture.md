@@ -2,7 +2,9 @@
 
 `ops` is the library boundary. In-process callers use `docli::ops::generate`
 and `docli::ops::show` and receive the same version `"1"` envelope the CLI
-prints. `src/main.rs` only converts argv into those requests. A later MCP
+prints. The `docli` and `cargo-docli` binaries convert argv through `docli::cli`
+(`#[doc(hidden)]`, shared in a.3) and call `ops`; integrators should use `ops`,
+not `cli`. A later MCP
 wrapper calls the same functions and does not re-parse flags or reshape the
 JSON.
 

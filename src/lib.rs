@@ -6,6 +6,8 @@
 //! [`ops::generate`] and [`ops::show`] for the same envelope the CLI prints.
 
 pub mod clap_model;
+#[doc(hidden)]
+pub mod cli;
 pub mod contract;
 pub mod ops;
 pub mod render;
