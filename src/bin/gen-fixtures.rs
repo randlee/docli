@@ -170,7 +170,13 @@ fn capture_fixture(checkout: &Path, target: &Target, docli_root: &Path) -> Resul
     )
     .map_err(|err| format!("patch {}: {err}", inject_path.display()))
     {
-        return fail_after_restore(restore_manifest_only(&manifest_path, &manifest_backup), err);
+        if let Err(restore_err) = fs::write(&manifest_path, &manifest_backup) {
+            return Err(format!(
+                "{err}\nfailed to restore {}: {restore_err}",
+                manifest_path.display()
+            ));
+        }
+        return Err(err);
     }
 
     let temp_out = env::temp_dir().join(format!(
@@ -238,17 +244,6 @@ fn capture_fixture(checkout: &Path, target: &Target, docli_root: &Path) -> Resul
     serde_json::from_str::<serde_json::Value>(&json)
         .map_err(|err| format!("generated JSON is invalid: {err}"))?;
     Ok(json.trim_end().to_string())
-}
-
-fn restore_manifest_only(
-    manifest_path: &Path,
-    manifest_backup: &str,
-) -> impl FnOnce() -> Result<(), String> + '_ {
-    move || {
-        fs::write(manifest_path, manifest_backup)
-            .map_err(|err| format!("restore {}: {err}", manifest_path.display()))?;
-        Ok(())
-    }
 }
 
 fn fail_after_restore(
