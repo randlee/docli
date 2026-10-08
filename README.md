@@ -66,7 +66,7 @@ Field reference:
 
 ### Rust (clap) — built in
 
-`docli` exposes `from_clap`, which maps a live `clap::Command` onto the model:
+`docli::clap_model::from_clap` maps a live `clap::Command` onto the model:
 
 ```rust
 use clap::{Parser, CommandFactory};
@@ -76,7 +76,7 @@ use clap::{Parser, CommandFactory};
 struct Demo { /* ... */ }
 
 fn main() {
-    let model = docli::from_clap(&Demo::command());
+    let model = docli::clap_model::from_clap(&Demo::command());
     println!("{}", serde_json::to_string(&model).unwrap());
 }
 ```

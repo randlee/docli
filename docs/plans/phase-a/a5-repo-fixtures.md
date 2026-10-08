@@ -1,7 +1,7 @@
 ---
 id: a.5
 title: test-repo command models
-status: planned
+status: complete
 branch: feature/phase-a-a5-fixtures
 worktree: ../docli-worktrees/feature/phase-a-a5-fixtures
 target: develop
@@ -31,7 +31,7 @@ cargo run --bin gen-fixtures -- --atm-core <atm-core-checkout> --sc-compose <sc-
 
 `gen-fixtures` is behind Cargo feature `gen-fixtures` (`required-features` on that bin). `cargo test` does not enable the feature and does not build the bin.
 
-The bin does not depend on atm-core or sc-compose in `Cargo.toml`. It writes a temporary package inside the given checkout, path-depending on that checkout's CLI crate and on this docli crate, runs it, writes the JSON, and deletes the temporary package. The temporary package calls `docli::from_clap` on:
+The bin does not depend on atm-core or sc-compose in `Cargo.toml`. For each checkout it temporarily patches that crate's `Cargo.toml` with a path dependency on this docli tree, appends a `docli_gen_fixtures` cfg-gated test module that calls `docli::from_clap`, runs `cargo test` for that package, reads the JSON from `DOCLI_GEN_OUT`, then restores the patched files. The injected test calls `docli::from_clap` on:
 
 - atm-core: `Cli::command()` in `crates/atm` (`clap::CommandFactory`)
 - sc-compose: `cli::Cli::command()` in `crates/sc-compose`

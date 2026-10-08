@@ -38,6 +38,9 @@ pub struct CliModel {
     /// Nested subcommands.
     #[serde(default)]
     pub subcommands: Vec<CliModel>,
+    /// Unknown fields preserved for forward compatibility.
+    #[serde(flatten, default)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
 }
 
 /// A flag or option (e.g. `--output <PATH>`, `-v`).
@@ -75,6 +78,9 @@ pub struct OptionSpec {
     /// Maximum number of values this option consumes.
     #[serde(default)]
     pub max_values: Option<usize>,
+    /// Unknown fields preserved for forward compatibility.
+    #[serde(flatten, default)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
 }
 
 /// A positional argument.
@@ -90,4 +96,7 @@ pub struct ArgumentSpec {
     pub default_value: Option<String>,
     #[serde(default)]
     pub choices: Vec<String>,
+    /// Unknown fields preserved for forward compatibility.
+    #[serde(flatten, default)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
 }
