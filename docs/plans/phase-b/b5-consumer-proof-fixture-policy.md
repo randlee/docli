@@ -95,15 +95,7 @@ fi
 
 ## Required Validation
 
-```text
-cargo test
-cargo test --test error_contract
-cargo test --test cli_contract
-cargo test --test cargo_docli
-cargo clippy --all-targets --all-features -- -D warnings
-cargo fmt --check
-git diff --check
-```
+- Phase B host gate — [README.md](README.md)
 
 ```text
 rg -n "^### Fixture policy$" docs/requirements.md

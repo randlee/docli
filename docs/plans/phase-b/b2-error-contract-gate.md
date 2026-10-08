@@ -166,54 +166,12 @@ Exit codes stay `ErrorCode::exit_code`: `DOCLI.USAGE` and `DOCLI.INPUT_INVALID` 
 - `tests/cli_contract.rs` does not assert a conflicting envelope shape
 - `DOCLI.INTERNAL` is covered by `docli_internal_error_body_contract` and is not given a false CLI argv
 
+## As-built note
+
+Much of this sprint may already be on `integrate/phase-b` (PR #13). Close **b.2** when acceptance criteria pass at the stack layer; do not revert landed work to re-enact the sprint.
+
 ## Required Validation
 
-```text
-cargo test
-cargo test --test error_contract
-cargo test --test cli_contract
-cargo test --test cargo_docli
-cargo clippy --all-targets --all-features -- -D warnings
-cargo fmt --check
-git diff --check
-```
-
-```text
-cargo test --test error_contract -- --list
-cargo test --test cargo_docli cargo_docli_matches_docli_error_envelopes
-for fn in \
-  docli_usage_unknown_command_json \
-  docli_usage_invalid_flag_json \
-  docli_usage_show_without_paths_json \
-  docli_usage_show_without_paths_human \
-  docli_input_invalid_parse_error_json \
-  docli_input_invalid_empty_file_json \
-  docli_stdin_empty_is_input_invalid \
-  docli_input_invalid_human \
-  docli_input_not_found_json \
-  docli_input_not_found_human \
-  docli_output_not_found_single_html_json \
-  docli_output_not_found_html_and_markdown_json \
-  docli_output_not_found_human \
-  docli_io_generate_html_dir_not_writable_json \
-  docli_io_generate_partial_write_lists_outputs_written_json \
-  docli_io_show_unreadable_index_json \
-  docli_io_show_unreadable_index_human \
-  docli_internal_error_body_contract
-do
-  rg -n "fn ${fn}\\(" tests/error_contract.rs
-  rg -n "${fn}" docs/requirements.md
-done
-rg -n "fn cargo_docli_matches_docli_error_envelopes" tests/cargo_docli.rs
-if rg -n "fn cargo_docli_matches_docli_error_envelopes" tests/error_contract.rs; then
-  echo "parity test must live only in tests/cargo_docli.rs" >&2
-  exit 1
-fi
-if rg -n "let _ = (process_exit|exit_code)" tests/common/envelope.rs; then
-  echo "assert_failure discards the exit code" >&2
-  exit 1
-fi
-rg -n "fn assert_failure" tests/common/envelope.rs
-rg -n "fn assert_json_mode_stdout_only_envelope" tests/common/envelope.rs
-rg -n "fn assert_human_actionable" tests/common/envelope.rs
-```
+- Phase B host gate — [README.md](README.md)
+- `cargo test --test error_contract`
+- `cargo test --test cargo_docli cargo_docli_matches_docli_error_envelopes`

@@ -26,23 +26,27 @@ This skill defines the repo-local orchestration workflow for this repository.
 ## Preconditions
 
 Before starting a sprint:
-1. `docs/requirements.md`, `docs/architecture.md`, and `docs/project-plan.md`
+1. `docs/requirements.md`, `docs/architecture.md`, and `docs/plans/project-plan.md`
    define the sprint or phase review target.
-2. A worktree exists for the sprint branch under the repo’s worktree strategy.
-3. The target branch for the sprint is chosen from the current repo plan.
-4. The following prompts exist in `.claude/agents/`:
+2. **Git workflow (all repos):** plan draft + `/plan-hardening` on the **planning
+   branch**; execution only after operator **go** on a **`/sc-gh-stack`** whose trunk is
+   **`integrate/phase-<N>`**. See `docs/plans/project-plan.md` and `.plan-hardening/README.md`.
+3. A worktree exists for the sprint branch under the repo’s worktree strategy.
+4. The target branch for the sprint is chosen from the current repo plan (integration trunk,
+   not `develop`, for implementation stacks).
+5. The following prompts exist in `.claude/agents/`:
    - `quality-mgr.md`
    - `req-qa.md`
    - `arch-qa.md`
    - `flaky-test-qa.md`
    - installed Rust reviewers from `sc-rust`
-5. The following QA reporting skill exists in `.claude/skills/`:
+6. The following QA reporting skill exists in `.claude/skills/`:
    - `quality-management-gh/`
-6. `quality-mgr` must read:
+7. `quality-mgr` must read:
    - `.claude/assets/sc-rust/quality-mgr/quality-mgr.rust.md`
-7. `quality-mgr` must also read:
+8. `quality-mgr` must also read:
    - `.claude/skills/quality-management-gh/SKILL.md`
-8. `sc-compose` is available for rendering the JSON and markdown templates.
+9. `sc-compose` is available for rendering the JSON and markdown templates.
 
 ## Sprint Flow
 

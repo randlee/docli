@@ -106,17 +106,13 @@ fn live_candidate_repos_generate_show() {
 - Script failure paths do not send `docli --json` stdout to `/dev/null`
 - The sibling-checkout success run is b.5, not a b.3 closure
 
+## As-built note
+
+Verify scripts and related tests may already be on `integrate/phase-b` (PR #13). Close when acceptance criteria pass; sprint doc lists gaps only.
+
 ## Required Validation
 
-```text
-cargo test
-cargo test --test error_contract
-cargo test --test cli_contract
-cargo test --test cargo_docli
-cargo clippy --all-targets --all-features -- -D warnings
-cargo fmt --check
-git diff --check
-```
+- Phase B host gate — [README.md](README.md)
 
 ```text
 bash -n scripts/docli-envelope.sh
