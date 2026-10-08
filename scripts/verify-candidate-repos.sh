@@ -97,7 +97,7 @@ generate_show_temp_html() {
   local label=$1
   local model_json=$2
   local tmp_html
-  tmp_html="$(mktemp -d "${TMPDIR:-/tmp}/docli-verify-html.XXXXXX")"
+  tmp_html="$(mktemp -d)"
   echo "== $label =="
   docli_require_envelope_ok "$label generate" \
     "$DOCLI" generate --input "$model_json" --html "$tmp_html" --json
