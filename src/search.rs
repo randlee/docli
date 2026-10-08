@@ -303,6 +303,13 @@ mod search_index {
     }
 
     #[test]
+    fn non_ascii_letters_do_not_map_into_ascii_slug_chars() {
+        // U+212A KELVIN SIGN lowercases to ASCII "k" in Unicode, but slug keeps only ASCII alnum.
+        let index = search_index(&model(r#"{"name":"Kelvin"}"#));
+        assert_eq!(index[0].anchor, "elvin");
+    }
+
+    #[test]
     fn argument_name_matches_its_owner() {
         let index = search_index(&model(
             r#"{"name":"demo","arguments":[{"name":"config"}],"subcommands":[{"name":"run"}]}"#,

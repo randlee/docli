@@ -29,7 +29,7 @@ target: integrate/phase-a
 
 ## Explicit Code Samples
 
-Anchor for a command is the slash-free slug of its path: join `name` from the root with a single space, lowercase, replace every run of non-alphanumeric characters with one `-`, and trim `-` from both ends. Root `demo` is `demo`. Child `run` is `demo-run`.
+Anchor for a command is the slash-free slug of its path: join `name` from the root with a single space; keep only ASCII letters and digits (lowered), treat every other character as a separator, collapse separator runs to one `-`, and trim `-` from both ends. Root `demo` is `demo`. Child `run` is `demo-run`. When two commands in preorder would share the same slug, the first keeps the plain slug and each later collision takes the next free `-2`, `-3`, … suffix (same rule in `search::unique_anchor` and the page script).
 
 ```rust
 // src/search.rs

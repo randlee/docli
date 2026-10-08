@@ -90,8 +90,27 @@ code{overflow-wrap:anywhere}
   const all = [];
   const usedAnchors = new Set();
 
+  // Mirror `search::slug`: only ASCII alnum are kept; other code points are separators.
   function slug(value) {
-    return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    let out = "";
+    let pendingDash = false;
+    for (const ch of value) {
+      const code = ch.charCodeAt(0);
+      const isAsciiAlnum =
+        (code >= 48 && code <= 57) ||
+        (code >= 65 && code <= 90) ||
+        (code >= 97 && code <= 122);
+      if (isAsciiAlnum) {
+        if (pendingDash) {
+          out += "-";
+          pendingDash = false;
+        }
+        out += ch.toLowerCase();
+      } else if (out.length) {
+        pendingDash = true;
+      }
+    }
+    return out;
   }
 
   // Same preorder rule as `search::unique_anchor`: the first slug wins, and
@@ -180,7 +199,7 @@ code{overflow-wrap:anywhere}
         const row = el("tr");
         row.id = option.name;
         row.append(
-          el("td", option.long || ""),
+          el("td", option.long || option.name || ""),
           el("td", option.short || ""),
           el("td", option.value_name || ""),
           el("td", option.required ? "yes" : "no"),
