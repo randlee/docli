@@ -189,41 +189,62 @@ fn capture_fixture(checkout: &Path, target: &Target, docli_root: &Path) -> Resul
     };
 
     if let Err(err) = &output {
-        let _ = restore();
-        return Err(err.clone());
+        return fail_after_restore(restore, err.clone());
     }
     let output = output?;
 
     if !output.status.success() {
-        let _ = restore();
-        return Err(format!(
-            "cargo test failed for {} (exit {:?})\nstdout:\n{}\nstderr:\n{}",
-            target.package_name,
-            output.status.code(),
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        ));
+        return fail_after_restore(
+            restore,
+            format!(
+                "cargo test failed for {} in {} (exit {:?}); filter {}; DOCLI_GEN_OUT={}; verify docli path dep and feature docli-gen-fixtures\nstdout:\n{}\nstderr:\n{}",
+                target.package_name,
+                checkout.display(),
+                output.status.code(),
+                target.test_filter,
+                temp_out.display(),
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            ),
+        );
     }
 
     if !temp_out.is_file() {
-        let _ = restore();
-        return Err(format!(
-            "dump test for {} did not write {}; stdout:\n{}\nstderr:\n{}",
-            target.package_name,
-            temp_out.display(),
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        ));
+        return fail_after_restore(
+            restore,
+            format!(
+                "dump test for {} did not write {}; stdout:\n{}\nstderr:\n{}",
+                target.package_name,
+                temp_out.display(),
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            ),
+        );
     }
 
-    let json = fs::read_to_string(&temp_out).map_err(|err| {
-        let _ = restore();
-        format!("read generated JSON at {}: {err}", temp_out.display())
-    })?;
+    let json = match fs::read_to_string(&temp_out) {
+        Ok(json) => json,
+        Err(err) => {
+            return fail_after_restore(
+                restore,
+                format!("read generated JSON at {}: {err}", temp_out.display()),
+            );
+        }
+    };
     restore()?;
     serde_json::from_str::<serde_json::Value>(&json)
         .map_err(|err| format!("generated JSON is invalid: {err}"))?;
     Ok(json.trim_end().to_string())
+}
+
+fn fail_after_restore(
+    restore: impl FnOnce() -> Result<(), String>,
+    err: String,
+) -> Result<String, String> {
+    match restore() {
+        Ok(()) => Err(err),
+        Err(restore_err) => Err(format!("{err}\nfailed to restore checkout: {restore_err}")),
+    }
 }
 
 fn patch_manifest(original: &str, docli_dep: &str) -> Result<String, String> {
