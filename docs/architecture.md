@@ -1,5 +1,9 @@
 # Architecture
 
+The `docli` CLI contract is normatively defined by the mandatory
+**creating-ai-clis** skill (`.claude/skills/creating-ai-clis/`); see
+[`requirements.md`](requirements.md).
+
 `ops` is the library boundary. In-process callers use `docli::ops::generate`
 and `docli::ops::show` and receive the same version `"1"` envelope the CLI
 prints. The `docli` and `cargo-docli` binaries convert argv through `docli::cli`
