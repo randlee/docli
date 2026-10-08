@@ -7,8 +7,8 @@ mod common;
 use std::fs;
 
 use common::envelope::{
-    assert_failure, assert_human_actionable, assert_json_mode_stdout_only_envelope,
-    assert_success, parse_envelope,
+    assert_failure, assert_human_actionable, assert_json_mode_stdout_only_envelope, assert_success,
+    parse_envelope,
 };
 use common::harness::{docli_bin, run, unique_dir, write_demo_model};
 
@@ -81,12 +81,7 @@ fn docli_input_not_found_json() {
     let missing = dir.join("missing.json");
     let output = run(
         &mut docli_bin(),
-        &[
-            "generate",
-            "--input",
-            missing.to_str().unwrap(),
-            "--json",
-        ],
+        &["generate", "--input", missing.to_str().unwrap(), "--json"],
     );
     assert_exit(&output, 3);
     let error = assert_failure(
@@ -95,10 +90,7 @@ fn docli_input_not_found_json() {
         "not_found",
         "DOCLI.INPUT_NOT_FOUND",
     );
-    assert_eq!(
-        error["details"]["path"],
-        missing.to_string_lossy().as_ref()
-    );
+    assert_eq!(error["details"]["path"], missing.to_string_lossy().as_ref());
     assert!(error["suggested_action"]
         .as_str()
         .unwrap()
@@ -162,10 +154,7 @@ fn docli_input_invalid_empty_file_json() {
         "DOCLI.INPUT_INVALID",
     );
     assert_eq!(error["details"], serde_json::json!({}));
-    assert!(error["message"]
-        .as_str()
-        .unwrap()
-        .contains("model JSON"));
+    assert!(error["message"].as_str().unwrap().contains("model JSON"));
 }
 
 #[test]
@@ -173,7 +162,10 @@ fn docli_input_invalid_human() {
     let dir = unique_dir();
     let bad = dir.join("bad.json");
     fs::write(&bad, "{\"name\": 1}").unwrap();
-    let output = run(&mut docli_bin(), &["generate", "--input", bad.to_str().unwrap()]);
+    let output = run(
+        &mut docli_bin(),
+        &["generate", "--input", bad.to_str().unwrap()],
+    );
     assert_exit(&output, 2);
     assert_human_actionable(&output.stderr, "DOCLI.INPUT_INVALID", &["expected"]);
 }
@@ -270,12 +262,7 @@ fn docli_io_generate_html_dir_not_writable_json() {
         ],
     );
     assert_exit(&output, 4);
-    let error = assert_failure(
-        &parse_envelope(&output.stdout),
-        4,
-        "dependency",
-        "DOCLI.IO",
-    );
+    let error = assert_failure(&parse_envelope(&output.stdout), 4, "dependency", "DOCLI.IO");
     assert!(error["details"]["cause"].as_str().is_some());
     assert!(error["details"].get("outputs_written").is_none());
     assert!(error["suggested_action"]
@@ -306,12 +293,7 @@ fn docli_io_generate_partial_write_lists_outputs_written_json() {
         ],
     );
     assert_exit(&output, 4);
-    let error = assert_failure(
-        &parse_envelope(&output.stdout),
-        4,
-        "dependency",
-        "DOCLI.IO",
-    );
+    let error = assert_failure(&parse_envelope(&output.stdout), 4, "dependency", "DOCLI.IO");
     let written = error["details"]["outputs_written"]
         .as_array()
         .expect("partial write must list outputs_written");
@@ -345,12 +327,7 @@ fn docli_io_show_unreadable_index_json() {
         &["show", "--html", html_dir.to_str().unwrap(), "--json"],
     );
     assert_exit(&output, 4);
-    let error = assert_failure(
-        &parse_envelope(&output.stdout),
-        4,
-        "dependency",
-        "DOCLI.IO",
-    );
+    let error = assert_failure(&parse_envelope(&output.stdout), 4, "dependency", "DOCLI.IO");
     assert!(error["details"]["cause"].as_str().is_some());
 }
 
@@ -409,10 +386,7 @@ fn cargo_docli_matches_docli_error_envelopes() {
         let docli = run(&mut docli_bin(), args);
         let cargo = run(&mut cargo_docli_bin(), args);
         assert_eq!(docli.status.code(), cargo.status.code(), "args={args:?}");
-        assert_eq!(
-            docli.stdout, cargo.stdout,
-            "stdout mismatch args={args:?}"
-        );
+        assert_eq!(docli.stdout, cargo.stdout, "stdout mismatch args={args:?}");
     }
 }
 

@@ -13,9 +13,8 @@ pub fn parse_envelope(stdout: &[u8]) -> Value {
         !trimmed.contains("\n\n"),
         "stdout must be a single JSON envelope, got multiple blocks: {trimmed}"
     );
-    serde_json::from_str(trimmed).unwrap_or_else(|err| {
-        panic!("stdout is not valid JSON envelope ({err}): {trimmed}")
-    })
+    serde_json::from_str(trimmed)
+        .unwrap_or_else(|err| panic!("stdout is not valid JSON envelope ({err}): {trimmed}"))
 }
 
 pub fn assert_success(envelope: &Value) {
@@ -32,9 +31,12 @@ pub fn assert_failure(envelope: &Value, exit_code: i32, kind: &str, code: &str) 
     let error = envelope["error"].clone();
     assert_eq!(error["kind"], kind);
     assert_eq!(error["code"], code);
-    let message = error["message"]
-        .as_str()
-        .unwrap_or_else(|| panic!("message must be a non-empty string, got {}", error["message"]));
+    let message = error["message"].as_str().unwrap_or_else(|| {
+        panic!(
+            "message must be a non-empty string, got {}",
+            error["message"]
+        )
+    });
     assert!(
         !message.is_empty(),
         "message must describe what failed for agent callers"
