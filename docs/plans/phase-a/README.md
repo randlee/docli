@@ -1,6 +1,6 @@
-# Phase A — Rust build tool (`develop`)
+# Phase A — Rust build tool (`integrate/phase-a`)
 
-Phase A implementation PRs target **`develop`**. This directory is the sole authority for Phase A sprint deliverables, acceptance criteria, and validation. `docs/requirements.md` is the product contract. A requirement id marked later there is not a Phase A gap.
+Phase A implementation PRs target **`integrate/phase-a`**. This directory is the sole authority for Phase A sprint deliverables, acceptance criteria, and validation. `docs/requirements.md` is the product contract. A requirement id marked later there is not a Phase A gap.
 
 ## What Phase A closes
 

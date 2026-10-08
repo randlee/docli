@@ -4,7 +4,7 @@ title: generate and show machine contract
 status: planned
 branch: feature/phase-a-a1-cli
 worktree: ../docli-worktrees/feature/phase-a-a1-cli
-target: develop
+target: integrate/phase-a
 ---
 
 # Sprint a.1 — generate and show machine contract
