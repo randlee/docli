@@ -6,13 +6,17 @@
 # Usage:
 #   ./scripts/verify-candidate-repos.sh
 #   DOCLI_SKIP_GEN_FIXTURES=1 ./scripts/verify-candidate-repos.sh
+#   DOCLI_REFRESH_FIXTURES=1 ./scripts/verify-candidate-repos.sh
 #
 # Env:
 #   DOCLI_ROOT          — docli checkout (default: repo root from script path)
 #   ATM_CORE_ROOT       — atm-core checkout
 #   SC_COMPOSE_ROOT     — sc-compose checkout
 #   SC_OBSERVABILITY_ROOT — sc-observability checkout (no clap CLI; smoke only)
-#   DOCLI_SKIP_GEN_FIXTURES — set to skip regen (default: run gen-fixtures)
+#   DOCLI_SKIP_GEN_FIXTURES — skip gen-fixtures; wins over DOCLI_REFRESH_FIXTURES
+#   DOCLI_REFRESH_FIXTURES — rewrite committed fixtures (reviewed PR; not the proof command)
+#
+# Mode rules: docs/requirements.md section "Fixture policy".
 
 set -euo pipefail
 
@@ -63,15 +67,135 @@ echo "sc-observability:        $SC_OBSERVABILITY_ROOT"
 cd "$DOCLI_ROOT"
 cargo build --release -q
 
-if [[ "${DOCLI_SKIP_GEN_FIXTURES:-}" != "1" ]]; then
+fixture_snapshot_dir=""
+default_fixture_guard=0
+
+snapshot_committed_fixtures() {
+  fixture_snapshot_dir="$(mktemp -d "${TMPDIR:-/tmp}/docli-fixture-snapshot.XXXXXX")"
+  local f
+  for f in "$DOCLI_ROOT/fixtures/repos"/*.json; do
+    [[ -f "$f" ]] || continue
+    cp -p "$f" "$fixture_snapshot_dir/"
+  done
+}
+
+# Copy the pre-run snapshot of fixtures/repos/*.json back into place.
+restore_committed_fixtures() {
+  local f base
+  if [[ -z "${fixture_snapshot_dir:-}" || ! -d "$fixture_snapshot_dir" ]]; then
+    echo "restore_committed_fixtures: no snapshot directory" >&2
+    return 1
+  fi
+  for f in "$DOCLI_ROOT/fixtures/repos"/*.json; do
+    [[ -f "$f" ]] || continue
+    base="$(basename "$f")"
+    if [[ ! -f "$fixture_snapshot_dir/$base" ]]; then
+      rm -f "$f"
+    fi
+  done
+  for f in "$fixture_snapshot_dir"/*.json; do
+    [[ -f "$f" ]] || continue
+    cp -p "$f" "$DOCLI_ROOT/fixtures/repos/$(basename "$f")"
+  done
+}
+
+fixture_basenames() {
+  local f
+  for f in "$fixture_snapshot_dir"/*.json "$DOCLI_ROOT/fixtures/repos"/*.json; do
+    [[ -f "$f" ]] || continue
+    basename "$f"
+  done | sort -u
+}
+
+committed_fixtures_differ() {
+  local base snap live
+  while IFS= read -r base; do
+    [[ -n "$base" ]] || continue
+    snap="$fixture_snapshot_dir/$base"
+    live="$DOCLI_ROOT/fixtures/repos/$base"
+    if [[ ! -f "$snap" || ! -f "$live" ]] || ! cmp -s "$snap" "$live"; then
+      return 0
+    fi
+  done < <(fixture_basenames)
+  return 1
+}
+
+capture_fixture_diff() {
+  local base snap live
+  while IFS= read -r base; do
+    [[ -n "$base" ]] || continue
+    snap="$fixture_snapshot_dir/$base"
+    live="$DOCLI_ROOT/fixtures/repos/$base"
+    if [[ -f "$snap" && -f "$live" ]]; then
+      if ! cmp -s "$snap" "$live"; then
+        diff -u "$snap" "$live" || true
+      fi
+    elif [[ -f "$snap" ]]; then
+      echo "diff: missing live fixture $base"
+    else
+      echo "diff: untracked live fixture $base"
+    fi
+  done < <(fixture_basenames)
+}
+
+release_fixture_guard() {
+  default_fixture_guard=0
+  trap - EXIT
+  if [[ -n "${fixture_snapshot_dir:-}" && -d "$fixture_snapshot_dir" ]]; then
+    rm -rf "$fixture_snapshot_dir"
+    fixture_snapshot_dir=""
+  fi
+}
+
+guard_restore_fixtures() {
+  if [[ "$default_fixture_guard" == "1" ]]; then
+    restore_committed_fixtures || true
+  fi
+  if [[ -n "${fixture_snapshot_dir:-}" && -d "$fixture_snapshot_dir" ]]; then
+    rm -rf "$fixture_snapshot_dir"
+    fixture_snapshot_dir=""
+  fi
+}
+
+run_gen_fixtures() {
   echo "== gen-fixtures (live clap → JSON) =="
   if ! cargo run --release --features gen-fixtures --bin gen-fixtures -- \
     --atm-core "$ATM_CORE_ROOT" \
     --sc-compose "$SC_COMPOSE_ROOT"; then
     echo "hint: ensure each consumer checkout is clean (no leftover docli_gen_fixtures injection)" >&2
     echo "hint: try RUSTUP_TOOLCHAIN=stable and cargo clean in the consumer crate if rustc artifacts look mixed" >&2
+    return 1
+  fi
+}
+
+# Three-mode matrix. Skip wins over refresh. Default fail-closes on byte drift.
+if [[ "${DOCLI_SKIP_GEN_FIXTURES:-}" == "1" ]]; then
+  if [[ "${DOCLI_REFRESH_FIXTURES:-}" == "1" ]]; then
+    echo "== gen-fixtures skipped (DOCLI_SKIP_GEN_FIXTURES=1 wins over DOCLI_REFRESH_FIXTURES) =="
+  else
+    echo "== gen-fixtures skipped (DOCLI_SKIP_GEN_FIXTURES=1; committed JSON) =="
+  fi
+elif [[ "${DOCLI_REFRESH_FIXTURES:-}" == "1" ]]; then
+  echo "== gen-fixtures refresh (DOCLI_REFRESH_FIXTURES=1) =="
+  run_gen_fixtures
+else
+  echo "== gen-fixtures (default: snapshot, diff, restore on drift) =="
+  snapshot_committed_fixtures
+  default_fixture_guard=1
+  trap guard_restore_fixtures EXIT
+  if ! run_gen_fixtures; then
     exit 1
   fi
+  if committed_fixtures_differ; then
+    drift_text="$(capture_fixture_diff)"
+    restore_committed_fixtures
+    echo "fixture drift: live gen-fixtures output differs from committed fixtures/repos/*.json; restored snapshot" >&2
+    printf '%s\n' "$drift_text" >&2
+    default_fixture_guard=0
+    release_fixture_guard
+    exit 1
+  fi
+  release_fixture_guard
 fi
 
 DOCLI="$DOCLI_ROOT/target/release/docli"

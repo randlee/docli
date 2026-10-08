@@ -172,6 +172,20 @@ These rules apply to every language implementation.
   drifts from those fixtures. Later implementations fail CI when their bytes
   differ from the same files.
 
+### Fixture policy
+
+CI (`cargo test`, including `tests/repo_fixtures.rs`) reads only the committed files `fixtures/repos/atm-core.json` and `fixtures/repos/sc-compose.json`.
+
+`fixtures/repos/sc-observability.json` is not a file in this repository. sc-observability has no clap `Command` to capture.
+
+`./scripts/verify-candidate-repos.sh` has three modes:
+
+1. `DOCLI_SKIP_GEN_FIXTURES=1` — do not run `gen-fixtures`. `generate` and `show` use the committed JSON. This is the pre-publish proof command. When `DOCLI_REFRESH_FIXTURES` is also set, skip still wins and the script does not write fixtures.
+2. Default (neither flag set) — snapshot `fixtures/repos/*.json`, run `gen-fixtures`, and diff against the snapshot. If the bytes differ, call `restore_committed_fixtures`, print the diff, and exit non-zero. The script does not leave a dirty fixture behind.
+3. `DOCLI_REFRESH_FIXTURES=1` (and skip unset) — write the captured JSON over the committed files. That write is a reviewed pull request. It is not the proof command.
+
+Live capture may differ from committed JSON when upstream help text is empty. That difference is a refresh pull request, not a silent verify success.
+
 ## 9. CLI Contract
 
 The machine contract is primary. Human output is a presentation of the same
