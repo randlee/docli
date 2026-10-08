@@ -153,7 +153,7 @@ fn capture_fixture(checkout: &Path, target: &Target, docli_root: &Path) -> Resul
 
     let docli_path = fs::canonicalize(docli_root)
         .map_err(|err| format!("resolve docli root {}: {err}", docli_root.display()))?;
-    let docli_dep = docli_path.to_string_lossy().into_owned();
+    let docli_dep = path_for_cargo_toml(&docli_path);
 
     let manifest_backup = fs::read_to_string(&manifest_path)
         .map_err(|err| format!("read {}: {err}", manifest_path.display()))?;
@@ -262,6 +262,26 @@ fn fail_after_restore(
     }
 }
 
+fn path_for_cargo_toml(path: &Path) -> String {
+    let mut s = path.to_string_lossy().into_owned();
+    if let Some(stripped) = s.strip_prefix(r"\\?\") {
+        s = stripped.into();
+    }
+    s.replace('\\', "/")
+}
+
+fn escape_toml_basic_string(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '\\' => out.push_str("\\\\"),
+            '"' => out.push_str("\\\""),
+            c => out.push(c),
+        }
+    }
+    out
+}
+
 fn patch_manifest(original: &str, docli_dep: &str) -> Result<String, String> {
     if original.contains("docli-gen-fixtures") || original.contains("dependencies.docli") {
         return Err(
@@ -283,7 +303,8 @@ fn patch_manifest(original: &str, docli_dep: &str) -> Result<String, String> {
         patched.push_str(&format!("\n[features]\n{FEATURE} = []\n"));
     }
 
-    patched.push_str(&format!("\n[dependencies.docli]\npath = \"{docli_dep}\"\n"));
+    let dep = escape_toml_basic_string(docli_dep);
+    patched.push_str(&format!("\n[dependencies.docli]\npath = \"{dep}\"\n"));
     Ok(patched)
 }
 

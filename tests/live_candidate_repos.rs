@@ -95,14 +95,27 @@ fn generate_show_site_cli(workdir: &Path, model: &Path, label: &str) {
     generate_show(workdir, model, &html, label);
 }
 
+struct TempHtmlDir(PathBuf);
+
+impl TempHtmlDir {
+    fn new() -> Self {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos();
+        Self(std::env::temp_dir().join(format!("docli-live-{nanos}")))
+    }
+}
+
+impl Drop for TempHtmlDir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
 fn generate_show_temp_html(model: &Path, label: &str) {
-    let nanos = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .expect("clock")
-        .as_nanos();
-    let html = std::env::temp_dir().join(format!("docli-live-{nanos}"));
-    generate_show(&workspace_root(), model, &html, label);
-    let _ = std::fs::remove_dir_all(&html);
+    let html = TempHtmlDir::new();
+    generate_show(&workspace_root(), model, &html.0, label);
 }
 
 #[test]
