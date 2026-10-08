@@ -45,11 +45,18 @@ fn assert_envelope_ok(label: &str, output: &Output) {
         return;
     }
     let err = envelope.get("error").cloned().unwrap_or(Value::Null);
+    let cause = err
+        .get("details")
+        .and_then(|d| d.get("cause"))
+        .filter(|c| c.is_string())
+        .cloned()
+        .unwrap_or(Value::Null);
     panic!(
-        "{label}: docli envelope ok:false — code={} message={} suggested_action={} (exit={:?})",
+        "{label}: docli envelope ok:false — code={} message={} suggested_action={} cause={} (exit={:?})",
         err.get("code").unwrap_or(&Value::Null),
         err.get("message").unwrap_or(&Value::Null),
         err.get("suggested_action").unwrap_or(&Value::Null),
+        cause,
         output.status.code()
     );
 }
