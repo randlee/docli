@@ -1,8 +1,32 @@
 # docli Requirements
 
-**Status**: Target contract. The 2026-10-07 tree is a prototype of the neutral model and the HTML/Markdown renderer.
-**Applies to**: `docli`
-**Source of truth**: this document, `src/schema.rs` for the input model, and `fixtures/contract/` for rendered bytes once those fixtures exist.
+**Status**: Authoritative requirements baseline for this repository.  
+**Applies to**: `docli`  
+**Consumers**: `req-qa` (compliance), implementers, sprint plans.
+
+**Hard requirements**: every `REQ-DOCLI-*` id in this document is normative for
+Phase A unless marked **(later)**. Use **MUST** / **MUST NOT** semantics when
+implementing or reviewing.
+
+**Source of truth (product)**
+
+- This file — requirement ids and acceptance criteria
+- [`architecture.md`](architecture.md) — ADRs and `ARCH-RULE-*` (validated by `arch-qa`)
+- `src/schema.rs` — input model fields for `REQ-DOCLI-INPUT-*`
+- `fixtures/contract/` — rendered HTML/Markdown byte lock for `REQ-DOCLI-GEN-*`
+
+**QA validation (`req-qa`)**
+
+1. Read this file, [`architecture.md`](architecture.md), and
+   [`plans/project-plan.md`](plans/project-plan.md) before analysis.
+2. Map each in-scope deliverable and acceptance criterion to one or more
+   `REQ-DOCLI-*` ids (cite `requirements.md` line or section).
+3. Map structural boundaries to `ADR-*` / `ARCH-RULE-*` in `architecture.md`
+   (arch-qa primary; req-qa flags cross-doc conflicts).
+4. **FAIL** on missing deliverables, unverifiable acceptance, or contradiction
+   between sprint docs and these baselines.
+5. External skill rules apply where cited (see `REQ-DOCLI-NORM-001`); skill text
+   lives under `.claude/skills/creating-ai-clis/`.
 
 **Mandatory CLI design basis**: the **creating-ai-clis** skill supplied for this
 project (vendored at `.claude/skills/creating-ai-clis/`, from
@@ -231,3 +255,21 @@ prompts.
 ## 10. Distribution
 
 - `REQ-DOCLI-DIST-001`: every implementation is licensed MIT.
+
+## 11. Requirement index (Phase A)
+
+Use this table for traceability in QA findings (`source_refs` must cite ids).
+
+| ID | Summary | ADR |
+|----|---------|-----|
+| `REQ-DOCLI-NORM-001` | CLI must conform to creating-ai-clis skill | ADR-003 |
+| `REQ-DOCLI-PRODUCT-001` | Rust library + CLI in repo; crates.io later | — |
+| `REQ-DOCLI-PRODUCT-002` | `docli` and `cargo docli` same operations | ADR-001 |
+| `REQ-DOCLI-PRODUCT-003` | In-process `ops` / `from_clap` / render parity with CLI | ADR-001 |
+| `REQ-DOCLI-INPUT-001`–`005` | Neutral `CliModel` JSON shape and stdin/file input | — |
+| `REQ-DOCLI-RUST-001`–`002` | clap adapter mapping and exclusions | — |
+| `REQ-DOCLI-HTML-001`–`006` | Self-contained two-pane HTML, search, default `site/cli` | ADR-002 |
+| `REQ-DOCLI-MD-001` | Flat Markdown reference | — |
+| `REQ-DOCLI-GEN-001`–`002` | Deterministic output; CI fixture lock | ADR-002 |
+| `REQ-DOCLI-CLI-001`–`007` | `--json` envelope, errors, generate/show, human output | ADR-001, ADR-003 |
+| `REQ-DOCLI-DIST-001` | MIT license | — |

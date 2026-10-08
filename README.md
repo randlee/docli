@@ -15,9 +15,10 @@ every release from the same command definitions.
 
 The `docli` / `cargo docli` tools are **AI-first CLIs** and must follow the
 **creating-ai-clis** skill you supplied for this repo (`.claude/skills/creating-ai-clis/`).
-Stable requirement ids and docli-specific product rules are in
-[`docs/requirements.md`](docs/requirements.md) (section 9 maps to the skill’s
-core and error references).
+Hard requirements (`REQ-DOCLI-*`) and QA baselines:
+[`docs/requirements.md`](docs/requirements.md). Architecture decisions and
+`arch-qa` rules (`ADR-*`, `ARCH-RULE-*`):
+[`docs/architecture.md`](docs/architecture.md).
 
 ## Install
 
