@@ -123,6 +123,32 @@
         {"agent": "flaky-test-qa", "task_id": "45c09e7c-4198-4e9c-adbf-8c3923f7c329", "spawn_actor": "parent-orchestrator"}
       ],
       "finding_ids": []
+    },
+    {
+      "qa_pass": "phase-end-integration",
+      "sprint": "integration",
+      "commit": "2143cbc",
+      "verdict": "PASS",
+      "pr_number": 6,
+      "pr_comment_url": "https://github.com/randlee/docli/pull/6#issuecomment-6065206051",
+      "coordinator_task_id": "99186cbb-f5a8-47d1-9e4c-e7230ea01ed3",
+      "reviewer_manifest": [
+        {"agent": "req-qa", "task_id": "1801dc10-b352-46cb-9731-c75ec0311ab4", "spawn_actor": "parent-orchestrator"},
+        {"agent": "arch-qa", "task_id": "779bece4-d681-4028-af53-747df846016f", "spawn_actor": "parent-orchestrator"},
+        {"agent": "rust-qa-agent", "task_id": "871543a1-9dd1-4ddb-b3a8-81b0fbec72e3", "spawn_actor": "parent-orchestrator", "notes": "QA-001 fixed at 2143cbc; HEAD re-verify PASS"},
+        {"agent": "rust-best-practices-agent", "task_id": "3da318bf-1c01-483c-914e-a00c96d571ac", "spawn_actor": "parent-orchestrator"},
+        {"agent": "rust-service-hardening-agent", "task_id": "174353a0-6e68-47e5-8123-9ad2a59be129", "spawn_actor": "parent-orchestrator"},
+        {"agent": "flaky-test-qa", "task_id": "af4c0b9b-ea63-48fd-b3cd-fb15367bb6a0", "spawn_actor": "parent-orchestrator"}
+      ],
+      "triage_ttl_paths": [
+        ".triage/phase-a/findings/ATM-QA-001.ttl",
+        ".triage/phase-a/findings/ATM-QA-002.ttl",
+        ".triage/phase-a/findings/ATM-QA-003.ttl",
+        ".triage/phase-a/findings/ATM-QA-004.ttl",
+        ".triage/phase-a/findings/RBP-F001.ttl",
+        ".triage/phase-a/findings/RBP-F002.ttl"
+      ],
+      "finding_ids": []
     }
   ]
 }
