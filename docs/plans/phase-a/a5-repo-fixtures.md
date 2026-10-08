@@ -1,7 +1,7 @@
 ---
 id: a.5
 title: test-repo command models
-status: planned
+status: complete
 branch: feature/phase-a-a5-fixtures
 worktree: ../docli-worktrees/feature/phase-a-a5-fixtures
 target: develop
