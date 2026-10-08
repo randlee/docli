@@ -1,0 +1,118 @@
+{
+  "name": "docli",
+  "version": "0.1.0",
+  "description": "Language-agnostic CLI documentation generator",
+  "long_description": "",
+  "epilogue": "",
+  "usage": "Usage: docli [OPTIONS] <COMMAND>",
+  "options": [
+    {
+      "name": "json",
+      "long": "--json",
+      "short": null,
+      "help": "Print only the version `\"1\"` envelope on stdout",
+      "long_help": "",
+      "value_name": "JSON",
+      "required": false,
+      "default_value": null,
+      "choices": [
+        "true",
+        "false"
+      ],
+      "min_values": null,
+      "max_values": null
+    }
+  ],
+  "arguments": [],
+  "subcommands": [
+    {
+      "name": "generate",
+      "version": null,
+      "description": "Render a neutral CLI model (JSON) to HTML and optional Markdown",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: docli generate [OPTIONS]",
+      "options": [
+        {
+          "name": "html",
+          "long": "--html",
+          "short": null,
+          "help": "Output directory for the self-contained HTML reference (writes <dir>/index.html)",
+          "long_help": "",
+          "value_name": "DIR",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "input",
+          "long": "--input",
+          "short": null,
+          "help": "Input CLI-model JSON. Pass `-` to read stdin",
+          "long_help": "",
+          "value_name": "FILE",
+          "required": false,
+          "default_value": "-",
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "markdown",
+          "long": "--markdown",
+          "short": null,
+          "help": "Output path for the Markdown reference",
+          "long_help": "",
+          "value_name": "FILE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [],
+      "subcommands": []
+    },
+    {
+      "name": "show",
+      "version": null,
+      "description": "Report hashes of previously generated artifacts",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: docli show [OPTIONS]",
+      "options": [
+        {
+          "name": "html",
+          "long": "--html",
+          "short": null,
+          "help": "Directory that contains `index.html`",
+          "long_help": "",
+          "value_name": "DIR",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "markdown",
+          "long": "--markdown",
+          "short": null,
+          "help": "Markdown file to inspect",
+          "long_help": "",
+          "value_name": "FILE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [],
+      "subcommands": []
+    }
+  ]
+}

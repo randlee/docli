@@ -24,6 +24,10 @@ name = "gen-fixtures"
 path = "src/bin/gen-fixtures.rs"
 required-features = ["gen-fixtures"]
 
+[[bin]]
+name = "dump-cli-model"
+path = "src/bin/dump-cli-model.rs"
+
 [features]
 gen-fixtures = []
 
