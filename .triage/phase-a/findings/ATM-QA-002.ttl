@@ -1,0 +1,63 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/ATM-QA-002>
+  a triage:Finding ;
+  triage:findingId "ATM-QA-002" ;
+  triage:title "Public from_clap re-export belongs to sprint a.4" ;
+  triage:description "src/lib.rs publishes clap_model::from_clap. Sprint a.1 says that re-export is a.4." ;
+  triage:phaseId "phase-a" ;
+  triage:triageMode "initial_pass" ;
+  triage:category "plan" ;
+  triage:severity "important" ;
+  triage:repeatable false ;
+  triage:sweepScope "file" ;
+  triage:status "closed" ;
+  triage:closedAt "2026-10-08T17:10:28Z"^^xsd:dateTime ;
+  triage:resolution "verified_fixed_on_integrate" ;
+  triage:dispatchReady true ;
+  triage:triagedAt "2026-10-07T21:59:00Z"^^xsd:dateTime ;
+  triage:originatingSprintDoc "docs/plans/phase-a/a1-cli-contract.md" ;
+  triage:requirementId "REQ-DOCLI-RUST-001" ;
+  triage:adrId "ADR-001" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-002/integrate-phase-a/0> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-002/feature-phase-a-a1-cli/0> ;
+  triage:openOn <urn:atm:triage:worktree/integrate-phase-a/9d885f59ed85d9d976f47b6a0029384a0c3a358d> ;
+  triage:openOn <urn:atm:triage:worktree/feature-phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f> ;
+  triage:promoteTo <urn:atm:triage:worktree/feature-phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f> .
+
+<urn:atm:triage:occurrence/ATM-QA-002/integrate-phase-a/0>
+  a triage:Occurrence ;
+  triage:file "src/lib.rs" ;
+  triage:line 10 ;
+  triage:snippet "pub use clap_model::from_clap;" ;
+  triage:status "closed" ;
+  triage:closed true ;
+  triage:branch "integrate/phase-a" ;
+  triage:headSha "f16a237976f90ab8edde517c22df0058f25432d9" ;
+  triage:occursIn <urn:atm:triage:worktree/integrate-phase-a/9d885f59ed85d9d976f47b6a0029384a0c3a358d> .
+
+<urn:atm:triage:occurrence/ATM-QA-002/feature-phase-a-a1-cli/0>
+  a triage:Occurrence ;
+  triage:file "src/lib.rs" ;
+  triage:line 14 ;
+  triage:snippet "#[doc(inline)]\npub use clap_model::from_clap;" ;
+  triage:status "closed" ;
+  triage:closed true ;
+  triage:branch "feature/phase-a-a1-cli" ;
+  triage:headSha "1913dbe99c63ed8624a029c2cd546614e0bf350f" ;
+  triage:occursIn <urn:atm:triage:worktree/feature-phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f> .
+
+<urn:atm:triage:worktree/integrate-phase-a/9d885f59ed85d9d976f47b6a0029384a0c3a358d>
+  a triage:WorktreeSnapshot ;
+  triage:branch "integrate/phase-a" ;
+  triage:path "/Users/randlee/github/docli-worktrees/integrate/phase-a" ;
+  triage:headSha "f16a237976f90ab8edde517c22df0058f25432d9" ;
+  triage:orderIndex 0 .
+
+<urn:atm:triage:worktree/feature-phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f>
+  a triage:WorktreeSnapshot ;
+  triage:branch "feature/phase-a-a1-cli" ;
+  triage:path "/Users/randlee/github/docli-worktrees/feature/phase-a-a1-cli" ;
+  triage:headSha "1913dbe99c63ed8624a029c2cd546614e0bf350f" ;
+  triage:orderIndex 1 .

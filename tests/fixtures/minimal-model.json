@@ -1,0 +1,8 @@
+{
+  "name": "minimal",
+  "description": "Minimal CliModel for cargo-docli parity tests",
+  "usage": "minimal [OPTIONS]",
+  "options": [],
+  "arguments": [],
+  "subcommands": []
+}

@@ -1,0 +1,51 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/ATM-QA-003>
+  a triage:Finding ;
+  triage:findingId "ATM-QA-003" ;
+  triage:title "Failure tests omit suggested_action" ;
+  triage:description "cli_contract failure tests do not assert suggested_action or the full details shape from the a.1 error inventory." ;
+  triage:triageMode "initial_pass" ;
+  triage:category "acceptance-gap" ;
+  triage:phaseId "phase-a" ;
+  triage:severity "important" ;
+  triage:repeatable true ;
+  triage:sweepScope "file" ;
+  triage:status "closed" ;
+  triage:closedAt "2026-10-08T17:10:28Z"^^xsd:dateTime ;
+  triage:resolution "verified_fixed_on_integrate" ;
+  triage:dispatchReady true ;
+  triage:originatingSprintDoc "docs/plans/phase-a/a1-cli-contract.md" ;
+  triage:requirementId "REQ-DOCLI-CLI-003" ;
+  triage:adrId "ADR-001" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-003/feature-phase-a-a1-cli/1> ;
+  triage:openOn <urn:atm:triage:worktree/feature-phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f> ;
+  triage:fixedOn <urn:atm:triage:worktree/integrate-phase-a/9d885f59ed85d9d976f47b6a0029384a0c3a358d> ;
+  triage:promoteTo <urn:atm:triage:worktree/feature-phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f> ;
+  triage:triagedAt "2026-10-08T02:59:00Z"^^xsd:dateTime .
+
+<urn:atm:triage:occurrence/ATM-QA-003/feature-phase-a-a1-cli/1>
+  a triage:Occurrence ;
+  triage:file "tests/cli_contract.rs" ;
+  triage:line 108 ;
+  triage:snippet "fn assert_failure<'a>(envelope: &'a Value, kind: &str, code: &str) -> &'a Value {" ;
+  triage:status "closed" ;
+  triage:closed true ;
+  triage:branch "feature/phase-a-a1-cli" ;
+  triage:headSha "1913dbe99c63ed8624a029c2cd546614e0bf350f" ;
+  triage:occursIn <urn:atm:triage:worktree/feature-phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f> .
+
+<urn:atm:triage:worktree/integrate-phase-a/9d885f59ed85d9d976f47b6a0029384a0c3a358d>
+  a triage:WorktreeSnapshot ;
+  triage:branch "integrate/phase-a" ;
+  triage:path "/Users/randlee/github/docli-worktrees/integrate/phase-a" ;
+  triage:headSha "f16a237976f90ab8edde517c22df0058f25432d9" ;
+  triage:orderIndex 0 .
+
+<urn:atm:triage:worktree/feature-phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f>
+  a triage:WorktreeSnapshot ;
+  triage:branch "feature/phase-a-a1-cli" ;
+  triage:path "/Users/randlee/github/docli-worktrees/feature/phase-a-a1-cli" ;
+  triage:headSha "1913dbe99c63ed8624a029c2cd546614e0bf350f" ;
+  triage:orderIndex 1 .
