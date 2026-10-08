@@ -96,17 +96,19 @@ generate_show() {
 generate_show_temp_html() {
   local label=$1
   local model_json=$2
-  local tmp_html
-  tmp_html="$(mktemp -d)"
-  trap 'rm -rf "$tmp_html"' RETURN
-  echo "== $label =="
-  docli_require_envelope_ok "$label generate" \
-    "$DOCLI" generate --input "$model_json" --html "$tmp_html" --json
-  test -f "$tmp_html/index.html"
-  docli_require_envelope_ok "$label show" \
-    "$DOCLI" show --html "$tmp_html" --json
-  rm -rf "$tmp_html"
-  echo "  OK generate + show (temp html dir; committed site/cli untouched)"
+  (
+    set -euo pipefail
+    local tmp_html
+    tmp_html="$(mktemp -d)"
+    trap 'rm -rf "$tmp_html"' EXIT
+    echo "== $label =="
+    docli_require_envelope_ok "$label generate" \
+      "$DOCLI" generate --input "$model_json" --html "$tmp_html" --json
+    test -f "$tmp_html/index.html"
+    docli_require_envelope_ok "$label show" \
+      "$DOCLI" show --html "$tmp_html" --json
+    echo "  OK generate + show (temp html dir; committed site/cli untouched)"
+  )
 }
 
 generate_show_temp_html "docli / contract fixture" "$DOCLI_ROOT/fixtures/contract/model.json"
