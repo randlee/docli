@@ -71,6 +71,9 @@ if e.get("version") != "1":
 if e.get("ok") is not True:
     err = e.get("error") or {}
     print(err.get("code"), err.get("message"), err.get("suggested_action"), sep="\n", file=sys.stderr)
+    details = err.get("details") or {}
+    if isinstance(details, dict) and isinstance(details.get("cause"), str):
+        print(f"cause: {details['cause']}", file=sys.stderr)
     raise SystemExit("envelope ok is not true")
 PY
   then
