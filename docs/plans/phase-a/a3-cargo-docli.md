@@ -19,7 +19,7 @@ target: develop
 
 ## Deliverables
 
-- `src/bin/cargo-docli.rs` — argv after the binary name matches `docli`; the file calls `ops::generate` and `ops::show` and does not duplicate their write or envelope logic
+- `src/bin/cargo-docli.rs` — argv after the binary name matches `docli`; the binary delegates to crate-internal `src/cli.rs`, which calls `ops::generate` and `ops::show` without duplicating write or envelope logic (same path as `docli`)
 - `Cargo.toml` — `[[bin]]` name `cargo-docli` beside `docli`
 - `tests/fixtures/minimal-model.json` — one valid `CliModel` used only by this sprint's tests
 - `tests/cargo_docli.rs` — stdout and exit code parity for success and for a missing input
