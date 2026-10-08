@@ -92,7 +92,6 @@ fn generate_show(workdir: &Path, model: &Path, html_dir: &Path, label: &str) {
 
 fn generate_show_site_cli(workdir: &Path, model: &Path, label: &str) {
     let html = workdir.join("site/cli");
-    let _ = std::fs::remove_dir_all(workdir.join("site"));
     generate_show(workdir, model, &html, label);
 }
 
