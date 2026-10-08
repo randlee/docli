@@ -55,20 +55,65 @@ code{overflow-wrap:anywhere}
 
 (() => {
   "use strict";
-  const data = JSON.parse(document.getElementById("docli-data").textContent);
-  const searchIndex = JSON.parse(document.getElementById("docli-search").textContent);
   const treeEl = document.getElementById("tree");
   const detailEl = document.getElementById("detail");
   const searchEl = document.getElementById("search");
+
+  function report(message) {
+    if (!detailEl) return;
+    detailEl.replaceChildren();
+    const note = document.createElement("p");
+    note.id = "docli-status";
+    note.textContent = message;
+    detailEl.append(note);
+  }
+
+  let data;
+  let searchIndex;
+  try {
+    const dataNode = document.getElementById("docli-data");
+    const searchNode = document.getElementById("docli-search");
+    if (!dataNode || !searchNode) {
+      throw new Error("embedded JSON is missing");
+    }
+    data = JSON.parse(dataNode.textContent);
+    searchIndex = JSON.parse(searchNode.textContent);
+    if (data === null || typeof data !== "object" || Array.isArray(data) || !Array.isArray(searchIndex)) {
+      throw new Error("embedded JSON is invalid");
+    }
+  } catch (err) {
+    const why = err && err.message ? err.message : "invalid JSON";
+    report("Could not read this page's command data. " + why);
+    return;
+  }
+
   const all = [];
+  const usedAnchors = new Set();
 
   function slug(value) {
     return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   }
 
+  // Same preorder rule as `search::unique_anchor`: the first slug wins, and
+  // each later collision takes the next free -2, -3, ... anchor.
+  function uniqueAnchor(base) {
+    if (!usedAnchors.has(base)) {
+      usedAnchors.add(base);
+      return base;
+    }
+    let suffix = 2;
+    let candidate = base + "-" + suffix;
+    while (usedAnchors.has(candidate)) {
+      suffix += 1;
+      candidate = base + "-" + suffix;
+    }
+    usedAnchors.add(candidate);
+    return candidate;
+  }
+
   function flatten(node, path) {
     const full = path.concat(node.name);
-    node.anchor = slug(full.join(" "));
+    node.anchor = uniqueAnchor(slug(full.join(" ")));
     all.push(node);
     (node.subcommands || []).forEach((child) => flatten(child, full));
   }
@@ -80,9 +125,17 @@ code{overflow-wrap:anywhere}
     return node;
   }
 
-  function show(node) {
-    location.hash = node.anchor;
+  function show(node, notice) {
+    if (!notice && location.hash.slice(1) !== node.anchor) {
+      location.hash = node.anchor;
+    }
     detailEl.replaceChildren();
+    if (notice) {
+      const note = el("p", notice);
+      note.id = "docli-status";
+      note.className = "meta";
+      detailEl.append(note);
+    }
     const head = el("section");
     head.className = "card";
     head.append(el("h2", node.name));
@@ -180,15 +233,25 @@ code{overflow-wrap:anywhere}
     return li;
   }
 
-  function select(node) {
+  function select(node, notice) {
     document.querySelectorAll("#tree .docli-cmd").forEach((button) => {
       button.setAttribute("aria-current", String(button.dataset.anchor === node.anchor));
     });
-    show(node);
+    show(node, notice);
   }
 
-  function byAnchor(anchor) {
-    return all.find((node) => node.anchor === anchor) || data;
+  function routeFromHash() {
+    const anchor = location.hash.slice(1);
+    if (anchor === "") {
+      select(data);
+      return;
+    }
+    const node = all.find((item) => item.anchor === anchor);
+    if (!node) {
+      select(data, "No command matches this link.");
+      return;
+    }
+    select(node);
   }
 
   function matchingAnchors(query) {
@@ -222,6 +285,19 @@ code{overflow-wrap:anywhere}
       if (caret) caret.setAttribute("aria-expanded", "true");
       kids.hidden = false;
     });
+    let status = document.getElementById("docli-search-status");
+    if (hits !== null && hits.size === 0) {
+      if (!status) {
+        status = el("p", "No matching commands.");
+        status.id = "docli-search-status";
+        status.className = "meta";
+        treeEl.before(status);
+      } else {
+        status.textContent = "No matching commands.";
+      }
+    } else if (status) {
+      status.remove();
+    }
   }
 
   treeEl.replaceChildren();
@@ -229,8 +305,8 @@ code{overflow-wrap:anywhere}
   root.append(buildTree(data));
   treeEl.append(root);
   searchEl.addEventListener("input", applySearch);
-  window.addEventListener("hashchange", () => select(byAnchor(location.hash.slice(1))));
-  select(byAnchor(location.hash.slice(1)));
+  window.addEventListener("hashchange", routeFromHash);
+  routeFromHash();
 })();
 
 </script>

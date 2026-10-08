@@ -7,10 +7,11 @@
 //! `#docli-search` is the only input to search filtering. CSS and JS are
 //! inlined.
 
+use std::collections::BTreeSet;
 use std::fmt::Write;
 
 use crate::schema::CliModel;
-use crate::search::{anchor_for_path, search_index};
+use crate::search::{anchor_for_path, search_index, unique_anchor};
 
 const CSS: &str = r#"
 :root{color-scheme:light dark;--bg:#fff;--fg:#1a1a2e;--border:#ddd;--hover:#f0f0f0;--accent:#007acc;--muted:#666}
@@ -57,20 +58,65 @@ code{overflow-wrap:anywhere}
 const JS: &str = r##"
 (() => {
   "use strict";
-  const data = JSON.parse(document.getElementById("docli-data").textContent);
-  const searchIndex = JSON.parse(document.getElementById("docli-search").textContent);
   const treeEl = document.getElementById("tree");
   const detailEl = document.getElementById("detail");
   const searchEl = document.getElementById("search");
+
+  function report(message) {
+    if (!detailEl) return;
+    detailEl.replaceChildren();
+    const note = document.createElement("p");
+    note.id = "docli-status";
+    note.textContent = message;
+    detailEl.append(note);
+  }
+
+  let data;
+  let searchIndex;
+  try {
+    const dataNode = document.getElementById("docli-data");
+    const searchNode = document.getElementById("docli-search");
+    if (!dataNode || !searchNode) {
+      throw new Error("embedded JSON is missing");
+    }
+    data = JSON.parse(dataNode.textContent);
+    searchIndex = JSON.parse(searchNode.textContent);
+    if (data === null || typeof data !== "object" || Array.isArray(data) || !Array.isArray(searchIndex)) {
+      throw new Error("embedded JSON is invalid");
+    }
+  } catch (err) {
+    const why = err && err.message ? err.message : "invalid JSON";
+    report("Could not read this page's command data. " + why);
+    return;
+  }
+
   const all = [];
+  const usedAnchors = new Set();
 
   function slug(value) {
     return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   }
 
+  // Same preorder rule as `search::unique_anchor`: the first slug wins, and
+  // each later collision takes the next free -2, -3, ... anchor.
+  function uniqueAnchor(base) {
+    if (!usedAnchors.has(base)) {
+      usedAnchors.add(base);
+      return base;
+    }
+    let suffix = 2;
+    let candidate = base + "-" + suffix;
+    while (usedAnchors.has(candidate)) {
+      suffix += 1;
+      candidate = base + "-" + suffix;
+    }
+    usedAnchors.add(candidate);
+    return candidate;
+  }
+
   function flatten(node, path) {
     const full = path.concat(node.name);
-    node.anchor = slug(full.join(" "));
+    node.anchor = uniqueAnchor(slug(full.join(" ")));
     all.push(node);
     (node.subcommands || []).forEach((child) => flatten(child, full));
   }
@@ -82,9 +128,17 @@ const JS: &str = r##"
     return node;
   }
 
-  function show(node) {
-    location.hash = node.anchor;
+  function show(node, notice) {
+    if (!notice && location.hash.slice(1) !== node.anchor) {
+      location.hash = node.anchor;
+    }
     detailEl.replaceChildren();
+    if (notice) {
+      const note = el("p", notice);
+      note.id = "docli-status";
+      note.className = "meta";
+      detailEl.append(note);
+    }
     const head = el("section");
     head.className = "card";
     head.append(el("h2", node.name));
@@ -182,15 +236,25 @@ const JS: &str = r##"
     return li;
   }
 
-  function select(node) {
+  function select(node, notice) {
     document.querySelectorAll("#tree .docli-cmd").forEach((button) => {
       button.setAttribute("aria-current", String(button.dataset.anchor === node.anchor));
     });
-    show(node);
+    show(node, notice);
   }
 
-  function byAnchor(anchor) {
-    return all.find((node) => node.anchor === anchor) || data;
+  function routeFromHash() {
+    const anchor = location.hash.slice(1);
+    if (anchor === "") {
+      select(data);
+      return;
+    }
+    const node = all.find((item) => item.anchor === anchor);
+    if (!node) {
+      select(data, "No command matches this link.");
+      return;
+    }
+    select(node);
   }
 
   function matchingAnchors(query) {
@@ -224,6 +288,19 @@ const JS: &str = r##"
       if (caret) caret.setAttribute("aria-expanded", "true");
       kids.hidden = false;
     });
+    let status = document.getElementById("docli-search-status");
+    if (hits !== null && hits.size === 0) {
+      if (!status) {
+        status = el("p", "No matching commands.");
+        status.id = "docli-search-status";
+        status.className = "meta";
+        treeEl.before(status);
+      } else {
+        status.textContent = "No matching commands.";
+      }
+    } else if (status) {
+      status.remove();
+    }
   }
 
   treeEl.replaceChildren();
@@ -231,8 +308,8 @@ const JS: &str = r##"
   root.append(buildTree(data));
   treeEl.append(root);
   searchEl.addEventListener("input", applySearch);
-  window.addEventListener("hashchange", () => select(byAnchor(location.hash.slice(1))));
-  select(byAnchor(location.hash.slice(1)));
+  window.addEventListener("hashchange", routeFromHash);
+  routeFromHash();
 })();
 "##;
 
@@ -245,6 +322,10 @@ fn escape_html(value: &str) -> String {
         .replace('\'', "&#39;")
 }
 
+/// Serializes `value` for an inline JSON script tag.
+///
+/// This cannot fail for a valid [`CliModel`]: serde writes plain JSON values,
+/// and the `</` escape is a [`String`] replacement.
 fn embed_json(value: &impl serde::Serialize) -> String {
     serde_json::to_string(value)
         .expect("serialize embedded JSON")
@@ -253,15 +334,25 @@ fn embed_json(value: &impl serde::Serialize) -> String {
 
 fn render_tree(model: &CliModel) -> String {
     let mut names = Vec::new();
+    let mut used = BTreeSet::new();
     let mut out = String::from("<ul>");
-    render_node(model, &mut names, &mut out);
+    render_node(model, &mut names, &mut used, &mut out);
     out.push_str("</ul>");
     out
 }
 
-fn render_node(command: &CliModel, names: &mut Vec<String>, out: &mut String) {
+/// Appends the HTML for `command` and its subcommands.
+///
+/// Writing into `out` cannot fail for a valid [`CliModel`]: `out` is a
+/// [`String`], and [`std::fmt::Write`] for [`String`] does not return an error.
+fn render_node(
+    command: &CliModel,
+    names: &mut Vec<String>,
+    used: &mut BTreeSet<String>,
+    out: &mut String,
+) {
     names.push(command.name.clone());
-    let anchor = anchor_for_path(names);
+    let anchor = unique_anchor(&anchor_for_path(names), used);
     let has_children = !command.subcommands.is_empty();
     let class = if has_children {
         "node open"
@@ -278,7 +369,7 @@ fn render_node(command: &CliModel, names: &mut Vec<String>, out: &mut String) {
     if has_children {
         out.push_str("<ul class=\"children\">");
         for sub in &command.subcommands {
-            render_node(sub, names, out);
+            render_node(sub, names, used, out);
         }
         out.push_str("</ul>");
     }
@@ -321,4 +412,22 @@ pub fn render(model: &CliModel) -> String {
         css = CSS,
         js = JS,
     )
+}
+
+#[cfg(test)]
+mod html_anchors {
+    use super::render;
+    use crate::schema::CliModel;
+
+    #[test]
+    fn static_tree_suffixes_colliding_anchors() {
+        let model: CliModel = serde_json::from_str(
+            r#"{"name":"demo","subcommands":[{"name":"Run Once"},{"name":"run-once"}]}"#,
+        )
+        .expect("parse model");
+        let html = render(&model);
+        assert!(html.contains("data-anchor=\"demo-run-once\""));
+        assert!(html.contains("data-anchor=\"demo-run-once-2\""));
+        assert!(html.contains("\"anchor\":\"demo-run-once-2\""));
+    }
 }

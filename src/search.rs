@@ -28,6 +28,10 @@ pub struct SearchEntry {
 /// and each argument `name`. Empty strings are omitted so a blank term
 /// cannot match every query.
 ///
+/// Each anchor is the command-path slug. When a later command produces a
+/// slug already stored, it receives the next free `-2`, `-3`, ... suffix.
+/// The first command in preorder keeps the unsuffixed slug.
+///
 /// # Examples
 ///
 /// ```
@@ -43,7 +47,8 @@ pub fn search_index(model: &CliModel) -> Vec<SearchEntry> {
     let mut index = Vec::new();
     let mut names = Vec::new();
     let mut ancestors = Vec::new();
-    walk(model, &mut names, &mut ancestors, &mut index);
+    let mut used = BTreeSet::new();
+    walk(model, &mut names, &mut ancestors, &mut index, &mut used);
     index
 }
 
@@ -92,6 +97,24 @@ pub(crate) fn anchor_for_path(names: &[String]) -> String {
     slug(&names.join(" "))
 }
 
+/// Returns `base`, or the next free `base-2`, `base-3`, ... form.
+///
+/// `used` records anchors already emitted in this walk. The caller walks in
+/// preorder, so the first command keeps `base`.
+pub(crate) fn unique_anchor(base: &str, used: &mut BTreeSet<String>) -> String {
+    if used.insert(base.to_string()) {
+        return base.to_string();
+    }
+    let mut suffix = 2usize;
+    loop {
+        let candidate = format!("{base}-{suffix}");
+        if used.insert(candidate.clone()) {
+            return candidate;
+        }
+        suffix += 1;
+    }
+}
+
 fn slug(value: &str) -> String {
     let mut out = String::with_capacity(value.len());
     let mut pending_dash = false;
@@ -114,9 +137,10 @@ fn walk(
     names: &mut Vec<String>,
     ancestors: &mut Vec<String>,
     index: &mut Vec<SearchEntry>,
+    used: &mut BTreeSet<String>,
 ) {
     names.push(command.name.clone());
-    let anchor = anchor_for_path(names);
+    let anchor = unique_anchor(&anchor_for_path(names), used);
     index.push(SearchEntry {
         anchor: anchor.clone(),
         ancestors: ancestors.clone(),
@@ -124,7 +148,7 @@ fn walk(
     });
     ancestors.push(anchor);
     for sub in &command.subcommands {
-        walk(sub, names, ancestors, index);
+        walk(sub, names, ancestors, index, used);
     }
     ancestors.pop();
     names.pop();
@@ -228,6 +252,42 @@ mod search_index {
         let hits = matching_anchors(&index, "--path");
         assert!(hits.contains("demo"));
         assert!(!hits.contains("demo-run"));
+    }
+
+    #[test]
+    fn colliding_slugs_receive_numeric_suffixes() {
+        let index = search_index(&model(
+            r#"{"name":"demo","subcommands":[
+                {"name":"Run Once"},
+                {"name":"run-once"},
+                {"name":"run once"}
+            ]}"#,
+        ));
+        assert_eq!(index[1].anchor, "demo-run-once");
+        assert_eq!(index[1].ancestors, vec!["demo".to_string()]);
+        assert_eq!(index[2].anchor, "demo-run-once-2");
+        assert_eq!(index[2].ancestors, vec!["demo".to_string()]);
+        assert_eq!(index[3].anchor, "demo-run-once-3");
+        assert_eq!(index[3].ancestors, vec!["demo".to_string()]);
+    }
+
+    #[test]
+    fn suffix_skips_a_slug_that_already_uses_that_suffix() {
+        let index = search_index(&model(
+            r#"{"name":"demo","subcommands":[
+                {"name":"Run Once"},
+                {"name":"run-once-2"},
+                {"name":"run-once"}
+            ]}"#,
+        ));
+        assert_eq!(index[1].anchor, "demo-run-once");
+        assert_eq!(index[2].anchor, "demo-run-once-2");
+        assert_eq!(index[3].anchor, "demo-run-once-3");
+        let anchors: Vec<&str> = index.iter().map(|entry| entry.anchor.as_str()).collect();
+        let mut unique = anchors.clone();
+        unique.sort_unstable();
+        unique.dedup();
+        assert_eq!(anchors.len(), unique.len());
     }
 
     #[test]
