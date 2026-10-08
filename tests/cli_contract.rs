@@ -1,4 +1,5 @@
-mod common;
+#[path = "common/envelope.rs"]
+mod envelope;
 
 use std::fs;
 use std::io::Write;
@@ -6,9 +7,9 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use common::envelope::{assert_failure, parse_envelope};
 use docli::ops::{generate, GenerateRequest, InputSource};
 use docli::{ArgumentSpec, CliModel, OptionSpec};
+use envelope::{assert_failure, parse_envelope};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 

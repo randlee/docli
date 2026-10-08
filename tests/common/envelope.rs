@@ -1,4 +1,5 @@
 //! Assert version `"1"` envelopes match `REQ-DOCLI-CLI-002` / `REQ-DOCLI-CLI-003`.
+#![allow(dead_code)] // shared across integration test binaries; each crate uses a subset.
 
 use serde::Deserialize;
 use serde_json::Value;
@@ -15,9 +16,8 @@ pub fn parse_envelope(stdout: &[u8]) -> Value {
         "stdout must be a single JSON envelope, got multiple blocks: {trimmed}"
     );
     let mut de = serde_json::Deserializer::from_str(trimmed);
-    let envelope = Value::deserialize(&mut de).unwrap_or_else(|err| {
-        panic!("stdout is not valid JSON envelope ({err}): {trimmed}")
-    });
+    let envelope = Value::deserialize(&mut de)
+        .unwrap_or_else(|err| panic!("stdout is not valid JSON envelope ({err}): {trimmed}"));
     de.end().unwrap_or_else(|err| {
         panic!("stdout must be a single JSON envelope, trailing content ({err}): {trimmed}")
     });
