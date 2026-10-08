@@ -107,12 +107,21 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
 ### ADR-003 — CLI contract is AI-first normative
 
 **Status**: Accepted  
-**Requirements**: `REQ-DOCLI-NORM-001`, `REQ-DOCLI-CLI-001`–`007`
+**Requirements**: `REQ-DOCLI-NORM-001`, `REQ-DOCLI-CLI-001`–`010`
 
 **Decision**
 
-- The `docli` / `cargo docli` machine contract is normatively defined by the
-  mandatory **creating-ai-clis** skill (`.claude/skills/creating-ai-clis/`).
+- The `docli` / `cargo docli` machine contract version is the string `"1"`.
+  Every success and failure envelope includes `ok`, `data`, and `error`.
+  Success sets `ok` true, `data` to the response object, and `error` null.
+  Failure sets `ok` false, `data` null, and `error` to the error object
+  (`REQ-DOCLI-CLI-002`). `data` and `error` are always present.
+- `error.kind` maps to process exit the way sprint b.2 and
+  `REQ-DOCLI-CLI-004` specify: `validation` exits `2`, `not_found` exits `3`,
+  `dependency` exits `4`, and `internal` exits `1`. `--help` and `--version`
+  stay human-readable and exit `0`.
+- That machine contract is normatively defined by the mandatory
+  **creating-ai-clis** skill (`.claude/skills/creating-ai-clis/`).
 - `docs/requirements.md` section 9 assigns stable `REQ-DOCLI-CLI-*` ids to that
   contract for `req-qa` traceability. Implementations **must** keep `--json`
   envelopes, typed actionable errors, and `generate` / `show` readback aligned
@@ -123,6 +132,9 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
 - CLI changes require skill conformance, not only ad hoc clap behavior.
 - Wrapper scripts and tests that invoke `docli --json` must surface envelope
   errors (`code`, `message`, `suggested_action`), not discard stdout.
+- Kind-to-exit drift is an ADR-003 failure even when the process still exits
+  non-zero. `tests/error_contract.rs` is the gate (see Error contract
+  verification).
 
 ## Architectural rules (`arch-qa`)
 

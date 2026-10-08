@@ -26,11 +26,14 @@ This skill defines the repo-local orchestration workflow for this repository.
 ## Preconditions
 
 Before starting a sprint:
-1. `docs/requirements.md`, `docs/architecture.md`, and `docs/plans/project-plan.md`
-   define the sprint or phase review target.
+1. `docs/requirements.md`, `docs/architecture.md`, `docs/plans/project-plan.md`,
+   and `docs/plans/phase-b/README.md` define the sprint or phase review target.
+   Phase B sprint authority is `docs/plans/phase-b/README.md`; sequencing stays
+   in `docs/plans/project-plan.md`.
 2. **Git workflow (all repos):** plan draft + `/plan-hardening` on the **planning
    branch**; execution only after operator **go** on a **`/sc-gh-stack`** whose trunk is
-   **`integrate/phase-<N>`**. See `docs/plans/project-plan.md` and `.plan-hardening/README.md`.
+   **`integrate/phase-<N>`**. See `docs/plans/project-plan.md`,
+   `docs/plans/phase-b/README.md`, and `.plan-hardening/README.md`.
 3. A worktree exists for the sprint branch under the repo’s worktree strategy.
 4. The target branch for the sprint is chosen from the current repo plan (integration trunk,
    not `develop`, for implementation stacks).
