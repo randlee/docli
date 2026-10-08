@@ -1,5 +1,6 @@
 //! Assert version `"1"` envelopes match `REQ-DOCLI-CLI-002` / `REQ-DOCLI-CLI-003`.
 
+use serde::Deserialize;
 use serde_json::Value;
 
 pub fn parse_envelope(stdout: &[u8]) -> Value {
@@ -13,8 +14,14 @@ pub fn parse_envelope(stdout: &[u8]) -> Value {
         !trimmed.contains("\n\n"),
         "stdout must be a single JSON envelope, got multiple blocks: {trimmed}"
     );
-    serde_json::from_str(trimmed)
-        .unwrap_or_else(|err| panic!("stdout is not valid JSON envelope ({err}): {trimmed}"))
+    let mut de = serde_json::Deserializer::from_str(trimmed);
+    let envelope = Value::deserialize(&mut de).unwrap_or_else(|err| {
+        panic!("stdout is not valid JSON envelope ({err}): {trimmed}")
+    });
+    de.end().unwrap_or_else(|err| {
+        panic!("stdout must be a single JSON envelope, trailing content ({err}): {trimmed}")
+    });
+    envelope
 }
 
 pub fn assert_success(envelope: &Value) {
