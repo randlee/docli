@@ -69,6 +69,23 @@
         {"agent": "flaky-test-qa", "task_id": "55442ccb-e832-4396-98e0-d449209279c0", "spawn_actor": "parent-orchestrator"}
       ],
       "finding_ids": []
+    },
+    {
+      "qa_pass": "qa-2",
+      "sprint": "a.3",
+      "commit": "54544c9",
+      "verdict": "PASS",
+      "pr_number": 3,
+      "pr_comment_url": "https://github.com/randlee/docli/pull/3#issuecomment-6054299538",
+      "coordinator_task_id": "cc8359d0-9f6e-40a1-a025-35b18dbe625a",
+      "merge_commit": "cd72178",
+      "reviewer_manifest": [
+        {"agent": "req-qa", "task_id": "a48dcce2-f995-45d4-9409-ca62729ad758", "spawn_actor": "parent-orchestrator"},
+        {"agent": "arch-qa", "task_id": "2d8e2048-543f-4f8b-adde-ce741762f3ec", "spawn_actor": "parent-orchestrator"},
+        {"agent": "rust-qa-agent", "task_id": "1212e792-d004-4098-97c4-775a682b7fc4", "spawn_actor": "parent-orchestrator"},
+        {"agent": "flaky-test-qa", "task_id": "5a176466-b22d-49b7-9042-43c21db0f4f7", "spawn_actor": "parent-orchestrator"}
+      ],
+      "finding_ids": []
     }
   ]
 }
