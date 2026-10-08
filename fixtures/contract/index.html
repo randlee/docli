@@ -1,18 +1,10 @@
-//! HTML renderer: a self-contained two-pane reference page.
-//!
-//! The left pane is an indented command tree. Each command is a `.node`
-//! whose `.docli-caret` and `.docli-cmd` buttons are siblings: the caret
-//! toggles only that node, and the command name selects it. The right pane
-//! is the detail card. `#docli-data` feeds the tree and the detail panel.
-//! `#docli-search` is the only input to search filtering. CSS and JS are
-//! inlined.
-
-use std::fmt::Write;
-
-use crate::schema::CliModel;
-use crate::search::{anchor_for_path, search_index};
-
-const CSS: &str = r#"
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>demo CLI Reference</title>
+<style>
 :root{color-scheme:light dark;--bg:#fff;--fg:#1a1a2e;--border:#ddd;--hover:#f0f0f0;--accent:#007acc;--muted:#666}
 @media (prefers-color-scheme:dark){:root{--bg:#16181d;--fg:#e6e6e6;--border:#333;--hover:#23262e;--accent:#4da3ff;--muted:#999}}
 *{box-sizing:border-box}
@@ -49,12 +41,18 @@ th,td{border:1px solid var(--border);padding:.4rem .55rem;text-align:left;vertic
 th{background:var(--hover);font-size:.85rem}
 code{overflow-wrap:anywhere}
 @media (max-width:760px){main{display:block}aside.pane{border-right:0;border-bottom:1px solid var(--border)}.search input{min-width:0;width:100%}}
-"#;
+</style>
+</head>
+<body>
+<header><a class="crumb" href="../">Documentation</a><h1>demo CLI Reference</h1><span class="meta">Version 1.0.0</span><label class="search">Search <input id="search" type="search" autocomplete="off" placeholder="commands and options"></label></header>
+<main>
+<aside class="pane"><h2>Commands</h2><nav id="tree"><ul><li class="node open" data-anchor="demo"><button type="button" class="docli-caret" aria-expanded="true"></button><button type="button" class="docli-cmd" data-anchor="demo">demo</button><ul class="children"><li class="node open" data-anchor="demo-run"><button type="button" class="docli-caret" aria-expanded="true"></button><button type="button" class="docli-cmd" data-anchor="demo-run">run</button><ul class="children"><li class="node leaf" data-anchor="demo-run-once"><button type="button" class="docli-caret" aria-expanded="false"></button><button type="button" class="docli-cmd" data-anchor="demo-run-once">once</button></li></ul></li><li class="node leaf" data-anchor="demo-check"><button type="button" class="docli-caret" aria-expanded="false"></button><button type="button" class="docli-cmd" data-anchor="demo-check">check</button></li></ul></li></ul></nav></aside>
+<article class="pane" id="detail" aria-live="polite"></article>
+</main>
+<script id="docli-data" type="application/json">{"name":"demo","version":"1.0.0","description":"A tiny example CLI","long_description":"A slightly longer description of the demo tool that spans a sentence.","epilogue":"See the full docs for more detail.","usage":"demo [OPTIONS] <COMMAND>","options":[{"name":"verbose","long":"--verbose","short":"-v","help":"Increase verbosity","long_help":"","value_name":null,"required":false,"default_value":null,"choices":[],"min_values":null,"max_values":null},{"name":"output","long":"--output","short":"-o","help":"Write output to PATH","long_help":"","value_name":"PATH","required":false,"default_value":null,"choices":["json","yaml"],"min_values":null,"max_values":null}],"arguments":[{"name":"config","help":"Path to the config file","required":false,"default_value":null,"choices":[]}],"subcommands":[{"name":"run","version":null,"description":"Run the thing","long_description":"","epilogue":"","usage":"demo run [OPTIONS]","options":[{"name":"dry-run","long":"--dry-run","short":null,"help":"Do not execute","long_help":"","value_name":null,"required":false,"default_value":"false","choices":[],"min_values":null,"max_values":null}],"arguments":[],"subcommands":[{"name":"once","version":null,"description":"Run exactly once","long_description":"","epilogue":"","usage":"demo run once","options":[],"arguments":[],"subcommands":[]}]},{"name":"check","version":null,"description":"Check the config","long_description":"","epilogue":"","usage":"demo check <CONFIG>","options":[],"arguments":[{"name":"config","help":"Config to check","required":true,"default_value":null,"choices":[]}],"subcommands":[]}]}</script>
+<script id="docli-search" type="application/json">[{"anchor":"demo","ancestors":[],"terms":["demo","verbose","--verbose","-v","output","--output","-o","config"]},{"anchor":"demo-run","ancestors":["demo"],"terms":["run","dry-run","--dry-run"]},{"anchor":"demo-run-once","ancestors":["demo","demo-run"],"terms":["once"]},{"anchor":"demo-check","ancestors":["demo"],"terms":["check","config"]}]</script>
+<script>
 
-// Slug logic here must match `search::anchor_for_path`: lowercase, collapse
-// non-alphanumeric runs to `-`, and trim `-`. Search reads `#docli-search`
-// only; `#docli-data` builds the tree and the detail panel.
-const JS: &str = r##"
 (() => {
   "use strict";
   const data = JSON.parse(document.getElementById("docli-data").textContent);
@@ -234,91 +232,7 @@ const JS: &str = r##"
   window.addEventListener("hashchange", () => select(byAnchor(location.hash.slice(1))));
   select(byAnchor(location.hash.slice(1)));
 })();
-"##;
 
-fn escape_html(value: &str) -> String {
-    value
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&#39;")
-}
-
-fn embed_json(value: &impl serde::Serialize) -> String {
-    serde_json::to_string(value)
-        .expect("serialize embedded JSON")
-        .replace("</", "<\\/")
-}
-
-fn render_tree(model: &CliModel) -> String {
-    let mut names = Vec::new();
-    let mut out = String::from("<ul>");
-    render_node(model, &mut names, &mut out);
-    out.push_str("</ul>");
-    out
-}
-
-fn render_node(command: &CliModel, names: &mut Vec<String>, out: &mut String) {
-    names.push(command.name.clone());
-    let anchor = anchor_for_path(names);
-    let has_children = !command.subcommands.is_empty();
-    let class = if has_children {
-        "node open"
-    } else {
-        "node leaf"
-    };
-    let expanded = if has_children { "true" } else { "false" };
-    let name = escape_html(&command.name);
-    write!(
-        out,
-        "<li class=\"{class}\" data-anchor=\"{anchor}\"><button type=\"button\" class=\"docli-caret\" aria-expanded=\"{expanded}\"></button><button type=\"button\" class=\"docli-cmd\" data-anchor=\"{anchor}\">{name}</button>"
-    )
-    .expect("write html");
-    if has_children {
-        out.push_str("<ul class=\"children\">");
-        for sub in &command.subcommands {
-            render_node(sub, names, out);
-        }
-        out.push_str("</ul>");
-    }
-    out.push_str("</li>");
-    names.pop();
-}
-
-/// Renders `model` as a self-contained two-pane HTML page.
-pub fn render(model: &CliModel) -> String {
-    let title = escape_html(&model.name);
-    let version = escape_html(model.version.as_deref().unwrap_or(""));
-    let version_html = if version.is_empty() {
-        String::new()
-    } else {
-        format!("<span class=\"meta\">Version {version}</span>")
-    };
-    let data = embed_json(model);
-    let search = embed_json(&search_index(model));
-    let tree = render_tree(model);
-    format!(
-        "<!doctype html>\n\
-<html lang=\"en\">\n\
-<head>\n\
-<meta charset=\"utf-8\">\n\
-<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\
-<title>{title} CLI Reference</title>\n\
-<style>{css}</style>\n\
-</head>\n\
-<body>\n\
-<header><a class=\"crumb\" href=\"../\">Documentation</a><h1>{title} CLI Reference</h1>{version_html}<label class=\"search\">Search <input id=\"search\" type=\"search\" autocomplete=\"off\" placeholder=\"commands and options\"></label></header>\n\
-<main>\n\
-<aside class=\"pane\"><h2>Commands</h2><nav id=\"tree\">{tree}</nav></aside>\n\
-<article class=\"pane\" id=\"detail\" aria-live=\"polite\"></article>\n\
-</main>\n\
-<script id=\"docli-data\" type=\"application/json\">{data}</script>\n\
-<script id=\"docli-search\" type=\"application/json\">{search}</script>\n\
-<script>\n{js}\n</script>\n\
-</body>\n\
-</html>\n",
-        css = CSS,
-        js = JS,
-    )
-}
+</script>
+</body>
+</html>

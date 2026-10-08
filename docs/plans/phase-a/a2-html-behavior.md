@@ -1,10 +1,10 @@
 ---
 id: a.2
 title: HTML tree behavior and renderer byte lock
-status: planned
+status: complete
 branch: feature/phase-a-a2-html
 worktree: ../docli-worktrees/feature/phase-a-a2-html
-target: develop
+target: integrate/phase-a
 ---
 
 # Sprint a.2 — HTML tree behavior and renderer byte lock
