@@ -12,7 +12,9 @@
   triage:severity "important" ;
   triage:repeatable false ;
   triage:sweepScope "file_only" ;
-  triage:status "open" ;
+  triage:status "closed" ;
+  triage:closedAt "2026-10-08T17:10:28Z"^^xsd:dateTime ;
+  triage:resolution "verified_fixed_on_integrate" ;
   triage:dispatchReady true ;
   triage:triagedAt "2026-10-08T04:59:00Z"^^xsd:dateTime ;
   triage:originatingSprintDoc "docs/plans/phase-a/a1-cli-contract.md" ;
@@ -29,8 +31,8 @@
   triage:file "src/main.rs" ;
   triage:line 52 ;
   triage:snippet "ClapErrorKind::DisplayHelp | ClapErrorKind::DisplayVersion => err.exit()" ;
-  triage:status "open" ;
-  triage:closed false ;
+  triage:status "closed" ;
+  triage:closed true ;
   triage:branch "feature/phase-a-a1-cli" ;
   triage:headSha "1913dbe9" ;
   triage:occursIn <urn:atm:triage:worktree/a1/1913dbe9> .
@@ -40,8 +42,8 @@
   triage:file "src/main.rs" ;
   triage:line 59 ;
   triage:snippet "err.exit()" ;
-  triage:status "open" ;
-  triage:closed false ;
+  triage:status "closed" ;
+  triage:closed true ;
   triage:branch "feature/phase-a-a1-cli" ;
   triage:headSha "1913dbe9" ;
   triage:occursIn <urn:atm:triage:worktree/a1/1913dbe9> .
@@ -50,7 +52,7 @@
   a triage:WorktreeSnapshot ;
   triage:branch "integrate/phase-a" ;
   triage:path "/Users/randlee/github/docli-worktrees/integrate/phase-a" ;
-  triage:headSha "9d885f59" ;
+  triage:headSha "f16a237976f90ab8edde517c22df0058f25432d9" ;
   triage:orderIndex 0 .
 
 <urn:atm:triage:worktree/a1/1913dbe9>
