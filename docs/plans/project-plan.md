@@ -1,13 +1,9 @@
 # Project plan
 
-## Phase A — Rust build tool
+Phase A implementation is tracked in [phase-a/README.md](phase-a/README.md). That directory lists sprint deliverables, acceptance criteria, and the Phase A CI gate.
 
-Implementation PRs target `integrate/phase-a`.
+| Phase | Integration branch | Plan authority |
+|-------|-------------------|----------------|
+| A | `integrate/phase-a` | [docs/plans/phase-a/README.md](phase-a/README.md) |
 
-| Sprint | Doc | Branch |
-|--------|-----|--------|
-| a.1 | [docs/plans/phase-a/a1-cli-contract.md](phase-a/a1-cli-contract.md) | `feature/phase-a-a1-cli` |
-| a.2 | [docs/plans/phase-a/a2-html-behavior.md](phase-a/a2-html-behavior.md) | `feature/phase-a-a2-html` |
-| a.3 | [docs/plans/phase-a/a3-cargo-docli.md](phase-a/a3-cargo-docli.md) | `feature/phase-a-a3-cargo` |
-| a.4 | [docs/plans/phase-a/a4-clap-adapter.md](phase-a/a4-clap-adapter.md) | `feature/phase-a-a4-clap` |
-| a.5 | [docs/plans/phase-a/a5-repo-fixtures.md](phase-a/a5-repo-fixtures.md) | `feature/phase-a-a5-fixtures` |
+Product requirements remain in [docs/requirements.md](../requirements.md). Architecture notes are in [docs/architecture.md](../architecture.md).

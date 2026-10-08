@@ -53,7 +53,8 @@ fn assert_parity(args: &[&str]) {
         String::from_utf8_lossy(&cargo.stderr)
     );
     assert_eq!(
-        docli.stdout, cargo.stdout,
+        docli.stdout,
+        cargo.stdout,
         "stdout mismatch for args {args:?}\ndocli: {}\ncargo-docli: {}",
         String::from_utf8_lossy(&docli.stdout),
         String::from_utf8_lossy(&cargo.stdout)
@@ -101,12 +102,7 @@ fn show_json_stdout_matches_docli() {
     let gen = run(&mut docli_bin(), &generate_args);
     assert_eq!(gen.status.code(), Some(0), "setup generate failed");
 
-    let show_args = [
-        "show",
-        "--html",
-        html_dir.to_str().expect("utf8"),
-        "--json",
-    ];
+    let show_args = ["show", "--html", html_dir.to_str().expect("utf8"), "--json"];
     assert_parity(&show_args);
 }
 
