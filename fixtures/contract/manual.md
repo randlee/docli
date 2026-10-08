@@ -54,4 +54,3 @@ demo check <CONFIG>
 **Arguments:**
 
 - `config` *(required)* — Config to check
-
