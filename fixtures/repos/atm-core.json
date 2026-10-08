@@ -1,0 +1,4983 @@
+{
+  "name": "atm",
+  "version": "1.6.1",
+  "description": "ATM CLI",
+  "long_description": "",
+  "epilogue": "",
+  "usage": "Usage: atm [OPTIONS] <COMMAND>",
+  "options": [
+    {
+      "name": "stderr_logs",
+      "long": "--stderr-logs",
+      "short": null,
+      "help": "Route retained observability console logs to stderr",
+      "long_help": "Route retained observability console logs to stderr.\n\nATM owns normal command stdout output; this flag opts the shared console sink into stderr so retained diagnostics do not pollute stdout.",
+      "value_name": "STDERR_LOGS",
+      "required": false,
+      "default_value": null,
+      "choices": [
+        "true",
+        "false"
+      ],
+      "min_values": null,
+      "max_values": null
+    }
+  ],
+  "arguments": [],
+  "subcommands": [
+    {
+      "name": "ack",
+      "version": null,
+      "description": "Acknowledge one pending-ack message and emit a reply when required",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm ack [OPTIONS] <MESSAGE_ID> <REPLY>",
+      "options": [
+        {
+          "name": "json",
+          "long": "--json",
+          "short": null,
+          "help": "Emit the result as JSON",
+          "long_help": "",
+          "value_name": "JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "team",
+          "long": "--team",
+          "short": null,
+          "help": "Override the team resolved from caller context",
+          "long_help": "",
+          "value_name": "TEAM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [
+        {
+          "name": "message_id",
+          "help": "ID of the pending-ack message to acknowledge",
+          "required": true,
+          "default_value": null,
+          "choices": []
+        },
+        {
+          "name": "reply",
+          "help": "Reply body recorded with the acknowledgement",
+          "required": true,
+          "default_value": null,
+          "choices": []
+        }
+      ],
+      "subcommands": []
+    },
+    {
+      "name": "api",
+      "version": null,
+      "description": "",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm api <COMMAND>",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "spec",
+          "version": null,
+          "description": "Print the versioned daemon OpenAPI contract",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm api spec [OPTIONS]",
+          "options": [
+            {
+              "name": "format",
+              "long": "--format",
+              "short": null,
+              "help": "Serialization format for the OpenAPI contract",
+              "long_help": "",
+              "value_name": "FORMAT",
+              "required": false,
+              "default_value": "yaml",
+              "choices": [
+                "json",
+                "yaml"
+              ],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "clear",
+      "version": null,
+      "description": "Clear read or acknowledged messages from a mailbox",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm clear [OPTIONS]",
+      "options": [
+        {
+          "name": "dry_run",
+          "long": "--dry-run",
+          "short": null,
+          "help": "Show the messages that would be cleared without clearing them",
+          "long_help": "",
+          "value_name": "DRY_RUN",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "idle_only",
+          "long": "--idle-only",
+          "short": null,
+          "help": "Clear only idle mailbox messages",
+          "long_help": "",
+          "value_name": "IDLE_ONLY",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "json",
+          "long": "--json",
+          "short": null,
+          "help": "Emit the result as JSON",
+          "long_help": "",
+          "value_name": "JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "older_than",
+          "long": "--older-than",
+          "short": null,
+          "help": "Clear messages older than this duration (`s`, `m`, `h`, or `d`)",
+          "long_help": "",
+          "value_name": "DURATION",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "team",
+          "long": "--team",
+          "short": null,
+          "help": "Override the team resolved from caller context",
+          "long_help": "",
+          "value_name": "TEAM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [],
+      "subcommands": []
+    },
+    {
+      "name": "compose",
+      "version": null,
+      "description": "Render a template through the core renderer port and print the exact body",
+      "long_description": "",
+      "epilogue": "Composition is local and never reads or writes the mailbox. Use `atm send <agent> --template <path> --vars <file>` to deliver the same template after previewing it.",
+      "usage": "Usage: atm compose [OPTIONS] --template <PATH>",
+      "options": [
+        {
+          "name": "dry_run",
+          "long": "--dry-run",
+          "short": null,
+          "help": "Validate and render without any side effects (the default operation is already side-effect free; the flag makes scripts self-documenting)",
+          "long_help": "",
+          "value_name": "DRY_RUN",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "env_prefix",
+          "long": "--env-prefix",
+          "short": null,
+          "help": "Capture environment variables with this prefix",
+          "long_help": "",
+          "value_name": "PREFIX",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "json",
+          "long": "--json",
+          "short": null,
+          "help": "Emit a structured result instead of the byte-identical rendered body",
+          "long_help": "",
+          "value_name": "JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "template",
+          "long": "--template",
+          "short": null,
+          "help": "Template file to validate and render",
+          "long_help": "",
+          "value_name": "PATH",
+          "required": true,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "var",
+          "long": "--var",
+          "short": null,
+          "help": "One template variable; may be repeated",
+          "long_help": "",
+          "value_name": "KEY=VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "vars",
+          "long": "--vars",
+          "short": null,
+          "help": "JSON object providing template variables; `-` reads stdin",
+          "long_help": "",
+          "value_name": "FILE|-",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [],
+      "subcommands": []
+    },
+    {
+      "name": "doctor",
+      "version": null,
+      "description": "Run ATM health and configuration diagnostics",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm doctor [OPTIONS]",
+      "options": [
+        {
+          "name": "all_teams",
+          "long": "--all-teams",
+          "short": null,
+          "help": "Inspect every team in the canonical roster.",
+          "long_help": "",
+          "value_name": "ALL_TEAMS",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "json",
+          "long": "--json",
+          "short": null,
+          "help": "Emit the result as JSON",
+          "long_help": "",
+          "value_name": "JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "team",
+          "long": "--team",
+          "short": null,
+          "help": "Override the team resolved from caller context",
+          "long_help": "",
+          "value_name": "TEAM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [],
+      "subcommands": []
+    },
+    {
+      "name": "escalation",
+      "version": null,
+      "description": "Manage daemon-wide and per-team escalation recipients",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm escalation <COMMAND>",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "add",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm escalation add [OPTIONS] <ADDRESS>",
+          "options": [
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "team",
+              "long": "--team",
+              "short": null,
+              "help": "Limit the change to this team; omit for daemon-wide recipients",
+              "long_help": "",
+              "value_name": "TEAM",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "address",
+              "help": "Recipient address to add or remove",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "list",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm escalation list [OPTIONS]",
+          "options": [
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "team",
+              "long": "--team",
+              "short": null,
+              "help": "Limit the listing to this team; omit for daemon-wide recipients",
+              "long_help": "",
+              "value_name": "TEAM",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "remove",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm escalation remove [OPTIONS] <ADDRESS>",
+          "options": [
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "team",
+              "long": "--team",
+              "short": null,
+              "help": "Limit the change to this team; omit for daemon-wide recipients",
+              "long_help": "",
+              "value_name": "TEAM",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "address",
+              "help": "Recipient address to add or remove",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "help",
+      "version": null,
+      "description": "Show ATM-owned conceptual help or delegated clap subcommand help",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm help [OPTIONS] [TARGET]",
+      "options": [
+        {
+          "name": "json",
+          "long": "--json",
+          "short": null,
+          "help": "Emit the result as JSON",
+          "long_help": "",
+          "value_name": "JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "list",
+          "long": "--list",
+          "short": null,
+          "help": "List available conceptual-help topics",
+          "long_help": "",
+          "value_name": "LIST",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [
+        {
+          "name": "target",
+          "help": "Conceptual-help topic or clap subcommand path to show",
+          "required": false,
+          "default_value": null,
+          "choices": []
+        }
+      ],
+      "subcommands": []
+    },
+    {
+      "name": "list",
+      "version": null,
+      "description": "List one ATM mailbox surface as bounded metadata rows",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm list [OPTIONS] [TARGET]",
+      "options": [
+        {
+          "name": "actor",
+          "long": "--as",
+          "short": null,
+          "help": "Act as this member instead of the environment identity",
+          "long_help": "",
+          "value_name": "ACTOR",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "all",
+          "long": "--all",
+          "short": null,
+          "help": "Include all messages instead of a filtered state",
+          "long_help": "",
+          "value_name": "ALL",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "contains",
+          "long": "--contains",
+          "short": null,
+          "help": "Include messages whose body contains this text",
+          "long_help": "",
+          "value_name": "CONTAINS",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "from",
+          "long": "--from",
+          "short": null,
+          "help": "Include messages sent by this address",
+          "long_help": "",
+          "value_name": "FROM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "json",
+          "long": "--json",
+          "short": null,
+          "help": "Emit the result as JSON",
+          "long_help": "",
+          "value_name": "JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "limit",
+          "long": "--limit",
+          "short": null,
+          "help": "Maximum number of messages to return",
+          "long_help": "",
+          "value_name": "LIMIT",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "pending_ack",
+          "long": "--pending-ack",
+          "short": null,
+          "help": "Include messages awaiting acknowledgement",
+          "long_help": "",
+          "value_name": "PENDING_ACK",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "since",
+          "long": "--since",
+          "short": null,
+          "help": "Include messages at or after this timestamp",
+          "long_help": "",
+          "value_name": "SINCE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "task",
+          "long": "--task",
+          "short": null,
+          "help": "Include messages linked to this task ID",
+          "long_help": "",
+          "value_name": "TASK",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "team",
+          "long": "--team",
+          "short": null,
+          "help": "Override the team resolved from caller context",
+          "long_help": "",
+          "value_name": "TEAM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "unread",
+          "long": "--unread",
+          "short": null,
+          "help": "Include unread messages",
+          "long_help": "",
+          "value_name": "UNREAD",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [
+        {
+          "name": "target",
+          "help": "Mailbox target address to inspect; defaults to the caller",
+          "required": false,
+          "default_value": null,
+          "choices": []
+        }
+      ],
+      "subcommands": []
+    },
+    {
+      "name": "log",
+      "version": null,
+      "description": "Query or follow ATM retained observability records",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm log <COMMAND>",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "filter",
+          "version": null,
+          "description": "Query ATM log records using explicit field filters",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm log filter [OPTIONS]",
+          "options": [
+            {
+              "name": "component",
+              "long": "--component",
+              "short": null,
+              "help": "Restrict timeline records to a component prefix",
+              "long_help": "",
+              "value_name": "COMPONENT",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "levels",
+              "long": "--level",
+              "short": null,
+              "help": "Restrict results to one or more severity levels",
+              "long_help": "",
+              "value_name": "LEVELS",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "limit",
+              "long": "--limit",
+              "short": null,
+              "help": "Maximum number of returned records",
+              "long_help": "",
+              "value_name": "LIMIT",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "matches",
+              "long": "--match",
+              "short": null,
+              "help": "Match one structured ATM field exactly, for example command=send",
+              "long_help": "",
+              "value_name": "KEY=VALUE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "since",
+              "long": "--since",
+              "short": null,
+              "help": "Inclusive lower time bound as RFC3339 or a relative duration like 15m",
+              "long_help": "",
+              "value_name": "SINCE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "source",
+              "long": "--source",
+              "short": null,
+              "help": "Select the retained-log source. JSONL is the byte-compatible default",
+              "long_help": "",
+              "value_name": "SOURCE",
+              "required": false,
+              "default_value": "jsonl",
+              "choices": [
+                "jsonl",
+                "timeline",
+                "merged"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "until",
+              "long": "--until",
+              "short": null,
+              "help": "Inclusive upper time bound as RFC3339 or a relative duration",
+              "long_help": "",
+              "value_name": "UNTIL",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "snapshot",
+          "version": null,
+          "description": "Query recent ATM log records",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm log snapshot [OPTIONS]",
+          "options": [
+            {
+              "name": "component",
+              "long": "--component",
+              "short": null,
+              "help": "Restrict timeline records to a component prefix",
+              "long_help": "",
+              "value_name": "COMPONENT",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "levels",
+              "long": "--level",
+              "short": null,
+              "help": "Restrict results to one or more severity levels",
+              "long_help": "",
+              "value_name": "LEVELS",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "limit",
+              "long": "--limit",
+              "short": null,
+              "help": "Maximum number of returned records",
+              "long_help": "",
+              "value_name": "LIMIT",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "matches",
+              "long": "--match",
+              "short": null,
+              "help": "Match one structured ATM field exactly, for example command=send",
+              "long_help": "",
+              "value_name": "KEY=VALUE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "since",
+              "long": "--since",
+              "short": null,
+              "help": "Inclusive lower time bound as RFC3339 or a relative duration like 15m",
+              "long_help": "",
+              "value_name": "SINCE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "source",
+              "long": "--source",
+              "short": null,
+              "help": "Select the retained-log source. JSONL is the byte-compatible default",
+              "long_help": "",
+              "value_name": "SOURCE",
+              "required": false,
+              "default_value": "jsonl",
+              "choices": [
+                "jsonl",
+                "timeline",
+                "merged"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "until",
+              "long": "--until",
+              "short": null,
+              "help": "Inclusive upper time bound as RFC3339 or a relative duration",
+              "long_help": "",
+              "value_name": "UNTIL",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "tail",
+          "version": null,
+          "description": "Follow new ATM log records as they arrive",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm log tail [OPTIONS]",
+          "options": [
+            {
+              "name": "component",
+              "long": "--component",
+              "short": null,
+              "help": "Restrict timeline records to a component prefix",
+              "long_help": "",
+              "value_name": "COMPONENT",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "levels",
+              "long": "--level",
+              "short": null,
+              "help": "Restrict results to one or more severity levels",
+              "long_help": "",
+              "value_name": "LEVELS",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "limit",
+              "long": "--limit",
+              "short": null,
+              "help": "Maximum number of returned records",
+              "long_help": "",
+              "value_name": "LIMIT",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "matches",
+              "long": "--match",
+              "short": null,
+              "help": "Match one structured ATM field exactly, for example command=send",
+              "long_help": "",
+              "value_name": "KEY=VALUE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "max_polls",
+              "long": "--max-polls",
+              "short": null,
+              "help": "Internal test seam to stop tail mode after a fixed number of polls",
+              "long_help": "",
+              "value_name": "MAX_POLLS",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "poll_interval_ms",
+              "long": "--poll-interval-ms",
+              "short": null,
+              "help": "Poll interval in milliseconds between follow polls",
+              "long_help": "",
+              "value_name": "POLL_INTERVAL_MS",
+              "required": false,
+              "default_value": "250",
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "since",
+              "long": "--since",
+              "short": null,
+              "help": "Inclusive lower time bound as RFC3339 or a relative duration like 15m",
+              "long_help": "",
+              "value_name": "SINCE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "source",
+              "long": "--source",
+              "short": null,
+              "help": "Select the retained-log source. JSONL is the byte-compatible default",
+              "long_help": "",
+              "value_name": "SOURCE",
+              "required": false,
+              "default_value": "jsonl",
+              "choices": [
+                "jsonl",
+                "timeline",
+                "merged"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "until",
+              "long": "--until",
+              "short": null,
+              "help": "Inclusive upper time bound as RFC3339 or a relative duration",
+              "long_help": "",
+              "value_name": "UNTIL",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "members",
+      "version": null,
+      "description": "List the current member roster for one ATM team",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm members [OPTIONS]",
+      "options": [
+        {
+          "name": "json",
+          "long": "--json",
+          "short": null,
+          "help": "Emit the result as JSON",
+          "long_help": "",
+          "value_name": "JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "team",
+          "long": "--team",
+          "short": null,
+          "help": "Override the team resolved from caller context",
+          "long_help": "",
+          "value_name": "TEAM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [],
+      "subcommands": []
+    },
+    {
+      "name": "peek",
+      "version": null,
+      "description": "Inspect one ATM mailbox message without mutating mailbox state",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm peek [OPTIONS] [TARGET]",
+      "options": [
+        {
+          "name": "actor",
+          "long": "--as",
+          "short": null,
+          "help": "Act as this member instead of the environment identity",
+          "long_help": "",
+          "value_name": "ACTOR",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "all",
+          "long": "--all",
+          "short": null,
+          "help": "Inspect all matching messages",
+          "long_help": "",
+          "value_name": "ALL",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "contains",
+          "long": "--contains",
+          "short": null,
+          "help": "Restrict messages to bodies containing this text",
+          "long_help": "",
+          "value_name": "CONTAINS",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "from",
+          "long": "--from",
+          "short": null,
+          "help": "Restrict messages to this sender address",
+          "long_help": "",
+          "value_name": "FROM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "history",
+          "long": "--history",
+          "short": null,
+          "help": "Deprecated spelling for `--all`",
+          "long_help": "",
+          "value_name": "HISTORY",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "json",
+          "long": "--json",
+          "short": null,
+          "help": "Emit the result as JSON",
+          "long_help": "",
+          "value_name": "JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "message_id",
+          "long": "--message-id",
+          "short": null,
+          "help": "Inspect one message by its ID",
+          "long_help": "",
+          "value_name": "MESSAGE_ID",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "no_since_last_seen",
+          "long": "--no-since-last-seen",
+          "short": null,
+          "help": "Disable the default seen-state filter",
+          "long_help": "",
+          "value_name": "NO_SINCE_LAST_SEEN",
+          "required": false,
+          "default_value": "false",
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "pending_ack",
+          "long": "--pending-ack",
+          "short": null,
+          "help": "Inspect messages awaiting acknowledgement",
+          "long_help": "",
+          "value_name": "PENDING_ACK",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "pending_ack_only",
+          "long": "--pending-ack-only",
+          "short": null,
+          "help": "Deprecated spelling for `--pending-ack`",
+          "long_help": "",
+          "value_name": "PENDING_ACK_ONLY",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "since",
+          "long": "--since",
+          "short": null,
+          "help": "Restrict messages to those at or after this timestamp",
+          "long_help": "",
+          "value_name": "SINCE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "since_last_seen",
+          "long": "--since-last-seen",
+          "short": null,
+          "help": "Explicitly retain the default seen-state filter",
+          "long_help": "",
+          "value_name": "SINCE_LAST_SEEN",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "task",
+          "long": "--task",
+          "short": null,
+          "help": "Restrict messages to this task ID",
+          "long_help": "",
+          "value_name": "TASK",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "team",
+          "long": "--team",
+          "short": null,
+          "help": "Override the team resolved from caller context",
+          "long_help": "",
+          "value_name": "TEAM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "timeout",
+          "long": "--timeout",
+          "short": null,
+          "help": "Wait up to this many seconds for matching messages",
+          "long_help": "",
+          "value_name": "TIMEOUT",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "unread",
+          "long": "--unread",
+          "short": null,
+          "help": "Inspect unread matching messages",
+          "long_help": "",
+          "value_name": "UNREAD",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "unread_only",
+          "long": "--unread-only",
+          "short": null,
+          "help": "Deprecated spelling for `--unread`",
+          "long_help": "",
+          "value_name": "UNREAD_ONLY",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [
+        {
+          "name": "target",
+          "help": "Mailbox target address to inspect; defaults to the caller",
+          "required": false,
+          "default_value": null,
+          "choices": []
+        }
+      ],
+      "subcommands": []
+    },
+    {
+      "name": "peer",
+      "version": null,
+      "description": "Manage durable cross-host HTTPS control-plane configuration",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm peer <COMMAND>",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "certificate",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm peer certificate <COMMAND>",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "init",
+              "version": null,
+              "description": "",
+              "long_description": "",
+              "epilogue": "",
+              "usage": "Usage: atm peer certificate init [OPTIONS] --fingerprint <FINGERPRINT> --private-key-ref <PRIVATE_KEY_REF>",
+              "options": [
+                {
+                  "name": "fingerprint",
+                  "long": "--fingerprint",
+                  "short": null,
+                  "help": "TLS certificate fingerprint for this host",
+                  "long_help": "",
+                  "value_name": "FINGERPRINT",
+                  "required": true,
+                  "default_value": null,
+                  "choices": [],
+                  "min_values": null,
+                  "max_values": null
+                },
+                {
+                  "name": "private_key_ref",
+                  "long": "--private-key-ref",
+                  "short": null,
+                  "help": "Reference to the local TLS private key; never the key material",
+                  "long_help": "",
+                  "value_name": "PRIVATE_KEY_REF",
+                  "required": true,
+                  "default_value": null,
+                  "choices": [],
+                  "min_values": null,
+                  "max_values": null
+                },
+                {
+                  "name": "yes",
+                  "long": "--yes",
+                  "short": null,
+                  "help": "Confirm the certificate initialization",
+                  "long_help": "",
+                  "value_name": "YES",
+                  "required": false,
+                  "default_value": null,
+                  "choices": [
+                    "true",
+                    "false"
+                  ],
+                  "min_values": null,
+                  "max_values": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "show",
+              "version": null,
+              "description": "",
+              "long_description": "",
+              "epilogue": "",
+              "usage": "Usage: atm peer certificate show [OPTIONS]",
+              "options": [
+                {
+                  "name": "json",
+                  "long": "--json",
+                  "short": null,
+                  "help": "Emit the result as JSON",
+                  "long_help": "",
+                  "value_name": "JSON",
+                  "required": false,
+                  "default_value": null,
+                  "choices": [
+                    "true",
+                    "false"
+                  ],
+                  "min_values": null,
+                  "max_values": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "interface",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm peer interface <COMMAND>",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "list",
+              "version": null,
+              "description": "",
+              "long_description": "",
+              "epilogue": "",
+              "usage": "Usage: atm peer interface list [OPTIONS]",
+              "options": [
+                {
+                  "name": "json",
+                  "long": "--json",
+                  "short": null,
+                  "help": "Emit the result as JSON",
+                  "long_help": "",
+                  "value_name": "JSON",
+                  "required": false,
+                  "default_value": null,
+                  "choices": [
+                    "true",
+                    "false"
+                  ],
+                  "min_values": null,
+                  "max_values": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "remove",
+              "version": null,
+              "description": "",
+              "long_description": "",
+              "epilogue": "",
+              "usage": "Usage: atm peer interface remove --bind <BIND>",
+              "options": [
+                {
+                  "name": "bind",
+                  "long": "--bind",
+                  "short": null,
+                  "help": "Socket address of the HTTPS interface to remove",
+                  "long_help": "",
+                  "value_name": "BIND",
+                  "required": true,
+                  "default_value": null,
+                  "choices": [],
+                  "min_values": null,
+                  "max_values": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "set",
+              "version": null,
+              "description": "",
+              "long_description": "",
+              "epilogue": "",
+              "usage": "Usage: atm peer interface set [OPTIONS] --bind <BIND> --advertise-host <ADVERTISE_HOST>",
+              "options": [
+                {
+                  "name": "advertise_host",
+                  "long": "--advertise-host",
+                  "short": null,
+                  "help": "Durable hostname advertised for this interface",
+                  "long_help": "",
+                  "value_name": "ADVERTISE_HOST",
+                  "required": true,
+                  "default_value": null,
+                  "choices": [],
+                  "min_values": null,
+                  "max_values": null
+                },
+                {
+                  "name": "bind",
+                  "long": "--bind",
+                  "short": null,
+                  "help": "Socket address on which the HTTPS interface listens",
+                  "long_help": "",
+                  "value_name": "BIND",
+                  "required": true,
+                  "default_value": null,
+                  "choices": [],
+                  "min_values": null,
+                  "max_values": null
+                },
+                {
+                  "name": "enabled",
+                  "long": "--enabled",
+                  "short": null,
+                  "help": "Enable or disable this HTTPS interface",
+                  "long_help": "",
+                  "value_name": "ENABLED",
+                  "required": false,
+                  "default_value": "true",
+                  "choices": [
+                    "true",
+                    "false"
+                  ],
+                  "min_values": null,
+                  "max_values": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "trust",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm peer trust <COMMAND>",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "add",
+              "version": null,
+              "description": "",
+              "long_description": "",
+              "epilogue": "",
+              "usage": "Usage: atm peer trust add [OPTIONS] --host <HOST> --fingerprint <FINGERPRINT>",
+              "options": [
+                {
+                  "name": "fingerprint",
+                  "long": "--fingerprint",
+                  "short": null,
+                  "help": "TLS certificate fingerprint expected from the peer",
+                  "long_help": "",
+                  "value_name": "FINGERPRINT",
+                  "required": true,
+                  "default_value": null,
+                  "choices": [],
+                  "min_values": null,
+                  "max_values": null
+                },
+                {
+                  "name": "host",
+                  "long": "--host",
+                  "short": null,
+                  "help": "Durable hostname of the trusted peer",
+                  "long_help": "",
+                  "value_name": "HOST",
+                  "required": true,
+                  "default_value": null,
+                  "choices": [],
+                  "min_values": null,
+                  "max_values": null
+                },
+                {
+                  "name": "https_port",
+                  "long": "--https-port",
+                  "short": null,
+                  "help": "HTTPS port exposed by the trusted peer",
+                  "long_help": "",
+                  "value_name": "HTTPS_PORT",
+                  "required": false,
+                  "default_value": "43101",
+                  "choices": [],
+                  "min_values": null,
+                  "max_values": null
+                },
+                {
+                  "name": "yes",
+                  "long": "--yes",
+                  "short": null,
+                  "help": "Confirm adding the trusted peer",
+                  "long_help": "",
+                  "value_name": "YES",
+                  "required": false,
+                  "default_value": null,
+                  "choices": [
+                    "true",
+                    "false"
+                  ],
+                  "min_values": null,
+                  "max_values": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "list",
+              "version": null,
+              "description": "",
+              "long_description": "",
+              "epilogue": "",
+              "usage": "Usage: atm peer trust list [OPTIONS]",
+              "options": [
+                {
+                  "name": "json",
+                  "long": "--json",
+                  "short": null,
+                  "help": "Emit the result as JSON",
+                  "long_help": "",
+                  "value_name": "JSON",
+                  "required": false,
+                  "default_value": null,
+                  "choices": [
+                    "true",
+                    "false"
+                  ],
+                  "min_values": null,
+                  "max_values": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "migrate",
+              "version": null,
+              "description": "Migrate or retire legacy literal-IP trusted-peer entries",
+              "long_description": "Migrate or retire legacy literal-IP trusted-peer entries.\n\nWithout `--yes`, prints the migration plan (one line per legacy literal-IP row: enabled/disabled, fingerprint, port, and the action) and makes no changes. With `--yes`, applies the plan: rows named by `--map IP=HOSTNAME` convert to the durable hostname, preserving their fingerprint and port; every other legacy literal-IP row is revoked.",
+              "epilogue": "",
+              "usage": "Usage: atm peer trust migrate [OPTIONS]",
+              "options": [
+                {
+                  "name": "map",
+                  "long": "--map",
+                  "short": null,
+                  "help": "Convert the legacy literal-IP entry `IP` to durable hostname `HOSTNAME`, keeping its fingerprint and port. May be repeated",
+                  "long_help": "",
+                  "value_name": "IP=HOSTNAME",
+                  "required": false,
+                  "default_value": null,
+                  "choices": [],
+                  "min_values": null,
+                  "max_values": null
+                },
+                {
+                  "name": "yes",
+                  "long": "--yes",
+                  "short": null,
+                  "help": "Apply the displayed migration plan",
+                  "long_help": "",
+                  "value_name": "YES",
+                  "required": false,
+                  "default_value": null,
+                  "choices": [
+                    "true",
+                    "false"
+                  ],
+                  "min_values": null,
+                  "max_values": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "replace",
+              "version": null,
+              "description": "",
+              "long_description": "",
+              "epilogue": "",
+              "usage": "Usage: atm peer trust replace [OPTIONS] --host <HOST> --fingerprint <FINGERPRINT>",
+              "options": [
+                {
+                  "name": "fingerprint",
+                  "long": "--fingerprint",
+                  "short": null,
+                  "help": "Replacement TLS certificate fingerprint",
+                  "long_help": "",
+                  "value_name": "FINGERPRINT",
+                  "required": true,
+                  "default_value": null,
+                  "choices": [],
+                  "min_values": null,
+                  "max_values": null
+                },
+                {
+                  "name": "host",
+                  "long": "--host",
+                  "short": null,
+                  "help": "Durable hostname of the trusted peer",
+                  "long_help": "",
+                  "value_name": "HOST",
+                  "required": true,
+                  "default_value": null,
+                  "choices": [],
+                  "min_values": null,
+                  "max_values": null
+                },
+                {
+                  "name": "https_port",
+                  "long": "--https-port",
+                  "short": null,
+                  "help": "HTTPS port exposed by the trusted peer",
+                  "long_help": "",
+                  "value_name": "HTTPS_PORT",
+                  "required": false,
+                  "default_value": "43101",
+                  "choices": [],
+                  "min_values": null,
+                  "max_values": null
+                },
+                {
+                  "name": "yes",
+                  "long": "--yes",
+                  "short": null,
+                  "help": "Confirm replacing the trusted-peer configuration",
+                  "long_help": "",
+                  "value_name": "YES",
+                  "required": false,
+                  "default_value": null,
+                  "choices": [
+                    "true",
+                    "false"
+                  ],
+                  "min_values": null,
+                  "max_values": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "revoke",
+              "version": null,
+              "description": "",
+              "long_description": "",
+              "epilogue": "",
+              "usage": "Usage: atm peer trust revoke [OPTIONS] --host <HOST>",
+              "options": [
+                {
+                  "name": "host",
+                  "long": "--host",
+                  "short": null,
+                  "help": "Durable hostname of the trusted peer to revoke",
+                  "long_help": "",
+                  "value_name": "HOST",
+                  "required": true,
+                  "default_value": null,
+                  "choices": [],
+                  "min_values": null,
+                  "max_values": null
+                },
+                {
+                  "name": "yes",
+                  "long": "--yes",
+                  "short": null,
+                  "help": "Confirm revoking the trusted peer",
+                  "long_help": "",
+                  "value_name": "YES",
+                  "required": false,
+                  "default_value": null,
+                  "choices": [
+                    "true",
+                    "false"
+                  ],
+                  "min_values": null,
+                  "max_values": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "queue",
+      "version": null,
+      "description": "Queue one ATM mailbox message for deferred recipient notification",
+      "long_description": "",
+      "epilogue": "Path-only bodies are admitted for compatibility but recorded as content_format=path-ref and warned on stderr; use `atm send --template <path> --vars <file>` to send rendered content, and `atm compose --template <path>` to preview it. Post-send hooks can be configured in .atm.toml via one or more [[atm.post_send_hooks]] rules with recipient = \"name-or-*\" and command = [\"argv\", ...]. Matching rules run after a successful non-dry-run send, in config order. Path-like command[0] values resolve relative to the declaring .atm.toml; bare executables like bash or python3 use normal PATH resolution. Recipient non-match is silent. For hook troubleshooting, combine --stderr-logs with ATM_LOG=debug to surface debug-level hook diagnostics on stderr.",
+      "usage": "Usage: atm queue [OPTIONS] [TO] [MESSAGE]",
+      "options": [
+        {
+          "name": "actor",
+          "long": "--as",
+          "short": null,
+          "help": "Act as this member instead of the environment identity",
+          "long_help": "",
+          "value_name": "ACTOR",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "attach",
+          "long": "--attach",
+          "short": null,
+          "help": "Attach a local file for Send-To delivery (ADR-055). May be repeated. A same-host recipient's files are staged under `$ATM_TEMP/send-to/<id>/`; a remote recipient's files are routed through that host's configured transfer script (see `docs/cross-host-file-transfer.md`). The landed path rides in the message text; there is no envelope change. Mutually exclusive with `--template` (structured template content and free-form attachment notes are not composed in this phase)",
+          "long_help": "",
+          "value_name": "PATH",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "category",
+          "long": "--category",
+          "short": null,
+          "help": "Classify the message under this category",
+          "long_help": "",
+          "value_name": "CATEGORY",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "chat_id",
+          "long": "--chat-id",
+          "short": null,
+          "help": "Restrict the send to this caller chat ID",
+          "long_help": "",
+          "value_name": "CHAT_ID",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "content_format",
+          "long": "--content-format",
+          "short": null,
+          "help": "Record this content format with the message",
+          "long_help": "",
+          "value_name": "FORMAT",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "dry_run",
+          "long": "--dry-run",
+          "short": null,
+          "help": "Validate and display the send without delivering it",
+          "long_help": "",
+          "value_name": "DRY_RUN",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "env_prefix",
+          "long": "--env-prefix",
+          "short": null,
+          "help": "Capture current environment variables with this prefix at CLI composition time",
+          "long_help": "",
+          "value_name": "PREFIX",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "file",
+          "long": "--file",
+          "short": null,
+          "help": "Read the message body from this file",
+          "long_help": "",
+          "value_name": "FILE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "from_json",
+          "long": "--from-json",
+          "short": null,
+          "help": "Read one `PickerOutput` JSON document (`{\"schema_version\":1,\"recipients\":[...],\"note\":\"...\"}`) from stdin and send one immutable message per recipient (ADR-055). Mutually exclusive with the positional recipient/message text, `--stdin`, `--file`, `--template`, and `--env-prefix`",
+          "long_help": "",
+          "value_name": "FROM_JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "host",
+          "long": "--host",
+          "short": null,
+          "help": "Route this send through the explicitly named host",
+          "long_help": "Route this send through the explicitly named host.\n\nSupplying this flag allows a same-identity send to be an intentional physical delivery test (for example, `--host localhost` or a same-host IP). This is wire-equivalent to a host-qualified recipient address. When both forms are supplied, they must name the same host.",
+          "value_name": "HOST",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "json",
+          "long": "--json",
+          "short": null,
+          "help": "Emit the result as JSON",
+          "long_help": "",
+          "value_name": "JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "requires_ack",
+          "long": "--requires-ack",
+          "short": null,
+          "help": "Require the recipient to acknowledge the message",
+          "long_help": "",
+          "value_name": "REQUIRES_ACK",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "stdin",
+          "long": "--stdin",
+          "short": null,
+          "help": "Read the message body from standard input",
+          "long_help": "",
+          "value_name": "STDIN",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "summary",
+          "long": "--summary",
+          "short": null,
+          "help": "Store this summary with the message",
+          "long_help": "",
+          "value_name": "SUMMARY",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "tag",
+          "long": "--tag",
+          "short": null,
+          "help": "Add a tag to the message; may be repeated",
+          "long_help": "",
+          "value_name": "TAG",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "task_complete",
+          "long": "--task-complete",
+          "short": null,
+          "help": "Close `--task-id` as completed after delivering this message as the report",
+          "long_help": "",
+          "value_name": "TASK_COMPLETE",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "task_id",
+          "long": "--task-id",
+          "short": null,
+          "help": "Link this message to the task with this ID",
+          "long_help": "",
+          "value_name": "TASK_ID",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "team",
+          "long": "--team",
+          "short": null,
+          "help": "Override the team resolved from caller context",
+          "long_help": "",
+          "value_name": "TEAM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "template",
+          "long": "--template",
+          "short": null,
+          "help": "Render and send a locally loaded template through the daemon-owned template admission path",
+          "long_help": "",
+          "value_name": "PATH",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "var",
+          "long": "--var",
+          "short": null,
+          "help": "One template variable. May be repeated; values parse as JSON when possible and otherwise remain strings",
+          "long_help": "",
+          "value_name": "KEY=VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "vars",
+          "long": "--vars",
+          "short": null,
+          "help": "JSON object providing template variables. `-` reads this object from stdin; it is distinct from `--stdin`, which is a plain message source",
+          "long_help": "",
+          "value_name": "FILE|-",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [
+        {
+          "name": "message",
+          "help": "Message body to send",
+          "required": false,
+          "default_value": null,
+          "choices": []
+        },
+        {
+          "name": "to",
+          "help": "Recipient address for the message",
+          "required": false,
+          "default_value": null,
+          "choices": []
+        }
+      ],
+      "subcommands": []
+    },
+    {
+      "name": "read",
+      "version": null,
+      "description": "Read one ATM mailbox message and optionally update read state",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm read [OPTIONS] [MESSAGE_ID]",
+      "options": [
+        {
+          "name": "actor",
+          "long": "--as",
+          "short": null,
+          "help": "Act as this member instead of the environment identity",
+          "long_help": "",
+          "value_name": "ACTOR",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "all",
+          "long": "--all",
+          "short": null,
+          "help": "Read all matching messages",
+          "long_help": "",
+          "value_name": "ALL",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "chat_id",
+          "long": "--chat-id",
+          "short": null,
+          "help": "Restrict reads to this caller chat ID",
+          "long_help": "",
+          "value_name": "CHAT_ID",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "contains",
+          "long": "--contains",
+          "short": null,
+          "help": "Restrict messages to bodies containing this text",
+          "long_help": "",
+          "value_name": "CONTAINS",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "from",
+          "long": "--from",
+          "short": null,
+          "help": "Restrict messages to this sender address",
+          "long_help": "",
+          "value_name": "FROM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "history",
+          "long": "--history",
+          "short": null,
+          "help": "Deprecated spelling for `--all`",
+          "long_help": "",
+          "value_name": "HISTORY",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "json",
+          "long": "--json",
+          "short": null,
+          "help": "Emit the result as JSON",
+          "long_help": "",
+          "value_name": "JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "message_id",
+          "long": "--message-id",
+          "short": null,
+          "help": "Read one message by its ID",
+          "long_help": "",
+          "value_name": "MESSAGE_ID",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "no_since_last_seen",
+          "long": "--no-since-last-seen",
+          "short": null,
+          "help": "Disable the default seen-state filter",
+          "long_help": "",
+          "value_name": "NO_SINCE_LAST_SEEN",
+          "required": false,
+          "default_value": "false",
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "pending_ack",
+          "long": "--pending-ack",
+          "short": null,
+          "help": "Read messages awaiting acknowledgement",
+          "long_help": "",
+          "value_name": "PENDING_ACK",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "pending_ack_only",
+          "long": "--pending-ack-only",
+          "short": null,
+          "help": "Deprecated spelling for `--pending-ack`",
+          "long_help": "",
+          "value_name": "PENDING_ACK_ONLY",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "since",
+          "long": "--since",
+          "short": null,
+          "help": "Restrict messages to those at or after this timestamp",
+          "long_help": "",
+          "value_name": "SINCE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "since_last_seen",
+          "long": "--since-last-seen",
+          "short": null,
+          "help": "Explicitly retain the default seen-state filter",
+          "long_help": "",
+          "value_name": "SINCE_LAST_SEEN",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "task",
+          "long": "--task",
+          "short": null,
+          "help": "Restrict messages to this task ID",
+          "long_help": "",
+          "value_name": "TASK",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "team",
+          "long": "--team",
+          "short": null,
+          "help": "Override the team resolved from caller context",
+          "long_help": "",
+          "value_name": "TEAM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "timeout",
+          "long": "--timeout",
+          "short": null,
+          "help": "Wait up to this many seconds for matching messages",
+          "long_help": "",
+          "value_name": "TIMEOUT",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "unread",
+          "long": "--unread",
+          "short": null,
+          "help": "Read unread matching messages",
+          "long_help": "",
+          "value_name": "UNREAD",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "unread_only",
+          "long": "--unread-only",
+          "short": null,
+          "help": "Deprecated spelling for `--unread`",
+          "long_help": "",
+          "value_name": "UNREAD_ONLY",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [
+        {
+          "name": "message_id_positional",
+          "help": "Positional message IDs are rejected with a migration hint. Keeping this parser slot lets the CLI explain the supported option instead of returning clap's generic unexpected-argument error",
+          "required": false,
+          "default_value": null,
+          "choices": []
+        }
+      ],
+      "subcommands": []
+    },
+    {
+      "name": "search",
+      "version": null,
+      "description": "Search locally indexed ATM messages through the daemon's typed query API",
+      "long_description": "",
+      "epilogue": "Plain positional text is always a literal phrase. --raw-match enables ATM's bounded advanced grammar (words, quoted phrases, NEAR(term term[, distance]), AND, OR, NOT); it never passes raw SQLite FTS syntax.",
+      "usage": "Usage: atm search [OPTIONS] [TEXT]",
+      "options": [
+        {
+          "name": "agent",
+          "long": "--agent",
+          "short": null,
+          "help": "Filter messages by agent identity",
+          "long_help": "",
+          "value_name": "AGENT",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "category",
+          "long": "--category",
+          "short": null,
+          "help": "Filter messages by their category",
+          "long_help": "",
+          "value_name": "CATEGORY",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "count",
+          "long": "--count",
+          "short": null,
+          "help": "Return only the number of matching messages",
+          "long_help": "",
+          "value_name": "COUNT",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "cursor",
+          "long": "--cursor",
+          "short": null,
+          "help": "Continue from this search-results cursor",
+          "long_help": "",
+          "value_name": "CURSOR",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "effective_tags",
+          "long": "--effective-tag",
+          "short": null,
+          "help": "Filter ATM's immutable effective-tag projection; may be repeated",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "from",
+          "long": "--from",
+          "short": null,
+          "help": "Filter messages by sender address",
+          "long_help": "",
+          "value_name": "FROM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "group_by",
+          "long": "--group-by",
+          "short": null,
+          "help": "Group matching messages by this field",
+          "long_help": "",
+          "value_name": "FIELD",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "json",
+          "long": "--json",
+          "short": null,
+          "help": "Emit the result as JSON",
+          "long_help": "",
+          "value_name": "JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "lifecycle_end_stage",
+          "long": "--lifecycle-end-stage",
+          "short": null,
+          "help": "Filter lifecycle projection end events by stage",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "lifecycle_end_state",
+          "long": "--lifecycle-end-state",
+          "short": null,
+          "help": "Filter lifecycle projection end events by state",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "lifecycle_end_transition",
+          "long": "--lifecycle-end-transition",
+          "short": null,
+          "help": "Filter lifecycle projection end events by transition",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "lifecycle_scope_id",
+          "long": "--lifecycle-scope-id",
+          "short": null,
+          "help": "Lifecycle projection scope ID",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "lifecycle_scope_kind",
+          "long": "--lifecycle-scope-kind",
+          "short": null,
+          "help": "Project generic lifecycle observations over the local search result set",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "lifecycle_start_stage",
+          "long": "--lifecycle-start-stage",
+          "short": null,
+          "help": "Filter lifecycle projection start events by stage",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "lifecycle_start_state",
+          "long": "--lifecycle-start-state",
+          "short": null,
+          "help": "Filter lifecycle projection start events by state",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "lifecycle_start_transition",
+          "long": "--lifecycle-start-transition",
+          "short": null,
+          "help": "Filter lifecycle projection start events by transition",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "limit",
+          "long": "--limit",
+          "short": null,
+          "help": "Maximum number of search results to return",
+          "long_help": "",
+          "value_name": "LIMIT",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "max",
+          "long": "--max",
+          "short": null,
+          "help": "Return the latest matching message timestamp",
+          "long_help": "",
+          "value_name": "MAX",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "message_at"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "min",
+          "long": "--min",
+          "short": null,
+          "help": "Return the earliest matching message timestamp",
+          "long_help": "",
+          "value_name": "MIN",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "message_at"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "per_mailbox",
+          "long": "--per-mailbox",
+          "short": null,
+          "help": "Preserve per-mailbox compound-key identities rather than default deduplication",
+          "long_help": "",
+          "value_name": "PER_MAILBOX",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "raw_match",
+          "long": "--raw-match",
+          "short": null,
+          "help": "Parse the positional text with ATM's documented bounded advanced grammar",
+          "long_help": "",
+          "value_name": "RAW_MATCH",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "since",
+          "long": "--since",
+          "short": null,
+          "help": "Include messages at or after this timestamp",
+          "long_help": "",
+          "value_name": "SINCE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "tags",
+          "long": "--tag",
+          "short": null,
+          "help": "Filter messages by a stored tag; may be repeated",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "team",
+          "long": "--team",
+          "short": null,
+          "help": "Filter messages by team",
+          "long_help": "",
+          "value_name": "TEAM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "template_meta",
+          "long": "--template-meta",
+          "short": null,
+          "help": "Filter stored template frontmatter metadata; a trailing * is a prefix match",
+          "long_help": "",
+          "value_name": "KEY=VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "template_sha",
+          "long": "--template-sha",
+          "short": null,
+          "help": "Filter the exact immutable template revision",
+          "long_help": "",
+          "value_name": "SHA",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "template_type",
+          "long": "--type",
+          "short": null,
+          "help": "Shorthand for --template-meta type=VALUE",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "until",
+          "long": "--until",
+          "short": null,
+          "help": "Include messages at or before this timestamp",
+          "long_help": "",
+          "value_name": "UNTIL",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "vars",
+          "long": "--var",
+          "short": null,
+          "help": "Filter one stored template variable; may be repeated",
+          "long_help": "",
+          "value_name": "KEY=VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "workflow_iteration",
+          "long": "--workflow-iteration",
+          "short": null,
+          "help": "Filter workflow projections by iteration",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "workflow_scope_id",
+          "long": "--workflow-scope-id",
+          "short": null,
+          "help": "Filter workflow projections by scope ID",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "workflow_scope_kind",
+          "long": "--workflow-scope-kind",
+          "short": null,
+          "help": "Filter workflow projections by scope kind",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "workflow_stage",
+          "long": "--workflow-stage",
+          "short": null,
+          "help": "Filter workflow projections by stage",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "workflow_state",
+          "long": "--workflow-state",
+          "short": null,
+          "help": "Filter workflow projections by state",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "workflow_transition",
+          "long": "--workflow-transition",
+          "short": null,
+          "help": "Filter workflow projections by transition",
+          "long_help": "",
+          "value_name": "VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [
+        {
+          "name": "text",
+          "help": "Literal phrase by default, or an ATM advanced expression with --raw-match",
+          "required": false,
+          "default_value": null,
+          "choices": []
+        }
+      ],
+      "subcommands": []
+    },
+    {
+      "name": "send",
+      "version": null,
+      "description": "Send one ATM mailbox message",
+      "long_description": "",
+      "epilogue": "Path-only bodies are admitted for compatibility but recorded as content_format=path-ref and warned on stderr; use `atm send --template <path> --vars <file>` to send rendered content, and `atm compose --template <path>` to preview it. Post-send hooks can be configured in .atm.toml via one or more [[atm.post_send_hooks]] rules with recipient = \"name-or-*\" and command = [\"argv\", ...]. Matching rules run after a successful non-dry-run send, in config order. Path-like command[0] values resolve relative to the declaring .atm.toml; bare executables like bash or python3 use normal PATH resolution. Recipient non-match is silent. For hook troubleshooting, combine --stderr-logs with ATM_LOG=debug to surface debug-level hook diagnostics on stderr.",
+      "usage": "Usage: atm send [OPTIONS] [TO] [MESSAGE]",
+      "options": [
+        {
+          "name": "actor",
+          "long": "--as",
+          "short": null,
+          "help": "Act as this member instead of the environment identity",
+          "long_help": "",
+          "value_name": "ACTOR",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "attach",
+          "long": "--attach",
+          "short": null,
+          "help": "Attach a local file for Send-To delivery (ADR-055). May be repeated. A same-host recipient's files are staged under `$ATM_TEMP/send-to/<id>/`; a remote recipient's files are routed through that host's configured transfer script (see `docs/cross-host-file-transfer.md`). The landed path rides in the message text; there is no envelope change. Mutually exclusive with `--template` (structured template content and free-form attachment notes are not composed in this phase)",
+          "long_help": "",
+          "value_name": "PATH",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "category",
+          "long": "--category",
+          "short": null,
+          "help": "Classify the message under this category",
+          "long_help": "",
+          "value_name": "CATEGORY",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "chat_id",
+          "long": "--chat-id",
+          "short": null,
+          "help": "Restrict the send to this caller chat ID",
+          "long_help": "",
+          "value_name": "CHAT_ID",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "content_format",
+          "long": "--content-format",
+          "short": null,
+          "help": "Record this content format with the message",
+          "long_help": "",
+          "value_name": "FORMAT",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "dry_run",
+          "long": "--dry-run",
+          "short": null,
+          "help": "Validate and display the send without delivering it",
+          "long_help": "",
+          "value_name": "DRY_RUN",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "env_prefix",
+          "long": "--env-prefix",
+          "short": null,
+          "help": "Capture current environment variables with this prefix at CLI composition time",
+          "long_help": "",
+          "value_name": "PREFIX",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "file",
+          "long": "--file",
+          "short": null,
+          "help": "Read the message body from this file",
+          "long_help": "",
+          "value_name": "FILE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "from_json",
+          "long": "--from-json",
+          "short": null,
+          "help": "Read one `PickerOutput` JSON document (`{\"schema_version\":1,\"recipients\":[...],\"note\":\"...\"}`) from stdin and send one immutable message per recipient (ADR-055). Mutually exclusive with the positional recipient/message text, `--stdin`, `--file`, `--template`, and `--env-prefix`",
+          "long_help": "",
+          "value_name": "FROM_JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "host",
+          "long": "--host",
+          "short": null,
+          "help": "Route this send through the explicitly named host",
+          "long_help": "Route this send through the explicitly named host.\n\nSupplying this flag allows a same-identity send to be an intentional physical delivery test (for example, `--host localhost` or a same-host IP). This is wire-equivalent to a host-qualified recipient address. When both forms are supplied, they must name the same host.",
+          "value_name": "HOST",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "json",
+          "long": "--json",
+          "short": null,
+          "help": "Emit the result as JSON",
+          "long_help": "",
+          "value_name": "JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "requires_ack",
+          "long": "--requires-ack",
+          "short": null,
+          "help": "Require the recipient to acknowledge the message",
+          "long_help": "",
+          "value_name": "REQUIRES_ACK",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "stdin",
+          "long": "--stdin",
+          "short": null,
+          "help": "Read the message body from standard input",
+          "long_help": "",
+          "value_name": "STDIN",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "summary",
+          "long": "--summary",
+          "short": null,
+          "help": "Store this summary with the message",
+          "long_help": "",
+          "value_name": "SUMMARY",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "tag",
+          "long": "--tag",
+          "short": null,
+          "help": "Add a tag to the message; may be repeated",
+          "long_help": "",
+          "value_name": "TAG",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "task_complete",
+          "long": "--task-complete",
+          "short": null,
+          "help": "Close `--task-id` as completed after delivering this message as the report",
+          "long_help": "",
+          "value_name": "TASK_COMPLETE",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "task_id",
+          "long": "--task-id",
+          "short": null,
+          "help": "Link this message to the task with this ID",
+          "long_help": "",
+          "value_name": "TASK_ID",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "team",
+          "long": "--team",
+          "short": null,
+          "help": "Override the team resolved from caller context",
+          "long_help": "",
+          "value_name": "TEAM",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "template",
+          "long": "--template",
+          "short": null,
+          "help": "Render and send a locally loaded template through the daemon-owned template admission path",
+          "long_help": "",
+          "value_name": "PATH",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "var",
+          "long": "--var",
+          "short": null,
+          "help": "One template variable. May be repeated; values parse as JSON when possible and otherwise remain strings",
+          "long_help": "",
+          "value_name": "KEY=VALUE",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "vars",
+          "long": "--vars",
+          "short": null,
+          "help": "JSON object providing template variables. `-` reads this object from stdin; it is distinct from `--stdin`, which is a plain message source",
+          "long_help": "",
+          "value_name": "FILE|-",
+          "required": false,
+          "default_value": null,
+          "choices": [],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [
+        {
+          "name": "message",
+          "help": "Message body to send",
+          "required": false,
+          "default_value": null,
+          "choices": []
+        },
+        {
+          "name": "to",
+          "help": "Recipient address for the message",
+          "required": false,
+          "default_value": null,
+          "choices": []
+        }
+      ],
+      "subcommands": []
+    },
+    {
+      "name": "task",
+      "version": null,
+      "description": "",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm task <COMMAND>",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "assign",
+          "version": null,
+          "description": "Assign a task with deferred notification",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm task assign [OPTIONS] <ASSIGNEE> [MESSAGE]",
+          "options": [
+            {
+              "name": "actor",
+              "long": "--as",
+              "short": null,
+              "help": "Act as this member instead of the environment identity",
+              "long_help": "",
+              "value_name": "ACTOR",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "before",
+              "long": "--before",
+              "short": null,
+              "help": "Place the task before this task in the assignee's queue",
+              "long_help": "",
+              "value_name": "OTHER_TASK_ID",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "file",
+              "long": "--file",
+              "short": null,
+              "help": "Read the message or report body from this file",
+              "long_help": "",
+              "value_name": "FILE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "head",
+              "long": "--head",
+              "short": null,
+              "help": "Place the task at the head of the assignee's queue",
+              "long_help": "",
+              "value_name": "HEAD",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "stdin",
+              "long": "--stdin",
+              "short": null,
+              "help": "Read the message or report body from standard input",
+              "long_help": "",
+              "value_name": "STDIN",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "task_id",
+              "long": "--task-id",
+              "short": null,
+              "help": "Explicit ID for the new task",
+              "long_help": "",
+              "value_name": "TASK_ID",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "team",
+              "long": "--team",
+              "short": null,
+              "help": "Override the team resolved from caller context",
+              "long_help": "",
+              "value_name": "TEAM",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "template",
+              "long": "--template",
+              "short": null,
+              "help": "Render the message or report body from this template file",
+              "long_help": "",
+              "value_name": "TEMPLATE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "vars",
+              "long": "--vars",
+              "short": null,
+              "help": "JSON object providing variables for `--template`; `-` reads stdin",
+              "long_help": "",
+              "value_name": "VARS",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "assignee",
+              "help": "Member address to assign the task to",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            },
+            {
+              "name": "text",
+              "help": "Message or report body",
+              "required": false,
+              "default_value": null,
+              "choices": []
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "close",
+          "version": null,
+          "description": "Deliver a report and close a task with a typed outcome",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm task close [OPTIONS] <TASK_ID> <OUTCOME> [REASON] [MESSAGE]",
+          "options": [
+            {
+              "name": "actor",
+              "long": "--as",
+              "short": null,
+              "help": "Act as this member instead of the environment identity",
+              "long_help": "",
+              "value_name": "ACTOR",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "file",
+              "long": "--file",
+              "short": null,
+              "help": "Read the message or report body from this file",
+              "long_help": "",
+              "value_name": "FILE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "stdin",
+              "long": "--stdin",
+              "short": null,
+              "help": "Read the message or report body from standard input",
+              "long_help": "",
+              "value_name": "STDIN",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "team",
+              "long": "--team",
+              "short": null,
+              "help": "Override the team resolved from caller context",
+              "long_help": "",
+              "value_name": "TEAM",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "template",
+              "long": "--template",
+              "short": null,
+              "help": "Render the message or report body from this template file",
+              "long_help": "",
+              "value_name": "TEMPLATE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "vars",
+              "long": "--vars",
+              "short": null,
+              "help": "JSON object providing variables for `--template`; `-` reads stdin",
+              "long_help": "",
+              "value_name": "VARS",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "outcome",
+              "help": "Terminal task outcome to record",
+              "required": true,
+              "default_value": null,
+              "choices": [
+                "completed",
+                "refused",
+                "cancelled"
+              ]
+            },
+            {
+              "name": "reason",
+              "help": "Recorded on the close event; also the report body when no source is given",
+              "required": false,
+              "default_value": null,
+              "choices": []
+            },
+            {
+              "name": "task_id",
+              "help": "ID of the task to close",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            },
+            {
+              "name": "text",
+              "help": "Message or report body",
+              "required": false,
+              "default_value": null,
+              "choices": []
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "events",
+          "version": null,
+          "description": "Append-only event history of one task",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm task events [OPTIONS] <TASK_ID>",
+          "options": [
+            {
+              "name": "actor",
+              "long": "--as",
+              "short": null,
+              "help": "Act as this member instead of the environment identity",
+              "long_help": "",
+              "value_name": "ACTOR",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "all",
+              "long": "--all",
+              "short": null,
+              "help": "Include every event instead of applying the limit",
+              "long_help": "",
+              "value_name": "ALL",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "limit",
+              "long": "--limit",
+              "short": null,
+              "help": "Maximum number of events to return",
+              "long_help": "",
+              "value_name": "N",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "team",
+              "long": "--team",
+              "short": null,
+              "help": "Override the team resolved from caller context",
+              "long_help": "",
+              "value_name": "TEAM",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "task_id",
+              "help": "ID of the task whose events to show",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "history",
+          "version": null,
+          "description": "Past N tasks for the team, open and completed, newest first",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm task history [OPTIONS]",
+          "options": [
+            {
+              "name": "actor",
+              "long": "--as",
+              "short": null,
+              "help": "Act as this member instead of the environment identity",
+              "long_help": "",
+              "value_name": "ACTOR",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "events",
+              "long": "--events",
+              "short": null,
+              "help": "Include ledger events for the returned tasks",
+              "long_help": "",
+              "value_name": "EVENTS",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "limit",
+              "long": "--limit",
+              "short": null,
+              "help": "Maximum number of past tasks to return",
+              "long_help": "",
+              "value_name": "N",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "member",
+              "long": "--member",
+              "short": null,
+              "help": "Restrict history to tasks assigned to this member",
+              "long_help": "",
+              "value_name": "MEMBER",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "team",
+              "long": "--team",
+              "short": null,
+              "help": "Override the team resolved from caller context",
+              "long_help": "",
+              "value_name": "TEAM",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "list",
+          "version": null,
+          "description": "Queue view: the caller's open tasks; --all includes every member",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm task list [OPTIONS]",
+          "options": [
+            {
+              "name": "actor",
+              "long": "--as",
+              "short": null,
+              "help": "Act as this member instead of the environment identity",
+              "long_help": "",
+              "value_name": "ACTOR",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "all",
+              "long": "--all",
+              "short": null,
+              "help": "Include every member's open tasks",
+              "long_help": "",
+              "value_name": "ALL",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "limit",
+              "long": "--limit",
+              "short": null,
+              "help": "Maximum number of tasks to return",
+              "long_help": "",
+              "value_name": "N",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "team",
+              "long": "--team",
+              "short": null,
+              "help": "Override the team resolved from caller context",
+              "long_help": "",
+              "value_name": "TEAM",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "move",
+          "version": null,
+          "description": "Reorder one member's queue",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm task move [OPTIONS] <--head|--end|--before <OTHER_TASK_ID>> <TASK_ID>",
+          "options": [
+            {
+              "name": "actor",
+              "long": "--as",
+              "short": null,
+              "help": "Act as this member instead of the environment identity",
+              "long_help": "",
+              "value_name": "ACTOR",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "before",
+              "long": "--before",
+              "short": null,
+              "help": "Move the task before this task in its queue",
+              "long_help": "",
+              "value_name": "OTHER_TASK_ID",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "end",
+              "long": "--end",
+              "short": null,
+              "help": "Move the task to the end of its queue",
+              "long_help": "",
+              "value_name": "END",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "head",
+              "long": "--head",
+              "short": null,
+              "help": "Move the task to the head of its queue",
+              "long_help": "",
+              "value_name": "HEAD",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "team",
+              "long": "--team",
+              "short": null,
+              "help": "Override the team resolved from caller context",
+              "long_help": "",
+              "value_name": "TEAM",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "task_id",
+              "help": "ID of the task to move",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "start",
+          "version": null,
+          "description": "Start an assigned task: moves it to active and tells the assigner",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm task start [OPTIONS] <TASK_ID> [MESSAGE]",
+          "options": [
+            {
+              "name": "actor",
+              "long": "--as",
+              "short": null,
+              "help": "Act as this member instead of the environment identity",
+              "long_help": "",
+              "value_name": "ACTOR",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "file",
+              "long": "--file",
+              "short": null,
+              "help": "Read the message or report body from this file",
+              "long_help": "",
+              "value_name": "FILE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "stdin",
+              "long": "--stdin",
+              "short": null,
+              "help": "Read the message or report body from standard input",
+              "long_help": "",
+              "value_name": "STDIN",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "team",
+              "long": "--team",
+              "short": null,
+              "help": "Override the team resolved from caller context",
+              "long_help": "",
+              "value_name": "TEAM",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "template",
+              "long": "--template",
+              "short": null,
+              "help": "Render the message or report body from this template file",
+              "long_help": "",
+              "value_name": "TEMPLATE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "vars",
+              "long": "--vars",
+              "short": null,
+              "help": "JSON object providing variables for `--template`; `-` reads stdin",
+              "long_help": "",
+              "value_name": "VARS",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "task_id",
+              "help": "ID of the assigned task to start",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            },
+            {
+              "name": "text",
+              "help": "Message or report body",
+              "required": false,
+              "default_value": null,
+              "choices": []
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "teams",
+      "version": null,
+      "description": "List teams or run one team-administration subcommand",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm teams [OPTIONS] [COMMAND]",
+      "options": [
+        {
+          "name": "json",
+          "long": "--json",
+          "short": null,
+          "help": "Emit the result as JSON",
+          "long_help": "",
+          "value_name": "JSON",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        },
+        {
+          "name": "members",
+          "long": "--members",
+          "short": null,
+          "help": "Emit the picker member projection (ADR-055 decision (e), PRD §4.2/§5a) instead of the team-count list: per-member `{\"id\",\"name\", \"host\",\"cwd\",\"status\"}`, consumed by `atm send --from-json`'s `recipients`. Only valid without a subcommand",
+          "long_help": "",
+          "value_name": "MEMBERS",
+          "required": false,
+          "default_value": null,
+          "choices": [
+            "true",
+            "false"
+          ],
+          "min_values": null,
+          "max_values": null
+        }
+      ],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "add-member",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm teams add-member [OPTIONS] <TEAM> <MEMBER>",
+          "options": [
+            {
+              "name": "agent_type",
+              "long": "--agent-type",
+              "short": null,
+              "help": "Agent-type metadata to store for the member",
+              "long_help": "",
+              "value_name": "AGENT_TYPE",
+              "required": false,
+              "default_value": "general-purpose",
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "alias",
+              "long": "--alias",
+              "short": null,
+              "help": "durable roster alias; Herdr members use it as their live-agent target",
+              "long_help": "",
+              "value_name": "ALIAS",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "backend",
+              "long": "--backend",
+              "short": null,
+              "help": "local receiver backend: tmux or herdr",
+              "long_help": "",
+              "value_name": "BACKEND",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "home_dir",
+              "long": "--home-dir",
+              "short": null,
+              "help": "ATM home directory to store for the member",
+              "long_help": "",
+              "value_name": "HOME_DIR",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "host",
+              "long": "--host",
+              "short": null,
+              "help": "this member's registered host (ADR-055 decision (e)); used for Send-To same-host/remote routing, never inferred",
+              "long_help": "",
+              "value_name": "HOST",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "model",
+              "long": "--model",
+              "short": null,
+              "help": "Model metadata to store for the member",
+              "long_help": "",
+              "value_name": "MODEL",
+              "required": false,
+              "default_value": "unknown",
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "pane_id",
+              "long": "--pane-id",
+              "short": null,
+              "help": "deprecated compatibility spelling for --backend tmux --target",
+              "long_help": "",
+              "value_name": "PANE_ID",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "session",
+              "long": "--session",
+              "short": null,
+              "help": "Herdr session name; only valid with --backend herdr",
+              "long_help": "",
+              "value_name": "SESSION",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "target",
+              "long": "--target",
+              "short": null,
+              "help": "tmux pane target; required for --backend tmux",
+              "long_help": "",
+              "value_name": "TARGET",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "member",
+              "help": "Name of the member to add",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            },
+            {
+              "name": "team",
+              "help": "Team that will contain the new member",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "backup",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm teams backup [OPTIONS] <TEAM>",
+          "options": [
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "team",
+              "help": "Team whose roster configuration to back up",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "clear-nudge-template",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm teams clear-nudge-template [OPTIONS] --team <TEAM> --kind <KIND>",
+          "options": [
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "kind",
+              "long": "--kind",
+              "short": null,
+              "help": "template kind: delivery, delivery_ack, queue, queue_ack, acknowledge, task_queued, task_ready, task_reminder, task_started, task_complete, task_closed; retired task and acknowledge_task are accepted for deletion",
+              "long_help": "",
+              "value_name": "KIND",
+              "required": true,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "team",
+              "long": "--team",
+              "short": null,
+              "help": "Team whose nudge template override to clear",
+              "long_help": "",
+              "value_name": "TEAM",
+              "required": true,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "disable-nudge-template",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm teams disable-nudge-template [OPTIONS] --team <TEAM> --kind <KIND>",
+          "options": [
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "kind",
+              "long": "--kind",
+              "short": null,
+              "help": "template kind: delivery, delivery_ack, queue, queue_ack, acknowledge, task_queued, task_ready, task_reminder, task_started, task_complete, task_closed",
+              "long_help": "",
+              "value_name": "KIND",
+              "required": true,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "team",
+              "long": "--team",
+              "short": null,
+              "help": "Team whose nudge template override to disable",
+              "long_help": "",
+              "value_name": "TEAM",
+              "required": true,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "remove-member",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm teams remove-member [OPTIONS] <TEAM> <MEMBER>",
+          "options": [
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "member",
+              "help": "Name of the member to remove",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            },
+            {
+              "name": "team",
+              "help": "Team containing the member to remove",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "restore",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm teams restore [OPTIONS] <TEAM>",
+          "options": [
+            {
+              "name": "dry_run",
+              "long": "--dry-run",
+              "short": null,
+              "help": "Validate and display the restore without writing it",
+              "long_help": "",
+              "value_name": "DRY_RUN",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "from",
+              "long": "--from",
+              "short": null,
+              "help": "Backup file to restore instead of the default backup location",
+              "long_help": "",
+              "value_name": "FROM",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "team",
+              "help": "Team whose roster configuration to restore",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "set-nudge-template",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm teams set-nudge-template [OPTIONS] --team <TEAM> --kind <KIND> --template-body <TEMPLATE_BODY>",
+          "options": [
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "kind",
+              "long": "--kind",
+              "short": null,
+              "help": "template kind: delivery, delivery_ack, queue, queue_ack, acknowledge, task_queued, task_ready, task_reminder, task_started, task_complete, task_closed",
+              "long_help": "",
+              "value_name": "KIND",
+              "required": true,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "team",
+              "long": "--team",
+              "short": null,
+              "help": "Team whose nudge template override to set",
+              "long_help": "",
+              "value_name": "TEAM",
+              "required": true,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "template_body",
+              "long": "--template-body",
+              "short": null,
+              "help": "Template body to use for the override",
+              "long_help": "",
+              "value_name": "TEMPLATE_BODY",
+              "required": true,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "update-member",
+          "version": null,
+          "description": "",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm teams update-member [OPTIONS] <TEAM> <MEMBER>",
+          "options": [
+            {
+              "name": "agent_type",
+              "long": "--agent-type",
+              "short": null,
+              "help": "Replace the member's agent-type metadata",
+              "long_help": "",
+              "value_name": "AGENT_TYPE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "alias",
+              "long": "--alias",
+              "short": null,
+              "help": "durable roster alias; Herdr members use it as their live-agent target",
+              "long_help": "",
+              "value_name": "ALIAS",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "backend",
+              "long": "--backend",
+              "short": null,
+              "help": "local receiver backend: tmux or herdr",
+              "long_help": "",
+              "value_name": "BACKEND",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "clear_alias",
+              "long": "--clear-alias",
+              "short": null,
+              "help": "remove the member's durable roster alias",
+              "long_help": "",
+              "value_name": "CLEAR_ALIAS",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "harness",
+              "long": "--harness",
+              "short": null,
+              "help": "Replace the member's harness metadata",
+              "long_help": "",
+              "value_name": "HARNESS",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "home_dir",
+              "long": "--home-dir",
+              "short": null,
+              "help": "Replace the member's stored ATM home directory",
+              "long_help": "",
+              "value_name": "HOME_DIR",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "host",
+              "long": "--host",
+              "short": null,
+              "help": "this member's registered host (ADR-055 decision (e)); used for Send-To same-host/remote routing, never inferred",
+              "long_help": "",
+              "value_name": "HOST",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "model",
+              "long": "--model",
+              "short": null,
+              "help": "Replace the member's model metadata",
+              "long_help": "",
+              "value_name": "MODEL",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "pane_id",
+              "long": "--pane-id",
+              "short": null,
+              "help": "deprecated compatibility spelling for --backend tmux --target",
+              "long_help": "",
+              "value_name": "PANE_ID",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "session",
+              "long": "--session",
+              "short": null,
+              "help": "Herdr session name; only valid with --backend herdr",
+              "long_help": "",
+              "value_name": "SESSION",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "target",
+              "long": "--target",
+              "short": null,
+              "help": "tmux pane target; required for --backend tmux",
+              "long_help": "",
+              "value_name": "TARGET",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "workspace_root",
+              "long": "--workspace-root",
+              "short": null,
+              "help": "Replace the member's stored workspace root",
+              "long_help": "",
+              "value_name": "WORKSPACE_ROOT",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "member",
+              "help": "Name of the member to update",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            },
+            {
+              "name": "team",
+              "help": "Team containing the member to update",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "templates",
+      "version": null,
+      "description": "Inspect immutable templates registered by decomposed-message admission",
+      "long_description": "",
+      "epilogue": "",
+      "usage": "Usage: atm templates <COMMAND>",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "list",
+          "version": null,
+          "description": "List every known immutable template revision, optionally by metadata type",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm templates list [OPTIONS]",
+          "options": [
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            },
+            {
+              "name": "template_type",
+              "long": "--type",
+              "short": null,
+              "help": "Restrict results to this template metadata type",
+              "long_help": "",
+              "value_name": "TEMPLATE_TYPE",
+              "required": false,
+              "default_value": null,
+              "choices": [],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "schema",
+          "version": null,
+          "description": "Show the stored schema/frontmatter for one exact immutable SHA",
+          "long_description": "",
+          "epilogue": "",
+          "usage": "Usage: atm templates schema [OPTIONS] <SHA>",
+          "options": [
+            {
+              "name": "json",
+              "long": "--json",
+              "short": null,
+              "help": "Emit the result as JSON",
+              "long_help": "",
+              "value_name": "JSON",
+              "required": false,
+              "default_value": null,
+              "choices": [
+                "true",
+                "false"
+              ],
+              "min_values": null,
+              "max_values": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "sha",
+              "help": "SHA of the immutable template revision",
+              "required": true,
+              "default_value": null,
+              "choices": []
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    }
+  ]
+}

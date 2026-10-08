@@ -19,6 +19,14 @@ path = "src/main.rs"
 name = "cargo-docli"
 path = "src/bin/cargo-docli.rs"
 
+[[bin]]
+name = "gen-fixtures"
+path = "src/bin/gen-fixtures.rs"
+required-features = ["gen-fixtures"]
+
+[features]
+gen-fixtures = []
+
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
