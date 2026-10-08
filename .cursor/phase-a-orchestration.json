@@ -86,6 +86,43 @@
         {"agent": "flaky-test-qa", "task_id": "5a176466-b22d-49b7-9042-43c21db0f4f7", "spawn_actor": "parent-orchestrator"}
       ],
       "finding_ids": []
+    },
+    {
+      "qa_pass": "qa-1",
+      "sprint": "a.4",
+      "commit": "1b8e198",
+      "verdict": "PASS",
+      "pr_number": 4,
+      "pr_comment_url": "https://github.com/randlee/docli/pull/4#issuecomment-6054379549",
+      "coordinator_task_id": "255f6465-5f4e-416f-a2b4-9aaff9d26832",
+      "merge_commit": "b035d3e",
+      "reviewer_manifest": [
+        {"agent": "req-qa", "task_id": "9bf1975f-78e3-4a05-bc06-5ac0157aaab9", "spawn_actor": "parent-orchestrator"},
+        {"agent": "arch-qa", "task_id": "e06958ab-0705-48de-8ce4-7a5f0917be4e", "spawn_actor": "parent-orchestrator"},
+        {"agent": "rust-qa-agent", "task_id": "3c13e335-918a-457b-945f-07aa91617255", "spawn_actor": "parent-orchestrator"},
+        {"agent": "rust-best-practices-agent", "task_id": "40910a20-ae4e-4655-9eb3-b12cddb88ff6", "spawn_actor": "parent-orchestrator"},
+        {"agent": "rust-service-hardening-agent", "task_id": "10545af1-3bfd-41dd-a9ad-aaf0ef023c22", "spawn_actor": "parent-orchestrator"},
+        {"agent": "flaky-test-qa", "task_id": "d4fd2947-e9cc-4f41-88d3-885a65877035", "spawn_actor": "parent-orchestrator"}
+      ],
+      "finding_ids": []
+    },
+    {
+      "qa_pass": "qa-2",
+      "sprint": "a.5",
+      "commit": "2d2bd19",
+      "verdict": "PASS",
+      "pr_number": 5,
+      "pr_comment_url": "https://github.com/randlee/docli/pull/5#issuecomment-6054553451",
+      "coordinator_task_id": "1788ce56-5174-43f5-bfa2-d17c4af2ffd3",
+      "merge_commit": "ce7f217",
+      "reviewer_manifest": [
+        {"agent": "req-qa", "task_id": "ff240b92-b209-486a-9c00-905b3d65e2d7", "spawn_actor": "parent-orchestrator"},
+        {"agent": "arch-qa", "task_id": "883a8f6e-85b0-4c36-99d5-795b9917cf5b", "spawn_actor": "parent-orchestrator"},
+        {"agent": "rust-qa-agent", "task_id": "66c589ed-1abf-4f9f-9bb1-580bc49af083", "spawn_actor": "parent-orchestrator"},
+        {"agent": "rust-best-practices-agent", "task_id": "0891611a-e814-4a74-8bae-c502c9586a1a", "spawn_actor": "parent-orchestrator"},
+        {"agent": "flaky-test-qa", "task_id": "45c09e7c-4198-4e9c-adbf-8c3923f7c329", "spawn_actor": "parent-orchestrator"}
+      ],
+      "finding_ids": []
     }
   ]
 }
