@@ -96,9 +96,15 @@ mod docli_gen_fixtures {
 fn main() {
     if let Err(err) = run() {
         eprintln!("gen-fixtures: {err}");
+        eprintln!("hint: {GEN_FIXTURES_HINT}");
         std::process::exit(1);
     }
 }
+
+const GEN_FIXTURES_HINT: &str =
+    "Use clean consumer checkouts (no leftover docli_gen_fixtures injection). \
+If cargo test fails with mixed toolchain artifacts, run `cargo clean` in the consumer crate and \
+retry with RUSTUP_TOOLCHAIN=stable. See docs/plans/phase-a/a5-repo-fixtures.md.";
 
 fn run() -> Result<(), String> {
     let args = Args::parse();

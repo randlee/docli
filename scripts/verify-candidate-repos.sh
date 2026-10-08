@@ -17,6 +17,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=docli-envelope.sh
+source "$SCRIPT_DIR/docli-envelope.sh"
+
 DOCLI_ROOT="${DOCLI_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 ATM_CORE_ROOT="${ATM_CORE_ROOT:-$HOME/Documents/github/atm-core}"
 SC_COMPOSE_ROOT="${SC_COMPOSE_ROOT:-$HOME/Documents/github/sc-compose}"
@@ -25,6 +28,7 @@ SC_OBSERVABILITY_ROOT="${SC_OBSERVABILITY_ROOT:-$HOME/Documents/github/sc-observ
 for d in "$DOCLI_ROOT" "$ATM_CORE_ROOT" "$SC_COMPOSE_ROOT" "$SC_OBSERVABILITY_ROOT"; do
   if [[ ! -d "$d" ]]; then
     echo "missing checkout: $d" >&2
+    echo "hint: clone the repo or set ATM_CORE_ROOT / SC_COMPOSE_ROOT / SC_OBSERVABILITY_ROOT" >&2
     exit 1
   fi
 done
@@ -39,9 +43,13 @@ cargo build --release -q
 
 if [[ "${DOCLI_SKIP_GEN_FIXTURES:-}" != "1" ]]; then
   echo "== gen-fixtures (live clap → JSON) =="
-  cargo run --release --features gen-fixtures --bin gen-fixtures -- \
+  if ! cargo run --release --features gen-fixtures --bin gen-fixtures -- \
     --atm-core "$ATM_CORE_ROOT" \
-    --sc-compose "$SC_COMPOSE_ROOT"
+    --sc-compose "$SC_COMPOSE_ROOT"; then
+    echo "hint: ensure each consumer checkout is clean (no leftover docli_gen_fixtures injection)" >&2
+    echo "hint: try RUSTUP_TOOLCHAIN=stable and cargo clean in the consumer crate if rustc artifacts look mixed" >&2
+    exit 1
+  fi
 fi
 
 DOCLI="$DOCLI_ROOT/target/release/docli"
@@ -54,9 +62,11 @@ generate_show() {
   rm -rf "$workdir/site/cli"
   (
     cd "$workdir"
-    "$DOCLI" generate --input "$model_json" --html site/cli --json >/dev/null
+    docli_require_envelope_ok "$label generate" \
+      "$DOCLI" generate --input "$model_json" --html site/cli --json
     test -f site/cli/index.html
-    "$DOCLI" show --html site/cli --json >/dev/null
+    docli_require_envelope_ok "$label show" \
+      "$DOCLI" show --html site/cli --json
   )
   echo "  OK generate + show ($workdir/site/cli/index.html)"
 }
@@ -70,6 +80,7 @@ generate_show "sc-compose checkout / sc-compose.json" "$SC_COMPOSE_ROOT" "$DOCLI
 echo "== sc-observability (no clap Command fixture) =="
 if [[ -f "$DOCLI_ROOT/fixtures/repos/sc-observability.json" ]]; then
   echo "  FAIL: sc-observability.json must not exist" >&2
+  echo "hint: remove sc-observability.json; that repo has no clap Command to capture" >&2
   exit 1
 fi
 generate_show "sc-observability tree / contract smoke" "$SC_OBSERVABILITY_ROOT" "$DOCLI_ROOT/fixtures/contract/model.json"

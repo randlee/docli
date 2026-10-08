@@ -9,7 +9,9 @@
 //! ```
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Output};
+
+use serde_json::Value;
 
 fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -25,10 +27,37 @@ fn docli_bin() -> PathBuf {
     PathBuf::from(env!("CARGO_BIN_EXE_docli"))
 }
 
-fn generate_show(workdir: &Path, model: &Path) {
+fn assert_envelope_ok(label: &str, output: &Output) {
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let envelope: Value = serde_json::from_str(stdout.trim()).unwrap_or_else(|err| {
+        panic!(
+            "{label}: stdout is not a JSON envelope ({err}); exit={:?}; stderr={}",
+            output.status.code(),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    });
+    assert_eq!(
+        envelope.get("version"),
+        Some(&Value::String("1".into())),
+        "{label}: unexpected envelope version: {envelope}"
+    );
+    if envelope.get("ok") == Some(&Value::Bool(true)) {
+        return;
+    }
+    let err = envelope.get("error").cloned().unwrap_or(Value::Null);
+    panic!(
+        "{label}: docli envelope ok:false — code={} message={} suggested_action={} (exit={:?})",
+        err.get("code").unwrap_or(&Value::Null),
+        err.get("message").unwrap_or(&Value::Null),
+        err.get("suggested_action").unwrap_or(&Value::Null),
+        output.status.code()
+    );
+}
+
+fn generate_show(workdir: &Path, model: &Path, label: &str) {
     let html = workdir.join("site/cli");
     let _ = std::fs::remove_dir_all(workdir.join("site"));
-    let status = Command::new(docli_bin())
+    let generate = Command::new(docli_bin())
         .current_dir(workdir)
         .args([
             "generate",
@@ -38,9 +67,9 @@ fn generate_show(workdir: &Path, model: &Path) {
             "site/cli",
             "--json",
         ])
-        .status()
+        .output()
         .expect("spawn docli generate");
-    assert!(status.success(), "generate failed in {}", workdir.display());
+    assert_envelope_ok(&format!("{label} generate"), &generate);
     assert!(
         html.join("index.html").is_file(),
         "missing {} after generate",
@@ -49,9 +78,9 @@ fn generate_show(workdir: &Path, model: &Path) {
     let show = Command::new(docli_bin())
         .current_dir(workdir)
         .args(["show", "--html", "site/cli", "--json"])
-        .status()
+        .output()
         .expect("spawn docli show");
-    assert!(show.success(), "show failed in {}", workdir.display());
+    assert_envelope_ok(&format!("{label} show"), &show);
 }
 
 #[test]
@@ -75,10 +104,10 @@ fn live_candidate_repos_generate_show() {
         "sc-observability has no clap Command; fixture must stay absent"
     );
 
-    generate_show(&root, &contract);
-    generate_show(&root, &atm_json);
-    generate_show(&root, &compose_json);
-    generate_show(&atm, &atm_json);
-    generate_show(&compose, &compose_json);
-    generate_show(&obs, &contract);
+    generate_show(&root, &contract, "docli contract");
+    generate_show(&root, &atm_json, "docli atm-core.json");
+    generate_show(&root, &compose_json, "docli sc-compose.json");
+    generate_show(&atm, &atm_json, "atm-core checkout");
+    generate_show(&compose, &compose_json, "sc-compose checkout");
+    generate_show(&obs, &contract, "sc-observability contract smoke");
 }

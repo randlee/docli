@@ -140,11 +140,15 @@ These rules apply to every language implementation.
 ## 9. CLI Contract
 
 The machine contract is primary. Human output is a presentation of the same
-result. The contract follows the sc-ai-cli rules: every command has a stable
-operation name, a request model, a response model, `--json`, and one envelope
-for success and failure. Request and response types live outside the CLI
-entrypoint so a later MCP wrapper can call the same operations without
-reshaping the payload.
+result. Section 9 derives from the **sc-ai-cli** toolkit
+(`synaptic-canvas/packages/sc-ai-cli`, especially
+`skills/creating-ai-clis/references/core-contract.md` and
+`error-contracts.md`): every command has a stable operation name, a request
+model, a response model, `--json`, and one envelope for success and failure.
+Failures must expose `kind`, stable `code`, structured `details`, and
+`suggested_action` so automated callers (and wrapper scripts) can recover without
+ guessing. Request and response types live outside the CLI entrypoint so a later
+MCP wrapper can call the same operations without reshaping the payload.
 
 There is no interactive prompt. JSON mode emits no color, progress, or
 prompts.
@@ -167,9 +171,12 @@ prompts.
   Success sets `ok` true, `data` to the response, and `error` null. Failure
   sets `ok` false, `data` null, and `error` to the error object.
 - `REQ-DOCLI-CLI-003`: `error` carries `kind`, `code`, `message`, `details`,
-  `suggested_action`, and `docs`. `kind` is one of `validation`, `not_found`,
-  `dependency`, or `internal`. `code` is one of the stable strings below.
-  `details` is an object. `docs` is a string or null. Codes are stable:
+  `suggested_action`, and `docs`. This matches sc-ai-cli actionable error
+  guidance: callers must be able to branch on `kind`/`code` and act on
+  `suggested_action` without parsing prose-only stderr. `kind` is one of
+  `validation`, `not_found`, `dependency`, or `internal`. `code` is one of the
+  stable strings below. `details` is an object. `docs` is a string or null.
+  Codes are stable:
 
   | Code | Kind | When |
   |---|---|---|

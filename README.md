@@ -40,6 +40,10 @@ smoke only — no sc-observability CLI model):
 ./scripts/verify-candidate-repos.sh
 ```
 
+The script runs `docli … --json` and requires `ok: true`. On failure it prints
+the envelope `code`, `message`, and `suggested_action` (same contract as
+`docs/requirements.md` / sc-ai-cli error guidance), not a silent exit.
+
 Override checkout paths with `ATM_CORE_ROOT`, `SC_COMPOSE_ROOT`, and
 `SC_OBSERVABILITY_ROOT`. Optional Rust test:
 
