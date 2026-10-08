@@ -11,6 +11,14 @@ System.CommandLine in .NET). `docli` gives all of them one output: a
 navigable website page and a distributable Markdown manual, regenerated on
 every release from the same command definitions.
 
+## CLI contract (mandatory)
+
+The `docli` / `cargo docli` tools are **AI-first CLIs** and must follow the
+**creating-ai-clis** skill you supplied for this repo (`.claude/skills/creating-ai-clis/`).
+Stable requirement ids and docli-specific product rules are in
+[`docs/requirements.md`](docs/requirements.md) (section 9 maps to the skill’s
+core and error references).
+
 ## Install
 
 ```sh
@@ -41,8 +49,8 @@ smoke only — no sc-observability CLI model):
 ```
 
 The script runs `docli … --json` and requires `ok: true`. On failure it prints
-the envelope `code`, `message`, and `suggested_action` (same contract as
-`docs/requirements.md` / sc-ai-cli error guidance), not a silent exit.
+the envelope `code`, `message`, and `suggested_action` (per **creating-ai-clis**
+/ `REQ-DOCLI-CLI-003`), not a silent exit.
 
 Override checkout paths with `ATM_CORE_ROOT`, `SC_COMPOSE_ROOT`, and
 `SC_OBSERVABILITY_ROOT`. Optional Rust test:

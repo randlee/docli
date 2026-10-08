@@ -4,6 +4,15 @@
 **Applies to**: `docli`
 **Source of truth**: this document, `src/schema.rs` for the input model, and `fixtures/contract/` for rendered bytes once those fixtures exist.
 
+**Mandatory CLI design basis**: the **creating-ai-clis** skill supplied for this
+project (vendored at `.claude/skills/creating-ai-clis/`, from
+`synaptic-canvas/packages/sc-ai-cli`). The `docli` and `cargo docli` binaries,
+their `--json` envelope, typed actionable errors, and `generate` / `show`
+readback pair MUST conform to that skill and its references (`core-contract.md`,
+`error-contracts.md`, `mcp-compatibility.md`, `simulation-and-auditability.md`
+where applicable). This file names stable requirement ids and docli-specific
+product scope; it does not replace the skill.
+
 Phase A is Rust only. Go, .NET, and Python stay in the contract so later phases match the same bytes and the same CLI envelope, and they are not Phase A deliverables.
 
 ## 1. Purpose And Scope
@@ -140,15 +149,18 @@ These rules apply to every language implementation.
 ## 9. CLI Contract
 
 The machine contract is primary. Human output is a presentation of the same
-result. Section 9 derives from the **sc-ai-cli** toolkit
-(`synaptic-canvas/packages/sc-ai-cli`, especially
-`skills/creating-ai-clis/references/core-contract.md` and
-`error-contracts.md`): every command has a stable operation name, a request
-model, a response model, `--json`, and one envelope for success and failure.
-Failures must expose `kind`, stable `code`, structured `details`, and
-`suggested_action` so automated callers (and wrapper scripts) can recover without
- guessing. Request and response types live outside the CLI entrypoint so a later
-MCP wrapper can call the same operations without reshaping the payload.
+result. Section 9 implements the mandatory **creating-ai-clis** skill (see header):
+read `.claude/skills/creating-ai-clis/SKILL.md` and
+`references/core-contract.md` / `references/error-contracts.md` before changing
+CLI behavior. Every command has a stable operation name, a request model, a
+response model, `--json`, and one envelope for success and failure. Failures
+must expose `kind`, stable `code`, structured `details`, and `suggested_action`
+so automated callers (and wrapper scripts) can recover without guessing. Request
+and response types live outside the CLI entrypoint so a later MCP wrapper can
+call the same operations without reshaping the payload.
+
+- `REQ-DOCLI-NORM-001`: `docli` CLI contract changes are invalid unless they
+  remain conformant with the in-repo **creating-ai-clis** skill and references.
 
 There is no interactive prompt. JSON mode emits no color, progress, or
 prompts.
