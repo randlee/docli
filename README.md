@@ -29,6 +29,28 @@ docli generate --html site/cli < cli-model.json
 
 With no `--html`/`--markdown`, the HTML is written to stdout.
 
+## Candidate repo verification
+
+CI uses checked-in JSON under `fixtures/repos/` (see `tests/repo_fixtures.rs`).
+To regenerate those models from live clap trees and run `generate` / `show` in
+**docli**, **atm-core**, **sc-compose**, and **sc-observability** (contract
+smoke only — no sc-observability CLI model):
+
+```sh
+./scripts/verify-candidate-repos.sh
+```
+
+Override checkout paths with `ATM_CORE_ROOT`, `SC_COMPOSE_ROOT`, and
+`SC_OBSERVABILITY_ROOT`. Optional Rust test:
+
+```sh
+DOCLI_LIVE_CANDIDATE_REPOS=1 \
+  ATM_CORE_ROOT=~/Documents/github/atm-core \
+  SC_COMPOSE_ROOT=~/Documents/github/sc-compose \
+  SC_OBSERVABILITY_ROOT=~/Documents/github/sc-observability \
+  cargo test --test live_candidate_repos -- --nocapture
+```
+
 ## The neutral model
 
 `docli` consumes one JSON document describing a CLI command tree. It carries
