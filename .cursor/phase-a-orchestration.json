@@ -52,6 +52,23 @@
         ".triage/phase-a/findings/RBP-F002.ttl"
       ],
       "finding_ids": []
+    },
+    {
+      "qa_pass": "qa-2",
+      "sprint": "a.2",
+      "commit": "2e83e00",
+      "verdict": "PASS",
+      "pr_number": 2,
+      "pr_comment_url": "https://github.com/randlee/docli/pull/2#issuecomment-6054180586",
+      "coordinator_task_id": "bf6cc4ba-5878-4264-bc5a-22a9d3e2edc8",
+      "merge_commit": "0b7a56f",
+      "reviewer_manifest": [
+        {"agent": "req-qa", "task_id": "988a8c88-e078-4f68-8547-1ec4262606d7", "spawn_actor": "parent-orchestrator"},
+        {"agent": "arch-qa", "task_id": "88a23a86-5f43-49e0-a7b8-cfcb23b46e7e", "spawn_actor": "parent-orchestrator"},
+        {"agent": "rust-qa-agent", "task_id": "979d6c58-f6d0-4bf6-af74-cdd0a5b9d05a", "spawn_actor": "parent-orchestrator"},
+        {"agent": "flaky-test-qa", "task_id": "55442ccb-e832-4396-98e0-d449209279c0", "spawn_actor": "parent-orchestrator"}
+      ],
+      "finding_ids": []
     }
   ]
 }
