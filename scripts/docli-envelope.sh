@@ -32,7 +32,7 @@ print(f"code: {err.get('code')}", file=sys.stderr)
 print(f"message: {err.get('message')}", file=sys.stderr)
 print(f"suggested_action: {err.get('suggested_action')}", file=sys.stderr)
 details = err.get("details") or {}
-if isinstance(details, dict) and details.get("cause"):
+if isinstance(details, dict) and isinstance(details.get("cause"), str):
     print(f"cause: {details['cause']}", file=sys.stderr)
 PY
   fi
