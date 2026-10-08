@@ -71,7 +71,7 @@ fixture_snapshot_dir=""
 default_fixture_guard=0
 
 snapshot_committed_fixtures() {
-  fixture_snapshot_dir="$(mktemp -d "${TMPDIR:-/tmp}/docli-fixture-snapshot.XXXXXX")"
+  fixture_snapshot_dir="$(mktemp -d)"
   local f
   for f in "$DOCLI_ROOT/fixtures/repos"/*.json; do
     [[ -f "$f" ]] || continue
