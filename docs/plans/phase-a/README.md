@@ -26,11 +26,13 @@ Phase A implementation PRs target **`develop`**. This directory is the sole auth
 ## Commands
 
 ```text
-docli generate --input <FILE|-> [--html DIR] [--markdown FILE] [--json]
+docli generate [--input <FILE|->] [--html DIR] [--markdown FILE] [--json]
 docli show (--html DIR | --markdown FILE) [--json]
 cargo docli generate …
 cargo docli show …
 ```
+
+`--input` defaults to `-` (stdin).
 
 Command syntax and the envelope live in [a1-cli-contract.md](a1-cli-contract.md). Product ids live in `docs/requirements.md`. `--html` defaults to `site/cli`. Callers in scripts and CI pass `--html` explicitly. `--markdown` has no default.
 

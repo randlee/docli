@@ -16,7 +16,7 @@ target: develop
 ## Hard Dependencies
 
 - `src/clap_model.rs` and `src/schema.rs`
-- a.2 renderer fixtures stay green if a mapping change alters rendered bytes
+- a.4 tests do not read `fixtures/contract/`. If a mapping change alters rendered bytes, re-run a.2's fixture test before merge. That re-run is not an a.4 acceptance criterion.
 
 ## Deliverables
 

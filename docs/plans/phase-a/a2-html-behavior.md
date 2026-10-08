@@ -42,7 +42,7 @@ pub fn search_index(model: &CliModel) -> Vec<SearchEntry>;
 pub fn matching_anchors(index: &[SearchEntry], query: &str) -> std::collections::BTreeSet<String>;
 ```
 
-`terms` include the command name, each option `name`, `long`, and `short`, and each argument `name`. `matching_anchors` returns the hit anchor and every ancestor anchor. Comparison is case-insensitive substring.
+`terms` include the command name, each option `name`, `long`, and `short`, and each argument `name`. `matching_anchors` returns the hit anchor and every ancestor anchor. A term matches when, after lowercasing, the query is a substring of the term or the term is a substring of the query. An empty query matches nothing.
 
 The page contains both script tags. `#docli-data` is the `CliModel` JSON and is what builds the tree and the detail panel. `#docli-search` is the `SearchEntry` array and is the only input to search filtering. Search does not walk `#docli-data`.
 

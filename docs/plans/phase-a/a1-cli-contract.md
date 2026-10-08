@@ -107,6 +107,28 @@ pub struct CliModel {
     pub arguments: Vec<ArgumentSpec>,
     pub subcommands: Vec<CliModel>,
 }
+
+pub struct OptionSpec {
+    pub name: String,
+    pub long: Option<String>,
+    pub short: Option<String>,
+    pub help: String,
+    pub long_help: String,
+    pub value_name: Option<String>,
+    pub required: bool,
+    pub default_value: Option<String>,
+    pub choices: Vec<String>,
+    pub min_values: Option<usize>,
+    pub max_values: Option<usize>,
+}
+
+pub struct ArgumentSpec {
+    pub name: String,
+    pub help: String,
+    pub required: bool,
+    pub default_value: Option<String>,
+    pub choices: Vec<String>,
+}
 ```
 
 Exit codes: `0` success, `2` validation (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`), `3` not found (`DOCLI.INPUT_NOT_FOUND`, `DOCLI.OUTPUT_NOT_FOUND`), `4` dependency (`DOCLI.IO`), `1` internal (`DOCLI.INTERNAL`).
@@ -125,6 +147,8 @@ Exit codes: `0` success, `2` validation (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`), 
 - That success envelope contains the key `error` with JSON value `null`
 - `docli generate --input <missing.json> --json` exits 3, code `DOCLI.INPUT_NOT_FOUND`, and the envelope contains the key `data` with JSON value `null`
 - `docli generate --input <model.json> --json` with no `--html` writes `site/cli/index.html` and `html_dir` is that directory
+- `docli generate --json` with stdin model JSON and no `--input` exits 0 and `input` is `"stdin"` (`--input` defaults to `-`)
+- `docli show --json` with neither `--html` nor `--markdown` exits 2 with `error.code` `DOCLI.USAGE`
 - `docli generate --input <model.json> --html <dir>` with no `--json` exits 0 and stdout contains that HTML path, its byte length, and its sha256
 - `docli show --html <dir> --markdown <out.md> --json` exits 0 and its artifact hashes equal the `generate` hashes
 - `docli show --html <dir>` with no `--json` exits 0 and stdout contains path, byte length, and sha256

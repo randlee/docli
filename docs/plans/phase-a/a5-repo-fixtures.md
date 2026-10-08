@@ -16,9 +16,8 @@ target: develop
 ## CI Hard Dependencies
 
 - a.1 `generate` and `show`
-- a.4 `docli::from_clap`
 
-`cargo test` does not compile atm-core or sc-compose. It reads the JSON files this sprint commits.
+`tests/repo_fixtures.rs` parses committed JSON and runs `generate` / `show`. It does not call `from_clap` and does not compile atm-core or sc-compose.
 
 ## Fixture Capture Prerequisites
 
@@ -30,7 +29,9 @@ cargo run --bin gen-fixtures -- --atm-core <atm-core-checkout> --sc-compose <sc-
 
 `<atm-core-checkout>` and `<sc-compose-checkout>` are arguments. The binary does not default them to a home-directory path.
 
-`gen-fixtures` builds each checkout enough to call `from_clap` on that repo's root command and writes pretty JSON:
+`gen-fixtures` is behind Cargo feature `gen-fixtures` (`required-features` on that bin). `cargo test` does not enable the feature and does not build the bin.
+
+The bin does not depend on atm-core or sc-compose in `Cargo.toml`. It writes a temporary package inside the given checkout, path-depending on that checkout's CLI crate and on this docli crate, runs it, writes the JSON, and deletes the temporary package. The temporary package calls `docli::from_clap` on:
 
 - atm-core: `Cli::command()` in `crates/atm` (`clap::CommandFactory`)
 - sc-compose: `cli::Cli::command()` in `crates/sc-compose`
@@ -39,6 +40,7 @@ sc-observability has no clap `Command` (`crates/sc-observe` is a library). This 
 
 ## Deliverables
 
+- `Cargo.toml` — feature `gen-fixtures` and `[[bin]]` `gen-fixtures` with `required-features = ["gen-fixtures"]`
 - `src/bin/gen-fixtures.rs`
 - `fixtures/repos/atm-core.json`
 - `fixtures/repos/sc-compose.json`
