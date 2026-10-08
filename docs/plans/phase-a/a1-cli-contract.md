@@ -1,7 +1,7 @@
 ---
 id: a.1
 title: generate and show machine contract
-status: planned
+status: complete
 branch: feature/phase-a-a1-cli
 worktree: ../docli-worktrees/feature/phase-a-a1-cli
 target: integrate/phase-a
