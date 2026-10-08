@@ -4,7 +4,7 @@ title: clap adapter mapping
 status: complete
 branch: feature/phase-a-a4-clap
 worktree: ../docli-worktrees/feature/phase-a-a4-clap
-target: develop
+target: integrate/phase-a
 ---
 
 # Sprint a.4 — clap adapter mapping
