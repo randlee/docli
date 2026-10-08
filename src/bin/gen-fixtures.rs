@@ -164,11 +164,14 @@ fn capture_fixture(checkout: &Path, target: &Target, docli_root: &Path) -> Resul
     let patched_manifest = patch_manifest(&manifest_backup, &docli_dep)?;
     fs::write(&manifest_path, &patched_manifest)
         .map_err(|err| format!("patch {}: {err}", manifest_path.display()))?;
-    fs::write(
+    if let Err(err) = fs::write(
         &inject_path,
         format!("{inject_backup}{}", target.inject_snippet),
     )
-    .map_err(|err| format!("patch {}: {err}", inject_path.display()))?;
+    .map_err(|err| format!("patch {}: {err}", inject_path.display()))
+    {
+        return fail_after_restore(restore_manifest_only(&manifest_path, &manifest_backup), err);
+    }
 
     let temp_out = env::temp_dir().join(format!(
         "docli-gen-out-{}-{}.json",
@@ -235,6 +238,17 @@ fn capture_fixture(checkout: &Path, target: &Target, docli_root: &Path) -> Resul
     serde_json::from_str::<serde_json::Value>(&json)
         .map_err(|err| format!("generated JSON is invalid: {err}"))?;
     Ok(json.trim_end().to_string())
+}
+
+fn restore_manifest_only(
+    manifest_path: &Path,
+    manifest_backup: &str,
+) -> impl FnOnce() -> Result<(), String> + '_ {
+    move || {
+        fs::write(manifest_path, manifest_backup)
+            .map_err(|err| format!("restore {}: {err}", manifest_path.display()))?;
+        Ok(())
+    }
 }
 
 fn fail_after_restore(
