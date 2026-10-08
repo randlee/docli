@@ -42,11 +42,11 @@ Library boundary: [adr-001-ops-boundary.md](adr-001-ops-boundary.md). Search emb
 
 | Sprint | Doc | Branch | Closes |
 |--------|-----|--------|--------|
-| a.1 | [a1-cli-contract.md](a1-cli-contract.md) | `feature/phase-a-a1-cli` | `REQ-DOCLI-CLI-001`–`007`, `REQ-DOCLI-HTML-006`, in-process `ops::generate` / `ops::show` |
-| a.2 | [a2-html-behavior.md](a2-html-behavior.md) | `feature/phase-a-a2-html` | `REQ-DOCLI-HTML-001`–`005`, `REQ-DOCLI-MD-001`, `REQ-DOCLI-GEN-001` fixture lock |
+| a.1 | [a1-cli-contract.md](a1-cli-contract.md) | `feature/phase-a-a1-cli` | `REQ-DOCLI-CLI-001`–`007`, `REQ-DOCLI-HTML-006`, `REQ-DOCLI-INPUT-001`–`005`, `REQ-DOCLI-PRODUCT-003`, `REQ-DOCLI-DIST-001`. `REQ-DOCLI-PRODUCT-001` is the aggregate of a.1–a.5 (build and test from the repo). crates.io publish stays later. |
+| a.2 | [a2-html-behavior.md](a2-html-behavior.md) | `feature/phase-a-a2-html` | `REQ-DOCLI-HTML-001`–`005`, `REQ-DOCLI-MD-001`, `REQ-DOCLI-GEN-001`, `REQ-DOCLI-GEN-002` for this repo's renderer fixtures. Consumer "regenerate on every release" waits for the later publish step. |
 | a.3 | [a3-cargo-docli.md](a3-cargo-docli.md) | `feature/phase-a-a3-cargo` | `REQ-DOCLI-PRODUCT-002` |
 | a.4 | [a4-clap-adapter.md](a4-clap-adapter.md) | `feature/phase-a-a4-clap` | `REQ-DOCLI-RUST-001`, `REQ-DOCLI-RUST-002`, `pub use from_clap` |
-| a.5 | [a5-repo-fixtures.md](a5-repo-fixtures.md) | `feature/phase-a-a5-fixtures` | atm-core and sc-compose models rendered with explicit `--html site/cli` |
+| a.5 | [a5-repo-fixtures.md](a5-repo-fixtures.md) | `feature/phase-a-a5-fixtures` | No standalone requirement id. Checked-in atm-core and sc-compose models, rendered with explicit `--html site/cli`, are evidence for the `REQ-DOCLI-PRODUCT-001` aggregate. |
 
 ## CI gate
 

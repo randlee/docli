@@ -17,11 +17,12 @@ target: develop
 
 - a.1 `generate` writes the page
 - [adr-002-search-index.md](adr-002-search-index.md)
-- `pub fn render(model: &CliModel) -> String` stays the signature of both renderers. This sprint does not add parameters. The search index is built inside `html::render`.
+- `pub fn render(model: &CliModel) -> String` stays the signature of both renderers. This sprint does not add parameters. `html::render` calls `search::search_index` and does not define `SearchEntry`.
 
 ## Deliverables
 
-- `src/render/html.rs` — caret and command name are sibling controls; search uses the embedded index
+- `src/search.rs` — `SearchEntry`, `search_index`, and `matching_anchors`, re-exported from `src/lib.rs`
+- `src/render/html.rs` — one file, inline CSS and JS, no external stylesheet or script URL; two panes (command tree and detail panel); caret and command name are sibling controls; detail panel reads `#docli-data`; search uses `#docli-search`
 - `src/render/markdown.rs` — one section per command with description, usage, arguments, and options
 - `fixtures/contract/model.json`, `fixtures/contract/index.html`, `fixtures/contract/manual.md`
 - `tests/render_fixtures.rs` — byte compare of both renderers against those fixtures
@@ -31,6 +32,7 @@ target: develop
 Anchor for a command is the slash-free slug of its path: join `name` from the root with a single space, lowercase, replace every run of non-alphanumeric characters with one `-`, and trim `-` from both ends. Root `demo` is `demo`. Child `run` is `demo-run`.
 
 ```rust
+// src/search.rs
 pub struct SearchEntry {
     pub anchor: String,
     pub ancestors: Vec<String>,
@@ -70,7 +72,10 @@ The page contains both script tags. `#docli-data` is the `CliModel` JSON and is 
 - A query that matches nothing returns an empty set
 - Generated HTML for each command contains `.docli-caret` and `.docli-cmd` as siblings under the same `.node`
 - Generated HTML contains `id="docli-data"` and `id="docli-search"`
-- `fixtures/contract/index.html` and `fixtures/contract/manual.md` equal `render` output for `fixtures/contract/model.json`
+- `fixtures/contract/index.html` and `fixtures/contract/manual.md` equal `render` output for `fixtures/contract/model.json`. Changing one byte of either fixture fails `cargo test --test render_fixtures` (`REQ-DOCLI-GEN-002` for this repo). Consumer regenerate-on-release is not this sprint.
+- The HTML fixture is one file: it contains a `<style` tag and a `<script` tag, and it contains no `href=` or `src=` pointing at a `.css` or `.js` file
+- The HTML fixture contains two sibling pane elements, one holding the command tree and one holding the detail panel
+- The detail panel's arguments/options table header row names name, short, value, required, default, choices, and description
 
 ## Required Validation
 

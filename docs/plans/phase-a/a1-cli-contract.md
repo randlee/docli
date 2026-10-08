@@ -23,7 +23,9 @@ target: develop
 - `src/contract.rs` — envelope, error body, exit codes
 - `src/ops.rs` — `generate` and `show`
 - `src/main.rs` — clap commands call the operations; `--json` prints only the envelope
-- `src/lib.rs` — `pub mod ops; pub mod contract;` and `pub use schema::{ArgumentSpec, CliModel, OptionSpec}`
+- `src/lib.rs` — `pub mod ops; pub mod contract; pub mod render;` and `pub use schema::{ArgumentSpec, CliModel, OptionSpec}`. `pub mod render` stays public per [adr-001-ops-boundary.md](adr-001-ops-boundary.md). `pub mod search` is a.2.
+- `src/schema.rs` — `CliModel`, `OptionSpec`, and `ArgumentSpec` keep the fields below. None of them uses `deny_unknown_fields`. Each has `#[serde(flatten)] pub extra: serde_json::Map<String, serde_json::Value>` so unknown fields stay on the value and do not change how known fields render.
+- `Cargo.toml` — `license = "MIT"` stays set. `LICENSE` at the repo root stays the MIT text.
 - `tests/cli_contract.rs` — process tests and one in-process `ops::generate` test
 
 `from_clap` re-export is a.4, not this sprint.
@@ -91,9 +93,11 @@ pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse>;
 pub fn show(req: ShowRequest) -> Envelope<ShowResponse>;
 ```
 
+`suggested_action` stays one `String` because `REQ-DOCLI-CLI-003` names that field. It is one recovery sentence. There is no `cause` field on `ErrorBody`; an upstream OS or parse error is the string `details.cause` when one exists, and that key is omitted when it does not.
+
 `generate` resolves `html_dir: None` to `site/cli` before writing. A write failure after another file landed returns an envelope with `ok: false`, code `DOCLI.IO`, and `error.details.outputs_written` listing the artifacts already written. `show` does not apply that default; both paths `None` is `DOCLI.USAGE`.
 
-Model fields this sprint reads (`src/schema.rs`, not rewritten here):
+Model fields this sprint owns in `src/schema.rs`:
 
 ```rust
 pub struct CliModel {
@@ -106,6 +110,8 @@ pub struct CliModel {
     pub options: Vec<OptionSpec>,
     pub arguments: Vec<ArgumentSpec>,
     pub subcommands: Vec<CliModel>,
+    #[serde(flatten)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
 }
 
 pub struct OptionSpec {
@@ -120,6 +126,8 @@ pub struct OptionSpec {
     pub choices: Vec<String>,
     pub min_values: Option<usize>,
     pub max_values: Option<usize>,
+    #[serde(flatten)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
 }
 
 pub struct ArgumentSpec {
@@ -128,10 +136,21 @@ pub struct ArgumentSpec {
     pub required: bool,
     pub default_value: Option<String>,
     pub choices: Vec<String>,
+    #[serde(flatten)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
 }
 ```
 
 Exit codes: `0` success, `2` validation (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`), `3` not found (`DOCLI.INPUT_NOT_FOUND`, `DOCLI.OUTPUT_NOT_FOUND`), `4` dependency (`DOCLI.IO`), `1` internal (`DOCLI.INTERNAL`).
+
+| Code | Kind | Cause | `details` | `suggested_action` |
+|---|---|---|---|---|
+| `DOCLI.USAGE` | validation | unknown command or invalid flags | `{}` | name the flag or command that was rejected |
+| `DOCLI.INPUT_INVALID` | validation | model JSON is missing, empty, or does not match known field types | `{ "cause": "<parse error>" }` when serde reports one, otherwise `{}` | point at the input and the parse error |
+| `DOCLI.INPUT_NOT_FOUND` | not_found | `--input` path does not exist | `{ "path": "<path>" }` | name the missing path |
+| `DOCLI.OUTPUT_NOT_FOUND` | not_found | `show` asked for an artifact that is not on disk | `{ "artifacts": [{ "path": "<path>", "exists": false }] }` for every requested artifact | name each missing path |
+| `DOCLI.IO` | dependency | reading or writing a file failed | `{ "cause": "<os error>", "outputs_written": [<ArtifactReport>, ...] }`. `outputs_written` is present only after a partial write | name the path that failed |
+| `DOCLI.INTERNAL` | internal | an unexpected failure | `{ "cause": "<message>" }` | say to report the cause string |
 
 ## Out of Scope
 
@@ -156,6 +175,9 @@ Exit codes: `0` success, `2` validation (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`), 
 - `docli show --html <missing> --json` exits 3 with `DOCLI.OUTPUT_NOT_FOUND` and `details` listing each requested artifact
 - `docli::ops::generate(GenerateRequest { input: InputSource::File(model_path), html_dir: Some(tmp), markdown: None })` returns an `Envelope` with `ok: true`, `html_dir` equal to `tmp`, and `tmp/index.html` exists
 - `--help` and `--version` exit 0 and print human text
+- A model JSON object with an extra field `"future": 1` on the root, on one option, and on one argument deserializes with those keys in `extra`, and the generated page still renders the known fields
+- `CliModel`, `OptionSpec`, and `ArgumentSpec` expose every field named by `REQ-DOCLI-INPUT-001`, `REQ-DOCLI-INPUT-002`, and `REQ-DOCLI-INPUT-003`
+- `cargo metadata --no-deps --format-version 1` reports `"license":"MIT"`, and the repo-root `LICENSE` file begins with `MIT License`
 
 ## Required Validation
 
