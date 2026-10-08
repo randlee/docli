@@ -1,7 +1,7 @@
 ---
 id: b.1
 title: normative baselines and QA agents
-status: planned
+status: complete
 branch: feature/phase-b-b1-baselines
 worktree: ../docli-worktrees/feature/phase-b-b1-baselines
 target: integrate/phase-b

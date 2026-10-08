@@ -4,9 +4,11 @@
 **Applies to**: `docli`  
 **Consumers**: `req-qa` (compliance), implementers, sprint plans.
 
-**Hard requirements**: every `REQ-DOCLI-*` id in this document is normative for
-Phase A unless marked **(later)**. Use **MUST** / **MUST NOT** semantics when
-implementing or reviewing.
+**Hard requirements**: every `REQ-DOCLI-*` id with a requirement sentence in
+this document is normative for Phase A unless marked **(later)**. Use **MUST** /
+**MUST NOT** semantics when implementing or reviewing. Section 11 rows whose
+text lands in a later sprint are traceability entries only; the normative
+sentence arrives with that sprint.
 
 **Source of truth (product)**
 
@@ -285,20 +287,56 @@ and a matching test in `tests/error_contract.rs` before merge.
 
 - `REQ-DOCLI-DIST-001`: every implementation is licensed MIT.
 
-## 11. Requirement index (Phase A)
+## 11. Requirement index
 
 Use this table for traceability in QA findings (`source_refs` must cite ids).
+Every `REQ-DOCLI-*` id in this repository is one row. Ids named in a Phase B
+sprint **Closes** section include a “text lands in sprint …” note. Sprints
+**b.7–b.11** add the requirement body and confirm the same index row in that
+sprint’s PR. An index row is not a substitute for the body.
 
-| ID | Summary | ADR |
-|----|---------|-----|
-| `REQ-DOCLI-NORM-001` | CLI must conform to creating-ai-clis skill | ADR-003 |
-| `REQ-DOCLI-PRODUCT-001` | Rust library + CLI in repo; crates.io later | — |
-| `REQ-DOCLI-PRODUCT-002` | `docli` and `cargo docli` same operations | ADR-001 |
-| `REQ-DOCLI-PRODUCT-003` | In-process `ops` / `from_clap` / render parity with CLI | ADR-001 |
-| `REQ-DOCLI-INPUT-001`–`005` | Neutral `CliModel` JSON shape and stdin/file input | — |
-| `REQ-DOCLI-RUST-001`–`002` | clap adapter mapping and exclusions | — |
-| `REQ-DOCLI-HTML-001`–`006` | Self-contained two-pane HTML, search, default `site/cli` | ADR-002 |
-| `REQ-DOCLI-MD-001` | Flat Markdown reference | — |
-| `REQ-DOCLI-GEN-001`–`002` | Deterministic output; CI fixture lock | ADR-002 |
-| `REQ-DOCLI-CLI-001`–`010` | `--json` envelope, errors, tests, cargo parity | ADR-001, ADR-003 |
-| `REQ-DOCLI-DIST-001` | MIT license | — |
+| ID | Summary | Text | ADR |
+|----|---------|------|-----|
+| `REQ-DOCLI-NORM-001` | CLI conforms to the vendored creating-ai-clis skill | text lands in sprint b.1 (section 9) | ADR-003 |
+| `REQ-DOCLI-PRODUCT-001` | Rust library and CLI in this repo; registry install is later | product text is in section 3; registry-install text lands in sprint b.11 (b.5 records pre-publish evidence only) | — |
+| `REQ-DOCLI-PRODUCT-002` | `docli` and `cargo docli` perform the same operations | section 3 | ADR-001 |
+| `REQ-DOCLI-PRODUCT-003` | In-process `ops`, `from_clap`, and render match the CLI | section 3 | ADR-001 |
+| `REQ-DOCLI-PRODUCT-004` | Go, .NET, and Python peer implementations (later) | section 3 | — |
+| `REQ-DOCLI-INPUT-001` | Command fields on the neutral model | section 4 | — |
+| `REQ-DOCLI-INPUT-002` | Option fields on the neutral model | section 4 | — |
+| `REQ-DOCLI-INPUT-003` | Argument fields on the neutral model | section 4 | — |
+| `REQ-DOCLI-INPUT-004` | Input from a file path or stdin (`-`) | section 4 | — |
+| `REQ-DOCLI-INPUT-005` | Unknown input fields are preserved | section 4 | — |
+| `REQ-DOCLI-RUST-001` | `docli::from_clap` maps clap fields | section 5 | — |
+| `REQ-DOCLI-RUST-002` | Clap adapter drops auto `--help`/`--version` and keeps usage paths | section 5 | — |
+| `REQ-DOCLI-GO-001` | Go cobra adapter and generator (later) | section 5 | — |
+| `REQ-DOCLI-NET-001` | .NET System.CommandLine adapter and generator (later) | section 5 | — |
+| `REQ-DOCLI-PY-001` | Python adapter and generator (later) | section 5 | — |
+| `REQ-DOCLI-HTML-001` | Self-contained single-file HTML with hash routes | section 6 | ADR-002 |
+| `REQ-DOCLI-HTML-002` | Two-pane tree and detail layout | section 6 | ADR-002 |
+| `REQ-DOCLI-HTML-003` | Indented tree, selection, and expand/collapse | section 6 | ADR-002 |
+| `REQ-DOCLI-HTML-004` | Detail panel fields for arguments and options | section 6 | ADR-002 |
+| `REQ-DOCLI-HTML-005` | Search keeps matching nested commands and ancestors | section 6 | ADR-002 |
+| `REQ-DOCLI-HTML-006` | Default HTML directory is `site/cli` | section 6 | ADR-002 |
+| `REQ-DOCLI-HTML-007` | Embedded `default` template pack; byte match without `--template` | text lands in sprint b.7 | ADR-004 (b.7) |
+| `REQ-DOCLI-HTML-008` | `cli-doc` pack layout markers, still self-contained | text lands in sprint b.10 | — |
+| `REQ-DOCLI-HTML-009` | `_skeleton` validates and is omitted from `templates list` | text lands in sprint b.10 | — |
+| `REQ-DOCLI-HTML-010` | Author docs match the template pack schema | text lands in sprint b.10 | ADR-004 (b.7) |
+| `REQ-DOCLI-MD-001` | Flat Markdown reference, one section per command | section 7 | — |
+| `REQ-DOCLI-MD-002` | Markdown shipped with each language installer (later) | section 7 | — |
+| `REQ-DOCLI-GEN-001` | Same input bytes produce the same HTML and Markdown bytes | section 8 | ADR-002 |
+| `REQ-DOCLI-GEN-002` | Consumers regenerate on release; CI rejects stale output | generation text is in section 8; fixture-policy text lands in sprint b.5 | ADR-002 |
+| `REQ-DOCLI-GEN-003` | Later languages match the Phase A fixture corpus (later) | section 8 | — |
+| `REQ-DOCLI-CLI-001` | Global `--json`; stdout is only the envelope | section 9 | ADR-001, ADR-003 |
+| `REQ-DOCLI-CLI-002` | Envelope version `"1"` with `ok`, `data`, and `error` | section 9 | ADR-003 |
+| `REQ-DOCLI-CLI-003` | Actionable `error` object and stable `DOCLI.*` codes | section 9 | ADR-003 |
+| `REQ-DOCLI-CLI-004` | Exit codes `0`, `2`, `3`, `4`, `1` by outcome | section 9 | ADR-003 |
+| `REQ-DOCLI-CLI-005` | `generate` writes HTML under `--html` (default `site/cli`) | section 9 | ADR-001 |
+| `REQ-DOCLI-CLI-006` | `show` readback of written artifacts | section 9 | ADR-001 |
+| `REQ-DOCLI-CLI-007` | Human output uses only `--json` fields | section 9 | ADR-001 |
+| `REQ-DOCLI-CLI-008` | Every stable code has `tests/error_contract.rs` coverage | text lands in sprint b.1 (section 9); test closure is sprint b.2 | ADR-003 |
+| `REQ-DOCLI-CLI-009` | `--json` failures are one stdout envelope; human mode uses stderr | text lands in sprint b.1 (section 9); test closure is sprint b.2 (also cited by b.3) | ADR-003 |
+| `REQ-DOCLI-CLI-010` | `cargo docli` matches `docli` exit and stdout on error scenarios | text lands in sprint b.1 (section 9); test closure is sprint b.2 | ADR-003 |
+| `REQ-DOCLI-CLI-011` | `docli templates` list, show, and validate | text lands in sprint b.8 | ADR-001 |
+| `REQ-DOCLI-CLI-012` | `generate --template`, `--theme`, and `--preview` | text lands in sprint b.9 | ADR-001 |
+| `REQ-DOCLI-DIST-001` | MIT license | section 10 | — |

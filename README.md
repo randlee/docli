@@ -47,7 +47,9 @@ docli generate --input cli-model.json --html site/cli --markdown docs/manual/cli
 docli generate --html site/cli < cli-model.json
 ```
 
-With no `--html`, HTML is written to `site/cli/index.html` (default). With no `--markdown`, no Markdown file is written.
+The default `--html` directory is `site/cli` (`REQ-DOCLI-HTML-006`,
+`REQ-DOCLI-CLI-005`). Omitting `--html` writes `site/cli/index.html`. HTML is
+not written to stdout. With no `--markdown`, no Markdown file is written.
 
 ## Candidate repo verification
 
