@@ -29,8 +29,9 @@ implementing or reviewing.
    lives under `.claude/skills/creating-ai-clis/`.
 
 **Mandatory CLI design basis**: the **creating-ai-clis** skill supplied for this
-project (vendored at `.claude/skills/creating-ai-clis/`, from
-`synaptic-canvas/packages/sc-ai-cli`). The `docli` and `cargo docli` binaries,
+project — **full upstream copy** at `.claude/skills/creating-ai-clis/` (see
+`PROVENANCE.md`; source `synaptic-canvas/packages/sc-ai-cli` v0.12.0). The
+`docli` and `cargo docli` binaries,
 their `--json` envelope, typed actionable errors, and `generate` / `show`
 readback pair MUST conform to that skill and its references (`core-contract.md`,
 `error-contracts.md`, `mcp-compatibility.md`, `simulation-and-auditability.md`
