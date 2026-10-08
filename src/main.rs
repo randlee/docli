@@ -50,14 +50,11 @@ fn main() {
         Ok(cli) => cli,
         Err(err) => match err.kind() {
             ClapErrorKind::DisplayHelp | ClapErrorKind::DisplayVersion => err.exit(),
-            _ => {
-                if json_flag_present() {
-                    emit_and_exit(&Envelope::<()>::failure(ErrorBody::usage(
-                        usage_suggestion(&err),
-                    )));
-                }
-                err.exit();
-            }
+            _ => finish(
+                json_flag_present(),
+                Envelope::<()>::failure(ErrorBody::usage(usage_suggestion(&err))),
+                |_| &[],
+            ),
         },
     };
 
@@ -89,7 +86,7 @@ fn main() {
     }
 }
 
-fn finish<T, F>(json: bool, envelope: Envelope<T>, artifacts: F)
+fn finish<T, F>(json: bool, envelope: Envelope<T>, artifacts: F) -> !
 where
     T: Serialize,
     F: FnOnce(&T) -> &[ArtifactReport],

@@ -11,6 +11,4 @@ pub mod render;
 pub mod schema;
 
 #[doc(inline)]
-pub use clap_model::from_clap;
-#[doc(inline)]
 pub use schema::{ArgumentSpec, CliModel, OptionSpec};

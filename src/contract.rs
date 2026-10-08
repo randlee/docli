@@ -129,7 +129,19 @@ pub struct ErrorBody {
 
 impl Display for ErrorBody {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.code_name(), self.message)
+        write!(f, "{}: {}", self.code_name(), self.message)?;
+        write!(f, "\n{}", self.suggested_action)?;
+        if let Some(cause) = self
+            .details
+            .get("cause")
+            .and_then(serde_json::Value::as_str)
+        {
+            write!(f, "\n{cause}")?;
+        }
+        if let Some(docs) = &self.docs {
+            write!(f, "\n{docs}")?;
+        }
+        Ok(())
     }
 }
 
@@ -237,5 +249,38 @@ impl ErrorBody {
             suggested_action: format!("Report this cause: {cause}"),
             docs: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn display_includes_suggested_action_cause_and_docs() {
+        let error = ErrorBody {
+            kind: ErrorKind::Validation,
+            code: ErrorCode::InputInvalid,
+            message: "bad model".to_owned(),
+            details: serde_json::json!({ "cause": "expected string" }),
+            suggested_action: "Fix the model JSON".to_owned(),
+            docs: Some("https://example.test/errors".to_owned()),
+        };
+        let text = error.to_string();
+        assert!(text.contains("DOCLI.INPUT_INVALID"));
+        assert!(text.contains("bad model"));
+        assert!(text.contains("Fix the model JSON"));
+        assert!(text.contains("expected string"));
+        assert!(text.contains("https://example.test/errors"));
+    }
+
+    #[test]
+    fn display_omits_missing_cause_and_docs() {
+        let error = ErrorBody::usage("Pass --html DIR and/or --markdown FILE");
+        let text = error.to_string();
+        assert!(text.contains("DOCLI.USAGE"));
+        assert!(text.contains("unknown command or invalid flags"));
+        assert!(text.contains("Pass --html DIR and/or --markdown FILE"));
+        assert!(!text.contains("cause"));
     }
 }

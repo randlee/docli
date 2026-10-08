@@ -112,8 +112,32 @@ fn assert_failure<'a>(envelope: &'a Value, kind: &str, code: &str) -> &'a Value 
     let error = &envelope["error"];
     assert_eq!(error["kind"], kind);
     assert_eq!(error["code"], code);
+    assert!(
+        error["details"].is_object(),
+        "details must be an object, got {}",
+        error["details"]
+    );
+    let suggested_action = error["suggested_action"]
+        .as_str()
+        .expect("suggested_action must be a string");
+    assert!(
+        !suggested_action.is_empty(),
+        "suggested_action must name the recovery step"
+    );
     assert_docs_present(error);
     error
+}
+
+fn assert_suggested_action_contains(error: &Value, needles: &[&str]) {
+    let suggested_action = error["suggested_action"]
+        .as_str()
+        .expect("suggested_action must be a string");
+    for needle in needles {
+        assert!(
+            suggested_action.contains(needle),
+            "suggested_action {suggested_action:?} missing {needle:?}"
+        );
+    }
 }
 
 #[test]
@@ -181,7 +205,11 @@ fn generate_missing_input_is_not_found() {
     assert_eq!(output.status.code(), Some(3));
     let envelope = parse_json(&output.stdout);
     let error = assert_failure(&envelope, "not_found", "DOCLI.INPUT_NOT_FOUND");
-    assert_eq!(error["details"]["path"], missing.to_string_lossy().as_ref());
+    assert_eq!(
+        error["details"],
+        serde_json::json!({ "path": missing.to_string_lossy().as_ref() })
+    );
+    assert_suggested_action_contains(error, &[missing.to_string_lossy().as_ref()]);
 }
 
 #[test]
@@ -241,6 +269,17 @@ fn show_json_without_paths_is_usage() {
     let envelope = parse_json(&output.stdout);
     let error = assert_failure(&envelope, "validation", "DOCLI.USAGE");
     assert_eq!(error["details"], serde_json::json!({}));
+    assert_suggested_action_contains(error, &["--html", "--markdown"]);
+}
+
+#[test]
+fn human_show_without_paths_is_usage() {
+    let output = bin().args(["show"]).output().expect("run show");
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("DOCLI.USAGE"), "stderr was {stderr}");
+    assert!(stderr.contains("--html"), "stderr was {stderr}");
+    assert!(stderr.contains("--markdown"), "stderr was {stderr}");
 }
 
 #[test]
@@ -357,7 +396,14 @@ fn invalid_model_json_is_input_invalid() {
     assert_eq!(output.status.code(), Some(2));
     let envelope = parse_json(&output.stdout);
     let error = assert_failure(&envelope, "validation", "DOCLI.INPUT_INVALID");
-    assert!(error["details"]["cause"].is_string());
+    let cause = error["details"]["cause"]
+        .as_str()
+        .expect("details.cause must be a string");
+    assert_eq!(
+        error["details"].as_object().expect("details object").len(),
+        1
+    );
+    assert_suggested_action_contains(error, &[model.to_string_lossy().as_ref(), cause]);
 }
 
 #[test]
@@ -373,13 +419,17 @@ fn show_missing_artifact_is_output_not_found() {
     assert_eq!(output.status.code(), Some(3));
     let envelope = parse_json(&output.stdout);
     let error = assert_failure(&envelope, "not_found", "DOCLI.OUTPUT_NOT_FOUND");
-    let artifacts = error["details"]["artifacts"].as_array().expect("artifacts");
-    assert_eq!(artifacts.len(), 1);
+    let missing_html = missing.join("index.html");
     assert_eq!(
-        artifacts[0]["path"],
-        missing.join("index.html").to_string_lossy().as_ref()
+        error["details"],
+        serde_json::json!({
+            "artifacts": [{
+                "path": missing_html.to_string_lossy().as_ref(),
+                "exists": false
+            }]
+        })
     );
-    assert_eq!(artifacts[0]["exists"], false);
+    assert_suggested_action_contains(error, &[missing_html.to_string_lossy().as_ref()]);
 }
 
 #[test]
@@ -406,10 +456,84 @@ fn help_and_version_exit_zero() {
     let help = bin().arg("--help").output().expect("help");
     assert_eq!(help.status.code(), Some(0));
     assert!(!help.stdout.is_empty());
+    let help_text = String::from_utf8_lossy(&help.stdout);
+    assert!(!help_text.contains("DOCLI.USAGE"));
+    assert!(help_text.contains("Usage") || help_text.contains("Usage:"));
 
     let version = bin().arg("--version").output().expect("version");
     assert_eq!(version.status.code(), Some(0));
     assert!(!version.stdout.is_empty());
+    let version_text = String::from_utf8_lossy(&version.stdout);
+    assert!(!version_text.contains("DOCLI.USAGE"));
+}
+
+#[test]
+fn invalid_flag_is_usage_with_and_without_json() {
+    let json = bin()
+        .args(["generate", "--not-a-flag", "--json"])
+        .output()
+        .expect("run generate --not-a-flag --json");
+    assert_eq!(json.status.code(), Some(2));
+    let envelope = parse_json(&json.stdout);
+    let error = assert_failure(&envelope, "validation", "DOCLI.USAGE");
+    assert_eq!(error["details"], serde_json::json!({}));
+    assert_suggested_action_contains(error, &["--not-a-flag"]);
+
+    let human = bin()
+        .args(["generate", "--not-a-flag"])
+        .output()
+        .expect("run generate --not-a-flag");
+    assert_eq!(human.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&human.stderr);
+    assert!(stderr.contains("DOCLI.USAGE"), "stderr was {stderr}");
+    assert!(stderr.contains("--not-a-flag"), "stderr was {stderr}");
+}
+
+#[test]
+fn unknown_command_is_usage_with_and_without_json() {
+    let json = bin()
+        .args(["not-a-command", "--json"])
+        .output()
+        .expect("run not-a-command --json");
+    assert_eq!(json.status.code(), Some(2));
+    let envelope = parse_json(&json.stdout);
+    let error = assert_failure(&envelope, "validation", "DOCLI.USAGE");
+    assert_eq!(error["details"], serde_json::json!({}));
+    assert_suggested_action_contains(error, &["not-a-command"]);
+
+    let human = bin()
+        .args(["not-a-command"])
+        .output()
+        .expect("run not-a-command");
+    assert_eq!(human.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&human.stderr);
+    assert!(stderr.contains("DOCLI.USAGE"), "stderr was {stderr}");
+    assert!(stderr.contains("not-a-command"), "stderr was {stderr}");
+}
+
+#[test]
+fn human_input_invalid_includes_suggested_action_and_cause() {
+    let dir = unique_dir();
+    let model = dir.join("bad.json");
+    fs::write(&model, "{\"name\": 1}").expect("write bad model");
+
+    let output = bin()
+        .args(["generate", "--input", model.to_str().expect("utf8")])
+        .current_dir(&dir)
+        .output()
+        .expect("run generate");
+
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("DOCLI.INPUT_INVALID"),
+        "stderr was {stderr}"
+    );
+    assert!(
+        stderr.contains(model.to_string_lossy().as_ref()),
+        "stderr was {stderr}"
+    );
+    assert!(stderr.contains("expected"), "stderr was {stderr}");
 }
 
 #[test]
