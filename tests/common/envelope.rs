@@ -24,7 +24,19 @@ pub fn assert_success(envelope: &Value) {
     assert!(envelope["data"].is_object(), "data must be an object");
 }
 
-pub fn assert_failure(envelope: &Value, exit_code: i32, kind: &str, code: &str) -> Value {
+/// Asserts `process_exit == Some(expected_exit)`, then the failure envelope.
+pub fn assert_failure(
+    process_exit: Option<i32>,
+    envelope: &Value,
+    expected_exit: i32,
+    kind: &str,
+    code: &str,
+) -> Value {
+    assert_eq!(
+        process_exit,
+        Some(expected_exit),
+        "process exit {process_exit:?} != expected {expected_exit} for {code}"
+    );
     assert_eq!(envelope["version"], "1");
     assert_eq!(envelope["ok"], false);
     assert_eq!(envelope["data"], Value::Null);
@@ -58,7 +70,6 @@ pub fn assert_failure(envelope: &Value, exit_code: i32, kind: &str, code: &str) 
         docs.is_string() || docs.is_null(),
         "docs must be string or null, got {docs}"
     );
-    let _ = exit_code;
     error
 }
 
