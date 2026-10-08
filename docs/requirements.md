@@ -251,6 +251,35 @@ prompts.
 - `REQ-DOCLI-CLI-007`: human-readable output uses only fields that `--json`
   also returns. Human `generate` with output paths prints each path, byte
   length, and sha256. Human `show` prints the same fields.
+- `REQ-DOCLI-CLI-008`: every stable error code in the table below **MUST**
+  have integration coverage in `tests/error_contract.rs` that asserts:
+  - exit code per `REQ-DOCLI-CLI-004`
+  - envelope shape per `REQ-DOCLI-CLI-002` (`data: null` on failure)
+  - `error.message` and `error.suggested_action` are non-empty strings agents
+    can act on without parsing stderr
+  - `error.details` matches the schema row for that code
+- `REQ-DOCLI-CLI-009`: with `--json`, failures **MUST** emit exactly one JSON
+  envelope on stdout. Contract fields **MUST NOT** appear only on stderr.
+  Human mode **MUST** print the same stable `DOCLI.*` code and recovery text on
+  stderr via `ErrorBody`'s display format (code, message, suggested_action,
+  optional cause).
+- `REQ-DOCLI-CLI-010`: `cargo docli` **MUST** match `docli` exit status and
+  stdout bytes for each error scenario exercised in `tests/error_contract.rs`
+  (see `cargo_docli_matches_docli_error_envelopes` and extended cases).
+
+### Error code inventory (normative)
+
+| Code | Exit | `kind` | `details` (required keys) | Covered by |
+|------|------|--------|---------------------------|------------|
+| `DOCLI.USAGE` | 2 | `validation` | `{}` | `docli_usage_*` tests |
+| `DOCLI.INPUT_INVALID` | 2 | `validation` | `{}` or `{ "cause" }` | `docli_input_invalid_*`, `docli_stdin_empty_*` |
+| `DOCLI.INPUT_NOT_FOUND` | 3 | `not_found` | `{ "path" }` | `docli_input_not_found_*` |
+| `DOCLI.OUTPUT_NOT_FOUND` | 3 | `not_found` | `{ "artifacts": [{ "path", "exists" }] }` | `docli_output_not_found_*` |
+| `DOCLI.IO` | 4 | `dependency` | `{ "cause" }`; optional `{ "outputs_written" }` after partial write | `docli_io_*` |
+| `DOCLI.INTERNAL` | 1 | `internal` | `{ "cause" }` | `docli_internal_error_body_contract` |
+
+Adding a new `DOCLI.*` code requires updating this table, `src/contract.rs`,
+and a matching test in `tests/error_contract.rs` before merge.
 
 ## 10. Distribution
 
@@ -271,5 +300,5 @@ Use this table for traceability in QA findings (`source_refs` must cite ids).
 | `REQ-DOCLI-HTML-001`–`006` | Self-contained two-pane HTML, search, default `site/cli` | ADR-002 |
 | `REQ-DOCLI-MD-001` | Flat Markdown reference | — |
 | `REQ-DOCLI-GEN-001`–`002` | Deterministic output; CI fixture lock | ADR-002 |
-| `REQ-DOCLI-CLI-001`–`007` | `--json` envelope, errors, generate/show, human output | ADR-001, ADR-003 |
+| `REQ-DOCLI-CLI-001`–`010` | `--json` envelope, errors, tests, cargo parity | ADR-001, ADR-003 |
 | `REQ-DOCLI-DIST-001` | MIT license | — |

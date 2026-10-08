@@ -26,6 +26,10 @@ Findings must cite **`REQ-DOCLI-*`** ids in `source_refs` when asserting
 requirements drift. Cite **`ADR-*`** / **`architecture.md`** when asserting
 design conflicts.
 
+For CLI work, verify `tests/error_contract.rs` covers every `DOCLI.*` code in
+`requirements.md` §9 (error inventory). Missing or weakened error tests are
+**Blocking** (`REQ-DOCLI-CLI-008`–`010`).
+
 ## Input Contract (Required)
 
 Input must be JSON, either as a raw JSON object or fenced JSON. Do not proceed

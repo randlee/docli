@@ -20,6 +20,11 @@ Hard requirements (`REQ-DOCLI-*`) and QA baselines:
 `arch-qa` rules (`ADR-*`, `ARCH-RULE-*`):
 [`docs/architecture.md`](docs/architecture.md).
 
+Every `DOCLI.*` error code is integration-tested in `tests/error_contract.rs`
+(`REQ-DOCLI-CLI-008`–`010`): one `--json` envelope on stdout, non-empty
+`message` and `suggested_action`, and matching human stderr when not using
+`--json`.
+
 ## Install
 
 ```sh

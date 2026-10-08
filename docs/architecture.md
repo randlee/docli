@@ -150,3 +150,10 @@ These rules implement the ADRs above. **Severity: BLOCKING** unless noted.
 Relaxing an ADR or ARCH-RULE requires an updated ADR in this file, matching
 `REQ-*` changes in `requirements.md`, and explicit approval — not “tests pass”
 alone.
+
+## Error contract verification
+
+CLI error shape is part of the architecture boundary (ADR-001, ADR-003).
+`tests/error_contract.rs` is the merge gate for every `DOCLI.*` code listed in
+`requirements.md` §9. `req-qa` treats a new or changed error code without a
+matching test as **Blocking**.
