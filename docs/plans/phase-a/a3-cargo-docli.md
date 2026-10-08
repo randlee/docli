@@ -1,7 +1,7 @@
 ---
 id: a.3
 title: cargo docli entry
-status: planned
+status: complete
 branch: feature/phase-a-a3-cargo
 worktree: ../docli-worktrees/feature/phase-a-a3-cargo
 target: develop
