@@ -11,16 +11,17 @@ target: develop
 
 ## Goal
 
-- `docli::from_clap` fills the neutral model the way `REQ-DOCLI-RUST-001` and `REQ-DOCLI-RUST-002` require.
+- `docli::from_clap` fills the neutral model from a clap 4.5 `Command`.
 
 ## Hard Dependencies
 
-- Existing `src/clap_model.rs` and `src/schema.rs`
-- a.2 renderer fixtures stay green after any mapping change that flows into render tests
+- `src/clap_model.rs` and `src/schema.rs`
+- a.2 renderer fixtures stay green if a mapping change alters rendered bytes
 
 ## Deliverables
 
-- `src/clap_model.rs` — mapping below, including fixes where the prototype drops required fields
+- `src/clap_model.rs` — clap 4 mapping below
+- `src/lib.rs` — `pub use clap_model::from_clap;`
 - `tests/clap_adapter.rs` — the acceptance checks in this sprint
 
 ## Explicit Code Samples
@@ -29,27 +30,36 @@ target: develop
 pub fn from_clap(command: &clap::Command) -> CliModel;
 ```
 
-Mapping:
+clap 4.5 only. Tests build args with `Arg::new` and `value_parser`, then read them back through `from_clap`. The adapter reads `Arg::get_possible_values()`, which returns `Vec<PossibleValue>`. It does not call the clap 3 method `possible_values()`.
 
-- `possible_values` → `choices`
-- first `value_names` entry → `value_name`
-- `num_args` → `min_values` and `max_values`
-- arg id `help` or `version` is excluded
-- subcommand `usage` contains the parent command path (`demo run`, not `run`)
+| clap 4 read | model field |
+|---|---|
+| `get_possible_values()` | `choices` on the option or argument |
+| first `get_value_names()` entry | `value_name` |
+| `get_num_args()` | `min_values`, `max_values` |
+| `get_long_help()` | `long_help` |
+| `get_long_about()` | `long_description` |
+| `get_after_help()` | `epilogue` |
+| arg id `help` or `version` | excluded |
+| subcommand usage | contains the parent path (`demo run`) |
 
 ## Out of Scope
 
-- A second CLI framework adapter
-- Generating HTML inside `from_clap`
-- Reading clap types out of atm-core, sc-compose, or sc-observability in this sprint
+- A second CLI framework
+- Rendering HTML inside `from_clap`
+- Reading command types from atm-core, sc-compose, or sc-observability
 
 ## Acceptance Criteria
 
-- An option with `possible_values(["json", "yaml"])` yields `choices` of those two strings
-- An option with `num_args(2..=3)` yields `min_values == Some(2)` and `max_values == Some(3)`
-- An option with `value_name = "PATH"` yields `value_name == Some("PATH")`
-- The model contains no option or argument whose name is `help` or `version` when those args are clap's built-in flags
-- A subcommand named `run` under command `demo` has `usage` containing `demo run`
+- `Arg::new("format").value_parser(["json", "yaml"])` yields `choices` `["json", "yaml"]`
+- `Arg::new("n").num_args(2..=3)` yields `min_values == Some(2)` and `max_values == Some(3)`
+- `Arg::new("output").value_name("PATH")` yields `value_name == Some("PATH")`
+- `Arg::new("verbose").long_help("more detail")` yields `long_help == "more detail"`
+- A positional `Arg` with `value_parser(["a", "b"])` yields argument `choices` of those two strings
+- `Command::new("demo").long_about("long").after_help("bye")` yields `long_description == "long"` and `epilogue == "bye"`
+- The model has no option or argument named `help` or `version` when those ids are clap's built-in flags
+- Subcommand `run` under `demo` has `usage` containing `demo run`
+- `docli::from_clap(&clap::Command::new("test"))` compiles and returns `name == "test"`
 
 ## Required Validation
 

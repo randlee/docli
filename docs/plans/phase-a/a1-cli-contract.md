@@ -11,30 +11,38 @@ target: develop
 
 ## Goal
 
-- `docli generate` and `docli show` speak one version `"1"` envelope on success and failure.
+- `docli generate` and `docli show` speak one version `"1"` envelope on success and failure, and the same functions are callable in-process.
 
 ## Hard Dependencies
 
-- None. The prototype renderer in `src/render/` stays the writer of HTML and Markdown bytes.
+- [adr-001-ops-boundary.md](adr-001-ops-boundary.md)
+- Renderer signatures stay `pub fn render(model: &CliModel) -> String` in `src/render/html.rs` and `src/render/markdown.rs`. a.1 calls those functions and does not change them.
 
 ## Deliverables
 
 - `src/contract.rs` — envelope, error body, exit codes
-- `src/ops.rs` — `generate` and `show` operations returning those types
+- `src/ops.rs` — `generate` and `show`
 - `src/main.rs` — clap commands call the operations; `--json` prints only the envelope
-- `src/lib.rs` — re-exports the operation and contract types
-- `tests/cli_contract.rs` — binary tests for the envelope, default HTML path, and `show` readback
+- `src/lib.rs` — `pub mod ops; pub mod contract;` and `pub use schema::{ArgumentSpec, CliModel, OptionSpec}`
+- `tests/cli_contract.rs` — process tests and one in-process `ops::generate` test
+
+`from_clap` re-export is a.4, not this sprint.
 
 ## Explicit Code Samples
 
 ```rust
+#[derive(Serialize)]
 pub struct Envelope<T> {
     pub version: &'static str, // "1"
     pub ok: bool,
     pub data: Option<T>,
     pub error: Option<ErrorBody>,
 }
+```
 
+`serde_json` writes `None` as `null`, so both keys are always present. `skip_serializing_if = "Option::is_none"` is forbidden on `data` and `error`. Success JSON contains `"error": null`. Failure JSON contains `"data": null`.
+
+```rust
 pub struct ErrorBody {
     pub kind: &'static str, // validation | not_found | dependency | internal
     pub code: &'static str,
@@ -42,30 +50,87 @@ pub struct ErrorBody {
     pub details: serde_json::Value,
     pub suggested_action: String,
 }
+
+pub enum InputSource {
+    Stdin,
+    File(std::path::PathBuf),
+}
+
+pub struct ArtifactReport {
+    pub kind: &'static str, // "html" | "markdown"
+    pub path: std::path::PathBuf,
+    pub bytes: u64,
+    pub sha256: String,
+}
+
+pub struct GenerateRequest {
+    pub input: InputSource,
+    pub html_dir: Option<std::path::PathBuf>, // None -> site/cli
+    pub markdown: Option<std::path::PathBuf>,
+}
+
+pub struct GenerateResponse {
+    pub operation: &'static str, // "generate"
+    pub input: String,
+    pub model_name: String,
+    pub html_dir: std::path::PathBuf,
+    pub outputs: Vec<ArtifactReport>,
+}
+
+pub struct ShowRequest {
+    pub html_dir: Option<std::path::PathBuf>,
+    pub markdown: Option<std::path::PathBuf>,
+}
+
+pub struct ShowResponse {
+    pub operation: &'static str, // "show"
+    pub artifacts: Vec<ArtifactReport>,
+}
+
+pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse>;
+pub fn show(req: ShowRequest) -> Envelope<ShowResponse>;
+```
+
+`generate` resolves `html_dir: None` to `site/cli` before writing. A write failure after another file landed returns an envelope with `ok: false`, code `DOCLI.IO`, and `error.details.outputs_written` listing the artifacts already written. `show` does not apply that default; both paths `None` is `DOCLI.USAGE`.
+
+Model fields this sprint reads (`src/schema.rs`, not rewritten here):
+
+```rust
+pub struct CliModel {
+    pub name: String,
+    pub version: Option<String>,
+    pub description: String,
+    pub long_description: String,
+    pub epilogue: String,
+    pub usage: String,
+    pub options: Vec<OptionSpec>,
+    pub arguments: Vec<ArgumentSpec>,
+    pub subcommands: Vec<CliModel>,
+}
 ```
 
 Exit codes: `0` success, `2` validation (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`), `3` not found (`DOCLI.INPUT_NOT_FOUND`, `DOCLI.OUTPUT_NOT_FOUND`), `4` dependency (`DOCLI.IO`), `1` internal (`DOCLI.INTERNAL`).
-
-`generate` data fields: `operation` (`"generate"`), `input`, `model_name`, `html_dir`, `outputs[]` (`kind`, `path`, `bytes`, `sha256`). `--html` defaults to `site/cli`. `--markdown` omitted writes no Markdown file. A later write failure after an earlier file landed is `ok: false` and `error.details.outputs_written` lists what landed.
-
-`show` data fields: `operation` (`"show"`), `artifacts[]` with the same `kind`, `path`, `bytes`, and `sha256`. At least one of `--html` or `--markdown` is required. `show` does not apply the `generate` HTML default.
 
 ## Out of Scope
 
 - Caret, search, and other HTML interaction fixes
 - `cargo-docli`
-- Clap adapter mapping tests beyond the prototype
+- `pub use clap_model::from_clap` (a.4)
 - atm-core, sc-compose, and sc-observability fixtures
 - Opening a file in a browser or default app
 
 ## Acceptance Criteria
 
-- `docli generate --input <model.json> --html site/cli --markdown out.md --json` exits 0 and stdout is one envelope whose `outputs` sha256 values match the written files
-- `docli generate --input <model.json> --json` with no `--html` writes `site/cli/index.html` and reports that path in `html_dir`
-- `docli show --html site/cli --markdown out.md --json` exits 0 and its artifact hashes equal the `generate` hashes
+- `docli generate --input <model.json> --html <dir> --markdown <out.md> --json` exits 0, stdout is one envelope, and each `outputs` sha256 matches the written file
+- That success envelope contains the key `error` with JSON value `null`
+- `docli generate --input <missing.json> --json` exits 3, code `DOCLI.INPUT_NOT_FOUND`, and the envelope contains the key `data` with JSON value `null`
+- `docli generate --input <model.json> --json` with no `--html` writes `site/cli/index.html` and `html_dir` is that directory
+- `docli generate --input <model.json> --html <dir>` with no `--json` exits 0 and stdout contains that HTML path, its byte length, and its sha256
+- `docli show --html <dir> --markdown <out.md> --json` exits 0 and its artifact hashes equal the `generate` hashes
+- `docli show --html <dir>` with no `--json` exits 0 and stdout contains path, byte length, and sha256
 - Invalid model JSON exits 2 with `error.code` `DOCLI.INPUT_INVALID`
-- A missing `--input` path exits 3 with `DOCLI.INPUT_NOT_FOUND`
 - `docli show --html <missing> --json` exits 3 with `DOCLI.OUTPUT_NOT_FOUND` and `details` listing each requested artifact
+- `docli::ops::generate(GenerateRequest { input: InputSource::File(model_path), html_dir: Some(tmp), markdown: None })` returns an `Envelope` with `ok: true`, `html_dir` equal to `tmp`, and `tmp/index.html` exists
 - `--help` and `--version` exit 0 and print human text
 
 ## Required Validation

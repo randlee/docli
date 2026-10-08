@@ -15,16 +15,20 @@ target: develop
 
 ## Hard Dependencies
 
-- a.1 `generate` writes the page the tests inspect
+- a.1 `generate` writes the page
+- [adr-002-search-index.md](adr-002-search-index.md)
+- `pub fn render(model: &CliModel) -> String` stays the signature of both renderers. This sprint does not add parameters. The search index is built inside `html::render`.
 
 ## Deliverables
 
-- `src/render/html.rs` — caret control separate from the command-name control; search uses a Rust-built index
-- `src/render/markdown.rs` — unchanged contract: one section per command with description, usage, arguments, and options
+- `src/render/html.rs` — caret and command name are sibling controls; search uses the embedded index
+- `src/render/markdown.rs` — one section per command with description, usage, arguments, and options
 - `fixtures/contract/model.json`, `fixtures/contract/index.html`, `fixtures/contract/manual.md`
 - `tests/render_fixtures.rs` — byte compare of both renderers against those fixtures
 
 ## Explicit Code Samples
+
+Anchor for a command is the slash-free slug of its path: join `name` from the root with a single space, lowercase, replace every run of non-alphanumeric characters with one `-`, and trim `-` from both ends. Root `demo` is `demo`. Child `run` is `demo-run`.
 
 ```rust
 pub struct SearchEntry {
@@ -38,22 +42,34 @@ pub fn search_index(model: &CliModel) -> Vec<SearchEntry>;
 pub fn matching_anchors(index: &[SearchEntry], query: &str) -> std::collections::BTreeSet<String>;
 ```
 
-`terms` include the command name, each option `name`, `long`, and `short`, and each argument `name`. `matching_anchors` also returns every ancestor of a hit. The page embeds the index as `<script id="docli-search" type="application/json">` and filters from that index.
+`terms` include the command name, each option `name`, `long`, and `short`, and each argument `name`. `matching_anchors` returns the hit anchor and every ancestor anchor. Comparison is case-insensitive substring.
 
-Initial tree state: nodes with children are expanded and the caret shows open. Activating the caret toggles only that node. Activating the command name selects it and does not change expanded state.
+The page contains both script tags. `#docli-data` is the `CliModel` JSON and is what builds the tree and the detail panel. `#docli-search` is the `SearchEntry` array and is the only input to search filtering. Search does not walk `#docli-data`.
+
+```html
+<li class="node open">
+  <button type="button" class="docli-caret" aria-expanded="true"></button>
+  <button type="button" class="docli-cmd">demo</button>
+  <ul class="children"></ul>
+</li>
+```
+
+`.docli-caret` and `.docli-cmd` are siblings under `.node`. Nodes with children start with class `open` and `aria-expanded="true"`. Activating `.docli-caret` toggles only that node. Activating `.docli-cmd` selects the command and does not change `open`.
 
 ## Out of Scope
 
 - A headed browser or default-app launch
-- Rewriting the neutral model in `src/schema.rs`
+- Rewriting `src/schema.rs`
 - Test-repo command trees
+- Changing `render`'s function signature
 
 ## Acceptance Criteria
 
-- `matching_anchors` for query `run` on a model whose root is `demo` and whose child is `run` contains both anchors
-- `matching_anchors` for query `--verbose` contains the command anchor that owns that option and that command's ancestors
+- `matching_anchors` for query `run` on a model whose root name is `demo` and whose child name is `run` contains `demo` and `demo-run`
+- `matching_anchors` for query `--verbose` contains the anchor of the command that owns that option and that command's ancestors
 - A query that matches nothing returns an empty set
-- Generated HTML has a caret element and a command-name element that are not the same node
+- Generated HTML for each command contains `.docli-caret` and `.docli-cmd` as siblings under the same `.node`
+- Generated HTML contains `id="docli-data"` and `id="docli-search"`
 - `fixtures/contract/index.html` and `fixtures/contract/manual.md` equal `render` output for `fixtures/contract/model.json`
 
 ## Required Validation

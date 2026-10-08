@@ -11,35 +11,54 @@ target: develop
 
 ## Goal
 
-- Checked-in command models from atm-core, sc-compose, and sc-observability render through `generate --html site/cli`.
+- Checked-in command models from the clap CLIs atm-core and sc-compose render through `generate --html site/cli`.
 
-## Hard Dependencies
+## CI Hard Dependencies
 
 - a.1 `generate` and `show`
-- a.4 `from_clap` for producing the snapshots
-- Read-only checkouts of those three repos on `develop` under `~/Documents/github/`
+- a.4 `docli::from_clap`
+
+`cargo test` does not compile atm-core or sc-compose. It reads the JSON files this sprint commits.
+
+## Fixture Capture Prerequisites
+
+Not a CI dependency. Regeneration is local:
+
+```text
+cargo run --bin gen-fixtures -- --atm-core <atm-core-checkout> --sc-compose <sc-compose-checkout>
+```
+
+`<atm-core-checkout>` and `<sc-compose-checkout>` are arguments. The binary does not default them to a home-directory path.
+
+`gen-fixtures` builds each checkout enough to call `from_clap` on that repo's root command and writes pretty JSON:
+
+- atm-core: `Cli::command()` in `crates/atm` (`clap::CommandFactory`)
+- sc-compose: `cli::Cli::command()` in `crates/sc-compose`
+
+sc-observability has no clap `Command` (`crates/sc-observe` is a library). This sprint does not invent a CLI there and does not commit `fixtures/repos/sc-observability.json`.
 
 ## Deliverables
 
+- `src/bin/gen-fixtures.rs`
 - `fixtures/repos/atm-core.json`
 - `fixtures/repos/sc-compose.json`
-- `fixtures/repos/sc-observability.json`
-- `tests/repo_fixtures.rs` — each file generates `site/cli/index.html` in a temp directory and `show` reports the same sha256
-
-Each JSON file is the neutral model from `docli::from_clap` on that repo's command type, captured from `develop` and committed here. docli CI does not compile those repos.
+- `tests/repo_fixtures.rs` — each JSON file generates `site/cli/index.html` under a temp directory and `show` reports the same sha256
 
 ## Out of Scope
 
 - Pull requests or `site/cli/` commits in atm-core, sc-compose, or sc-observability
+- A sc-observability command model
 - Worktrees of those repos as a Phase A deliverable
-- Re-rendering when those CLIs change, beyond replacing the three JSON files in a later change
+- Running `gen-fixtures` in CI
 
 ## Acceptance Criteria
 
-- Each of the three JSON files parses as `CliModel` and has a non-empty `name`
-- `docli generate --input fixtures/repos/<repo>.json --html <tmp>/site/cli --json` exits 0 and writes `<tmp>/site/cli/index.html`
-- `docli show --html <tmp>/site/cli --json` exits 0 and the artifact sha256 equals the `generate` output entry
-- The `generate` invocation in the test passes `--html` explicitly
+- `fixtures/repos/atm-core.json` and `fixtures/repos/sc-compose.json` each parse as `CliModel` and have a non-empty `name`
+- `docli generate --input fixtures/repos/atm-core.json --html <tmp>/site/cli --json` exits 0 and writes `<tmp>/site/cli/index.html`
+- The same command for `fixtures/repos/sc-compose.json` exits 0 and writes that page
+- `docli show --html <tmp>/site/cli --json` exits 0 and the artifact sha256 equals the matching `generate` output entry
+- Both `generate` invocations pass `--html` explicitly
+- `fixtures/repos/sc-observability.json` is absent
 
 ## Required Validation
 

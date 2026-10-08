@@ -11,17 +11,18 @@ target: develop
 
 ## Goal
 
-- `cargo docli` runs the same operations as `docli`.
+- `cargo docli` runs the same operations as `docli`, including the not-found error path.
 
 ## Hard Dependencies
 
-- a.1 command surface and envelope
+- a.1 command surface and `ops::generate` / `ops::show`
 
 ## Deliverables
 
-- `src/bin/cargo-docli.rs` — cargo subcommand entry; arguments after the binary name match `docli`
-- `Cargo.toml` — `[[bin]]` name `cargo-docli` beside the existing `docli` bin
-- `tests/cargo_docli.rs` — the two binaries emit the same stdout and exit code for `generate` and `show`
+- `src/bin/cargo-docli.rs` — argv after the binary name matches `docli`; the file calls `ops::generate` and `ops::show` and does not duplicate their write or envelope logic
+- `Cargo.toml` — `[[bin]]` name `cargo-docli` beside `docli`
+- `tests/fixtures/minimal-model.json` — one valid `CliModel` used only by this sprint's tests
+- `tests/cargo_docli.rs` — stdout and exit code parity for success and for a missing input
 
 ## Explicit Code Samples
 
@@ -35,18 +36,20 @@ name = "cargo-docli"
 path = "src/bin/cargo-docli.rs"
 ```
 
-`cargo docli generate --input model.json --html site/cli` is cargo invoking the `cargo-docli` binary with argv `generate --input model.json --html site/cli`. The binary does not insert a different flag set.
+`cargo docli generate --input model.json --html site/cli` is cargo invoking binary `cargo-docli` with argv `generate --input model.json --html site/cli`.
 
 ## Out of Scope
 
 - Publishing either binary to crates.io
-- A cargo build-script that discovers a package's clap types without `from_clap`
+- Discovering a package's clap types without `from_clap`
 - Changing generate or show behavior
+- Using `fixtures/contract/model.json` (that file is a.2)
 
 ## Acceptance Criteria
 
-- `cargo run --bin cargo-docli -- generate --input <model.json> --html <dir> --json` and `cargo run --bin docli -- generate --input <model.json> --html <dir> --json` exit 0 with equal stdout
-- The same pair holds for `show --html <dir> --json`
+- `cargo run --bin cargo-docli -- generate --input tests/fixtures/minimal-model.json --html <dir> --json` and the same argv on `--bin docli` exit 0 with equal stdout
+- The same pair holds for `show --html <dir> --json` on that directory
+- Both binaries, given `--input tests/fixtures/does-not-exist.json --json`, exit 3 and both envelopes have `ok: false` and `error.code` `DOCLI.INPUT_NOT_FOUND`
 - `cargo run --bin cargo-docli -- --help` exits 0 and lists `generate` and `show`
 
 ## Required Validation
