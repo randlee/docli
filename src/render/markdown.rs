@@ -10,6 +10,10 @@ pub fn render(model: &CliModel) -> String {
     }
     out.push_str("Generated from the CLI command tree. Do not hand-edit.\n\n");
     render_command(model, 0, &model.name, &mut out);
+    // End with a single newline (no blank line at EOF) for stable fixtures and git diff --check.
+    if out.ends_with("\n\n") {
+        out.pop();
+    }
     out
 }
 
