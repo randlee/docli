@@ -70,6 +70,8 @@ Set `DOCLI_ROOT` to override the docli checkout (default: repo root). Consumer
 paths resolve in order: the env var, `../<repo>` next to docli, then
 `~/Documents/github/<repo>`. Use `DOCLI_SKIP_GEN_FIXTURES=1` to skip
 `gen-fixtures` and run `generate` / `show` against committed JSON only.
+Committed JSON rules, including `DOCLI_REFRESH_FIXTURES`, are the
+[Fixture policy](docs/requirements.md#fixture-policy) in `docs/requirements.md`.
 
 Override checkout paths with `ATM_CORE_ROOT`, `SC_COMPOSE_ROOT`, and
 `SC_OBSERVABILITY_ROOT`. Optional Rust test:
