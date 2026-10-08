@@ -25,7 +25,7 @@ enum Cmd {
 
 #[test]
 fn clap_to_model_maps_the_tree() {
-    let model = docli::from_clap(&Demo::command());
+    let model = docli::clap_model::from_clap(&Demo::command());
     assert_eq!(model.name, "demo");
     assert_eq!(model.version.as_deref(), Some("1.0.0"));
     assert_eq!(model.description, "A demo CLI");
@@ -46,7 +46,7 @@ fn clap_to_model_maps_the_tree() {
 
 #[test]
 fn renders_html_and_markdown() {
-    let model = docli::from_clap(&Demo::command());
+    let model = docli::clap_model::from_clap(&Demo::command());
 
     let html = docli::render::html::render(&model);
     assert!(html.contains("demo CLI Reference"));

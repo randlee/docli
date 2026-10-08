@@ -49,6 +49,7 @@ fn from_clap_path(command: &Command, full_name: &str) -> CliModel {
                 required,
                 default_value,
                 choices,
+                extra: serde_json::Map::new(),
             });
         } else {
             options.push(OptionSpec {
@@ -63,6 +64,7 @@ fn from_clap_path(command: &Command, full_name: &str) -> CliModel {
                 choices,
                 min_values: num_args.map(|r| r.min_values()),
                 max_values: num_args.map(|r| r.max_values()),
+                extra: serde_json::Map::new(),
             });
         }
     }
@@ -103,6 +105,7 @@ fn from_clap_path(command: &Command, full_name: &str) -> CliModel {
         options,
         arguments,
         subcommands,
+        extra: serde_json::Map::new(),
     }
 }
 
