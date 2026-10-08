@@ -1,0 +1,37 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/ATM-QA-001>
+  a triage:Finding ;
+  triage:findingId "ATM-QA-001" ;
+  triage:title "Missing docs/architecture.md baseline" ;
+  triage:description "req-qa requires docs/architecture.md. The Phase A design currently lives in the ADRs and phase README. Add a baseline document that points at those decisions." ;
+  triage:phaseId "phase-a" ;
+  triage:triageMode "initial_pass" ;
+  triage:category "cross-doc-conflict" ;
+  triage:severity "blocking" ;
+  triage:repeatable false ;
+  triage:sweepScope "repo" ;
+  triage:status "open" ;
+  triage:dispatchReady false ;
+  triage:triagedAt "2026-10-08T05:00:00Z"^^xsd:dateTime ;
+  triage:originatingSprintDoc "docs/plans/phase-a/a1-cli-contract.md" ;
+  triage:requirementId "REQ-DOCLI-PRODUCT-003" ;
+  triage:adrId "ADR-001" ;
+  triage:adrId "ADR-002" ;
+  triage:openOn <urn:atm:triage:worktree/feature-phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f> ;
+  triage:promoteTo <urn:atm:triage:worktree/feature-phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f> .
+
+<urn:atm:triage:worktree/integrate-phase-a/9d885f59ed85d9d976f47b6a0029384a0c3a358d>
+  a triage:WorktreeSnapshot ;
+  triage:branch "integrate/phase-a" ;
+  triage:path "/Users/randlee/github/docli-worktrees/integrate/phase-a" ;
+  triage:headSha "9d885f59ed85d9d976f47b6a0029384a0c3a358d" ;
+  triage:orderIndex 0 .
+
+<urn:atm:triage:worktree/feature-phase-a-a1-cli/1913dbe99c63ed8624a029c2cd546614e0bf350f>
+  a triage:WorktreeSnapshot ;
+  triage:branch "feature/phase-a-a1-cli" ;
+  triage:path "/Users/randlee/github/docli-worktrees/feature/phase-a-a1-cli" ;
+  triage:headSha "1913dbe99c63ed8624a029c2cd546614e0bf350f" ;
+  triage:orderIndex 1 .
