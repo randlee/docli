@@ -7,4 +7,5 @@
 | 5 | 4 | remediation | 715ee18 | PASS | | | | | critical fixes committed |
 | 6 | 5 | arch-ctm (inline) | 715ee18 | PASS | | | | | consistency hardening |
 | 7 | 6 | quality-mgr | 2cb48b1 | FAIL | 1 | 2 | 2 | PHB-QA-001…005 | IN-FLIGHT timeout; req-qa completed separately |
-| 8 | 6 | remediation | pending | pending | | | | | PHB-QA-001 README + plan clarifications |
+| 8 | 6 | remediation | 1079910 | PASS | 0 | 0 | 0 | | PHB-QA-001 README + plan clarifications |
+| 9 | 6 | quality-mgr (plan QA-2) | 1079910 | PASS | 0 | 0 | 0 | | req-qa + arch-qa PASS; RBP/RSH SKIPPED docs-only |
