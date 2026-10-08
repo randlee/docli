@@ -66,6 +66,11 @@ The script runs `docli … --json` and requires `ok: true`. On failure it prints
 the envelope `code`, `message`, and `suggested_action` (per **creating-ai-clis**
 / `REQ-DOCLI-CLI-003`), not a silent exit.
 
+Set `DOCLI_ROOT` to override the docli checkout (default: repo root). Consumer
+paths resolve in order: the env var, `../<repo>` next to docli, then
+`~/Documents/github/<repo>`. Use `DOCLI_SKIP_GEN_FIXTURES=1` to skip
+`gen-fixtures` and run `generate` / `show` against committed JSON only.
+
 Override checkout paths with `ATM_CORE_ROOT`, `SC_COMPOSE_ROOT`, and
 `SC_OBSERVABILITY_ROOT`. Optional Rust test:
 

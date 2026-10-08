@@ -21,17 +21,39 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/docli-envelope.sh"
 
 DOCLI_ROOT="${DOCLI_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
-ATM_CORE_ROOT="${ATM_CORE_ROOT:-$HOME/Documents/github/atm-core}"
-SC_COMPOSE_ROOT="${SC_COMPOSE_ROOT:-$HOME/Documents/github/sc-compose}"
-SC_OBSERVABILITY_ROOT="${SC_OBSERVABILITY_ROOT:-$HOME/Documents/github/sc-observability}"
 
-for d in "$DOCLI_ROOT" "$ATM_CORE_ROOT" "$SC_COMPOSE_ROOT" "$SC_OBSERVABILITY_ROOT"; do
-  if [[ ! -d "$d" ]]; then
-    echo "missing checkout: $d" >&2
-    echo "hint: clone the repo or set ATM_CORE_ROOT / SC_COMPOSE_ROOT / SC_OBSERVABILITY_ROOT" >&2
+resolve_checkout() {
+  local env_name=$1
+  local sibling=$2
+  local val="${!env_name:-}"
+  if [[ -n "$val" ]]; then
+    if [[ -d "$val" ]]; then
+      printf '%s' "$val"
+      return 0
+    fi
+    echo "missing checkout: $env_name ($val)" >&2
+    echo "hint: clone the repo, set $env_name to an existing directory, or unset it to use sibling defaults" >&2
     exit 1
   fi
-done
+  local candidate="$DOCLI_ROOT/../$sibling"
+  if [[ -d "$candidate" ]]; then
+    printf '%s' "$candidate"
+    return 0
+  fi
+  candidate="$HOME/Documents/github/$sibling"
+  if [[ -d "$candidate" ]]; then
+    printf '%s' "$candidate"
+    return 0
+  fi
+  echo "missing checkout: $env_name ($sibling)" >&2
+  echo "hint: clone the repo, set $env_name, or place a sibling checkout at $DOCLI_ROOT/../$sibling" >&2
+  exit 1
+}
+
+DOCLI_ROOT="$(resolve_checkout DOCLI_ROOT docli)"
+ATM_CORE_ROOT="$(resolve_checkout ATM_CORE_ROOT atm-core)"
+SC_COMPOSE_ROOT="$(resolve_checkout SC_COMPOSE_ROOT sc-compose)"
+SC_OBSERVABILITY_ROOT="$(resolve_checkout SC_OBSERVABILITY_ROOT sc-observability)"
 
 echo "docli root:              $DOCLI_ROOT"
 echo "atm-core:                $ATM_CORE_ROOT"
@@ -71,9 +93,27 @@ generate_show() {
   echo "  OK generate + show ($workdir/site/cli/index.html)"
 }
 
-generate_show "docli / contract fixture" "$DOCLI_ROOT" "$DOCLI_ROOT/fixtures/contract/model.json"
-generate_show "docli / atm-core.json" "$DOCLI_ROOT" "$DOCLI_ROOT/fixtures/repos/atm-core.json"
-generate_show "docli / sc-compose.json" "$DOCLI_ROOT" "$DOCLI_ROOT/fixtures/repos/sc-compose.json"
+generate_show_temp_html() {
+  local label=$1
+  local model_json=$2
+  (
+    set -euo pipefail
+    local tmp_html
+    tmp_html="$(mktemp -d)"
+    trap 'rm -rf "$tmp_html"' EXIT
+    echo "== $label =="
+    docli_require_envelope_ok "$label generate" \
+      "$DOCLI" generate --input "$model_json" --html "$tmp_html" --json
+    test -f "$tmp_html/index.html"
+    docli_require_envelope_ok "$label show" \
+      "$DOCLI" show --html "$tmp_html" --json
+    echo "  OK generate + show (temp html dir; committed site/cli untouched)"
+  )
+}
+
+generate_show_temp_html "docli / contract fixture" "$DOCLI_ROOT/fixtures/contract/model.json"
+generate_show_temp_html "docli / atm-core.json" "$DOCLI_ROOT/fixtures/repos/atm-core.json"
+generate_show_temp_html "docli / sc-compose.json" "$DOCLI_ROOT/fixtures/repos/sc-compose.json"
 generate_show "atm-core checkout / atm-core.json" "$ATM_CORE_ROOT" "$DOCLI_ROOT/fixtures/repos/atm-core.json"
 generate_show "sc-compose checkout / sc-compose.json" "$SC_COMPOSE_ROOT" "$DOCLI_ROOT/fixtures/repos/sc-compose.json"
 

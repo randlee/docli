@@ -1,7 +1,7 @@
 ---
 id: b.3
 title: agent-safe verification tooling
-status: planned
+status: complete
 branch: feature/phase-b-b3-verify
 worktree: ../docli-worktrees/feature/phase-b-b3-verify
 target: integrate/phase-b

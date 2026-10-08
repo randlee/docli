@@ -45,18 +45,25 @@ fn assert_envelope_ok(label: &str, output: &Output) {
         return;
     }
     let err = envelope.get("error").cloned().unwrap_or(Value::Null);
+    let cause = err
+        .get("details")
+        .and_then(|d| d.get("cause"))
+        .filter(|c| c.is_string())
+        .cloned()
+        .unwrap_or(Value::Null);
     panic!(
-        "{label}: docli envelope ok:false — code={} message={} suggested_action={} (exit={:?})",
+        "{label}: docli envelope ok:false — code={} message={} suggested_action={} cause={} (exit={:?})",
         err.get("code").unwrap_or(&Value::Null),
         err.get("message").unwrap_or(&Value::Null),
         err.get("suggested_action").unwrap_or(&Value::Null),
+        cause,
         output.status.code()
     );
 }
 
-fn generate_show(workdir: &Path, model: &Path, label: &str) {
-    let html = workdir.join("site/cli");
-    let _ = std::fs::remove_dir_all(workdir.join("site"));
+fn generate_show(workdir: &Path, model: &Path, html_dir: &Path, label: &str) {
+    let _ = std::fs::remove_dir_all(html_dir);
+    let html_arg = html_dir.to_str().expect("utf8 html dir");
     let generate = Command::new(docli_bin())
         .current_dir(workdir)
         .args([
@@ -64,23 +71,51 @@ fn generate_show(workdir: &Path, model: &Path, label: &str) {
             "--input",
             model.to_str().expect("utf8 model"),
             "--html",
-            "site/cli",
+            html_arg,
             "--json",
         ])
         .output()
         .expect("spawn docli generate");
     assert_envelope_ok(&format!("{label} generate"), &generate);
     assert!(
-        html.join("index.html").is_file(),
+        html_dir.join("index.html").is_file(),
         "missing {} after generate",
-        html.join("index.html").display()
+        html_dir.join("index.html").display()
     );
     let show = Command::new(docli_bin())
         .current_dir(workdir)
-        .args(["show", "--html", "site/cli", "--json"])
+        .args(["show", "--html", html_arg, "--json"])
         .output()
         .expect("spawn docli show");
     assert_envelope_ok(&format!("{label} show"), &show);
+}
+
+fn generate_show_site_cli(workdir: &Path, model: &Path, label: &str) {
+    let html = workdir.join("site/cli");
+    generate_show(workdir, model, &html, label);
+}
+
+struct TempHtmlDir(PathBuf);
+
+impl TempHtmlDir {
+    fn new() -> Self {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos();
+        Self(std::env::temp_dir().join(format!("docli-live-{nanos}")))
+    }
+}
+
+impl Drop for TempHtmlDir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+fn generate_show_temp_html(model: &Path, label: &str) {
+    let html = TempHtmlDir::new();
+    generate_show(&workspace_root(), model, &html.0, label);
 }
 
 #[test]
@@ -104,10 +139,10 @@ fn live_candidate_repos_generate_show() {
         "sc-observability has no clap Command; fixture must stay absent"
     );
 
-    generate_show(&root, &contract, "docli contract");
-    generate_show(&root, &atm_json, "docli atm-core.json");
-    generate_show(&root, &compose_json, "docli sc-compose.json");
-    generate_show(&atm, &atm_json, "atm-core checkout");
-    generate_show(&compose, &compose_json, "sc-compose checkout");
-    generate_show(&obs, &contract, "sc-observability contract smoke");
+    generate_show_temp_html(&contract, "docli contract");
+    generate_show_temp_html(&atm_json, "docli atm-core.json");
+    generate_show_temp_html(&compose_json, "docli sc-compose.json");
+    generate_show_site_cli(&atm, &atm_json, "atm-core checkout");
+    generate_show_site_cli(&compose, &compose_json, "sc-compose checkout");
+    generate_show_site_cli(&obs, &contract, "sc-observability contract smoke");
 }
