@@ -28,8 +28,9 @@ Agents discover and validate template packs via **`docli templates`** with versi
 - `src/ops.rs` — `templates_list`, `templates_show`, `templates_validate`
 - `src/cli.rs` — `Templates { List | Show | Validate }`
 - `REQ-DOCLI-CLI-011` + section 11 index update
-- `tests/template_contract.rs` — list/show/validate success envelopes
-- `tests/error_contract.rs` — at least one `templates validate` → `DOCLI.TEMPLATE_INVALID` path
+- [`docs/requirements.md`](../../requirements.md) section 9 row for **`DOCLI.TEMPLATE_INVALID`** (kind, exit **2**) with **Covered by** naming the validate test in `tests/error_contract.rs`
+- `tests/template_contract.rs` — list/show/validate success envelopes + **`cargo_docli_templates_list_matches_docli`** (or equivalent) parity test
+- `tests/error_contract.rs` — `templates validate` → `DOCLI.TEMPLATE_INVALID` (named test)
 
 ## Subcommand surface
 
@@ -61,32 +62,35 @@ docli templates validate <PATH> [--json]
 }
 ```
 
-### `templates validate` failure envelope
+### `templates validate` failure envelope (exit **2**)
 
 ```json
 {
   "ok": false,
   "version": "1",
+  "data": null,
   "error": {
     "code": "DOCLI.TEMPLATE_INVALID",
     "kind": "dependency",
     "message": "…",
-    "suggested_action": "…"
+    "details": {},
+    "suggested_action": "…",
+    "docs": "https://github.com/randlee/docli/blob/develop/docs/requirements.md"
   }
 }
 ```
-
-Exit code **2** on validate failure.
 
 ## Acceptance Criteria
 
 - `docli templates list --json` lists at least `default`
 - `docli templates show default --json` includes `theme_schema` and `example_generate_argv`
 - Broken pack → validate exits 2, `DOCLI.TEMPLATE_INVALID`, actionable envelope
-- `cargo docli templates list --json` matches `docli` stdout bytes
+- Section 9 **Covered by** matches the named `error_contract` test
+- `cargo docli templates list --json` matches `docli` stdout bytes (parity test name in sprint doc)
 
 ## Required Validation
 
 - Phase B host gate — [README.md](README.md)
 - `cargo test --test template_contract`
-- `cargo test --test error_contract` (TEMPLATE_INVALID)
+- `cargo test --test error_contract` — TEMPLATE_INVALID test name from deliverables
+- `cargo test --test template_contract` — parity test for `cargo docli templates list`

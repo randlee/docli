@@ -24,9 +24,10 @@ Second bundled pack **`cli-doc`**, `_skeleton` starter, aligned author/agent doc
 ## Deliverables
 
 1. **Packs:** `templates/html/cli-doc/`, `templates/html/_skeleton/`
-2. **Docs:** [`AUTHOR.md`](../../templates/AUTHOR.md), [`AGENT-PREVIEW.md`](../../templates/AGENT-PREVIEW.md) — Phase B ids only (b.7–b.11); no `c.*` or fictional `compact` template
-3. **README** link to template docs
-4. **Test:** render `fixtures/repos/docli.json` with `--template cli-doc` (smoke or snapshot)
+2. **Requirements:** [`docs/requirements.md`](../../requirements.md) bodies for **`REQ-DOCLI-HTML-008`–`010`** + section 11 rows (same PR)
+3. **Docs:** [`AUTHOR.md`](../../templates/AUTHOR.md), [`AGENT-PREVIEW.md`](../../templates/AGENT-PREVIEW.md) — Phase B ids only; no `c.*` or `compact`
+4. **README** link to template docs
+5. **Test:** render `fixtures/repos/docli.json` with `--template cli-doc` (smoke or snapshot)
 
 ## Acceptance Criteria
 
@@ -39,5 +40,14 @@ Second bundled pack **`cli-doc`**, `_skeleton` starter, aligned author/agent doc
 
 - Phase B host gate — [README.md](README.md)
 - `cargo test --test template_contract`
-- AGENT-PREVIEW.md commands (maintainer machine)
 - `! rg -n 'c\\.(1|4)|compact' docs/templates/`
+
+Three-call preview (from AGENT-PREVIEW.md; `MODEL=fixtures/contract/model.json` or equivalent):
+
+```bash
+docli generate --json --input "$MODEL" --preview --template default --theme '{"accent":"#007acc","font_body":"system-ui"}'
+docli generate --json --input "$MODEL" --preview --template cli-doc --theme '{"accent":"#d73a49","font_body":"Monaco"}'
+docli generate --json --input "$MODEL" --preview --template default --theme '{"accent":"#059669","font_body":"Inter"}'
+```
+
+Each command exits 0; parse `--json` stdout for `"ok":true` and `preview_dir`.

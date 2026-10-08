@@ -30,8 +30,9 @@ Extend **`docli generate`** with template selection, theme JSON, and temp previe
 - **`--preview`**: temp dir `docli-preview-{pid}-{nanos}/index.html`; envelope includes `preview_dir`
 - Invalid theme JSON → `DOCLI.INPUT_INVALID`
 - `REQ-DOCLI-CLI-012` + section 11 index update
+- [`docs/requirements.md`](../../requirements.md) section 9 row for **`DOCLI.TEMPLATE_NOT_FOUND`** with **Covered by** test name in `tests/error_contract.rs`
 - `tests/template_contract.rs` — three `--preview` runs with **default** + different `--theme` only
-- `tests/error_contract.rs` — `DOCLI.TEMPLATE_NOT_FOUND`
+- `tests/error_contract.rs` — named test for `DOCLI.TEMPLATE_NOT_FOUND`
 
 ## Explicit code samples
 
@@ -52,7 +53,7 @@ Success `generate` `data` adds: `template`, `theme`, `preview_dir` (null when no
 
 - Three `--preview` runs (default template, distinct themes) → three dirs, three success envelopes
 - `--preview` + `--html` → USAGE
-- Unknown template id → `DOCLI.TEMPLATE_NOT_FOUND`
+- Unknown template id → `DOCLI.TEMPLATE_NOT_FOUND`; section 9 **Covered by** matches test name
 - Default template + no theme still matches b.7 contract bytes when writing to explicit `--html`
 
 ## Required Validation

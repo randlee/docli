@@ -30,7 +30,7 @@ Phase-end **quality-mgr** runs **after** this sprint merges, then **`integrate/p
 - [`README.md`](../../../README.md) — install from crates.io after publish; link to `docli templates`, `AGENT-PREVIEW.md`, error contract tests
 - Release checklist (in CHANGELOG or `docs/release-first-crates-io.md`):
   - `cargo publish --dry-run`
-  - `cargo install docli --version …` smoke: `docli templates list --json`, one preview generate, one `error_contract`-equivalent manual check
+  - `cargo install docli --version …` smoke: `docli templates list --json`, one preview generate, `cargo test --test error_contract`
 - **Publish execution** is explicit human/team-lead step after merge to `develop`; sprint closes when repo is publish-ready, not necessarily when crates.io has the crate
 
 ## Out of Scope
@@ -47,6 +47,6 @@ Phase-end **quality-mgr** runs **after** this sprint merges, then **`integrate/p
 
 ## Required Validation
 
-- Phase B CI gate in [README.md](README.md)
+- Phase B host gate in [README.md](README.md)
 - `cargo publish --dry-run`
 - `cargo package --list` includes `README.md`, `LICENSE`, template packs, and fixtures needed for tests (document what ships vs dev-only)
