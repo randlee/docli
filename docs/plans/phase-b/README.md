@@ -4,6 +4,10 @@ Phase B implementation PRs target **`integrate/phase-b`**, then merge to **`deve
 
 Sprint docs are the QA source. This README is the phase index. It does not restate sprint acceptance criteria.
 
+**HTML templates:** There is no separate “Phase C.” Templating is **b.7–b.10** in this
+same phase (after b.1–b.5 contract/verify work, before **b.11** publish). Agent preview
+docs live under [`docs/templates/`](../../templates/).
+
 ## What Phase B closes
 
 - `REQ-DOCLI-NORM-001`: full `.claude/skills/creating-ai-clis/` tree and provenance

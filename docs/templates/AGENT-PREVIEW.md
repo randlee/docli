@@ -1,14 +1,14 @@
 # Agent workflow: preview CLI documentation templates
 
 Use this when the user wants to **see what their CLI docs would look like** before
-choosing a template or brand colors. Requires Phase C (`docli templates`, `--preview`,
-`--template`, `--theme`).
+choosing a template or brand colors. Requires Phase B **b.8–b.9** (`docli templates`,
+`--preview`, `--template`, `--theme`).
 
 ## Preconditions
 
 - `cli-model.json` exists (from `docli::from_clap`, `dump-cli-model`, or hand-written)
 - `docli` on `PATH` (or `target/release/docli`)
-- Phase C installed with bundled templates
+- Phase B template sprints shipped (bundled packs on disk or dev tree)
 
 ## Step 1 — Discover templates
 
@@ -16,7 +16,7 @@ choosing a template or brand colors. Requires Phase C (`docli templates`, `--pre
 docli templates list --json
 ```
 
-Confirm `data.templates[].id` values (expect at least `default`, and `cli-doc` after c.4).
+Confirm `data.templates[].id` values (expect at least `default`, and `cli-doc` after **b.10**).
 
 ## Step 2 — Render three previews
 

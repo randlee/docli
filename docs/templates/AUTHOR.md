@@ -6,7 +6,7 @@ root and can be added locally for custom branding.
 
 ## Install layout
 
-After `cargo install docli` (Phase C), bundled packs live at:
+After `cargo install docli` (Phase B **b.11** publish; packs land in **b.7–b.10**), bundled packs live at:
 
 ```text
 <install-root>/share/docli/templates/<id>/
@@ -101,4 +101,4 @@ search navigation). docli still consumes **CliModel JSON**, not `--help` scrapin
 4. Point `docli generate --template /path/to/pack` at CI or local preview.
 
 Custom packs are **not** registered in `templates list` unless installed under
-`<install-root>/share/docli/templates/` (packaging decision for post–Phase C).
+`<install-root>/share/docli/templates/` (packaging decision for Phase B **b.7** / **b.11**).
