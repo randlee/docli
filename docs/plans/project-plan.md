@@ -1,9 +1,13 @@
 # Project plan
 
-Phase A implementation is tracked in [phase-a/README.md](phase-a/README.md). That directory lists sprint deliverables, acceptance criteria, and the Phase A CI gate.
+Product requirements: [docs/requirements.md](../requirements.md).  
+Architecture (ADRs, `ARCH-RULE-*`): [docs/architecture.md](../architecture.md).
 
-| Phase | Integration branch | Plan authority |
-|-------|-------------------|----------------|
-| A | `integrate/phase-a` | [docs/plans/phase-a/README.md](phase-a/README.md) |
+| Phase | Integration branch | Plan authority | Status |
+|-------|-------------------|----------------|--------|
+| A | `integrate/phase-a` | [phase-a/README.md](phase-a/README.md) | Complete (merged to `develop`) |
+| B | `integrate/phase-b` | [phase-b/README.md](phase-b/README.md) | Planned — normative baselines, error gate, consumer proof, publish readiness |
 
-Product requirements remain in [docs/requirements.md](../requirements.md). Architecture notes are in [docs/architecture.md](../architecture.md).
+Phase B follows [codex-orchestration](../../.claude/skills/codex-orchestration/SKILL.md):
+sprint docs are authoritative for `req-qa` deliverable enumeration; run
+`/plan-hardening` on Phase B plans before dispatching `cwy`.
