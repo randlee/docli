@@ -72,7 +72,10 @@ From **b.8** onward also: `cargo test --test template_contract`.
 
 `DOCLI_SKIP_GEN_FIXTURES=1 ./scripts/verify-candidate-repos.sh` — **b.5** proof only; not default CI.
 
+## Requirement index rule
+
+Section 11 lists every Phase B `REQ-DOCLI-*` at **b.1** with sprint ownership notes. Sprints **b.7–b.11** add requirement bodies and touch the index row in the same PR.
+
 ## Phase-end QA
 
-Once **b.1–b.5** and **b.7–b.11** are on `integrate/phase-b`, run **quality-mgr** once
-(req-qa, arch-qa, rust reviewers, flaky-test-qa), then merge **`integrate/phase-b` → `develop`**.
+After **b.11** merges to `integrate/phase-b`, run **quality-mgr** once, then merge **`integrate/phase-b` → `develop`**. b.11 does not depend on QA completing first.

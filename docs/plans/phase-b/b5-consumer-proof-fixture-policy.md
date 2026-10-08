@@ -46,7 +46,7 @@ CI (`cargo test`, including `tests/repo_fixtures.rs`) reads only the committed f
 Live capture may differ from committed JSON when upstream help text is empty. That difference is a refresh pull request, not a silent verify success.
 ```
 
-- [`scripts/verify-candidate-repos.sh`](../../../scripts/verify-candidate-repos.sh) implements those three modes, including a function named `restore_committed_fixtures`.
+- **Delta on** [`scripts/verify-candidate-repos.sh`](../../../scripts/verify-candidate-repos.sh) (base script is **b.3**): add `restore_committed_fixtures`, default-mode snapshot diff, and the three-mode flag matrix from the policy above.
 - [`README.md`](../../../README.md) `## Candidate repo verification` links to `docs/requirements.md` section `Fixture policy` and names `DOCLI_REFRESH_FIXTURES`. It does not restate the three modes.
 - [`docs/plans/phase-b/evidence/b5-consumer-proof.md`](evidence/b5-consumer-proof.md) records the proof run: command, exit code `0`, and an OK line for each label below. It also records `gh pr list` JSON for the three consumer remotes.
   - `docli / contract fixture`

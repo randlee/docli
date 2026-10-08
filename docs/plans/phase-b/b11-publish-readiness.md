@@ -18,7 +18,8 @@ target: integrate/phase-b
 ## Hard Dependencies
 
 - b.1–b.10 merged on `integrate/phase-b`
-- Phase B phase-end QA PASS on integration branch
+
+Phase-end **quality-mgr** runs **after** this sprint merges, then **`integrate/phase-b` → `develop`** (see phase-b README).
 
 ## Deliverables
 

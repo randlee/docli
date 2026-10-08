@@ -41,7 +41,7 @@ fg = { type = "color", default = "#1a1a2e" }
 
 ## Render context
 
-Templates receive (MiniJinja / Askama — fixed in c.1):
+Templates receive (MiniJinja — Phase B **b.7**):
 
 | Variable | Content |
 |----------|---------|
@@ -79,7 +79,7 @@ docli generate --json --input "$MODEL" --preview --template default \
 docli generate --json --input "$MODEL" --preview --template cli-doc \
   --theme '{"accent":"#007acc","font_body":"Monaco"}'
 
-docli generate --json --input "$MODEL" --preview --template compact \
+docli generate --json --input "$MODEL" --preview --template default \
   --theme '{"accent":"#059669","font_body":"Inter"}'
 ```
 
@@ -95,7 +95,7 @@ search navigation). docli still consumes **CliModel JSON**, not `--help` scrapin
 
 ## Publishing a custom pack
 
-1. Copy `templates/html/_skeleton/` (added in c.4) to your repo or site repo.
+1. Copy `templates/html/_skeleton/` (Phase B **b.10**) to your repo or site repo.
 2. Edit `theme_schema` and CSS variables in `style.css.j2`.
 3. Run `docli templates validate` before committing.
 4. Point `docli generate --template /path/to/pack` at CI or local preview.

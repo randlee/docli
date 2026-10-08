@@ -15,8 +15,14 @@ target: integrate/phase-b
 
 ## Planning vs this sprint
 
-- **Planning branch → `develop`:** full `.claude/skills/creating-ai-clis/` tree and `PROVENANCE.md` (`REQ-DOCLI-NORM-001`). Not re-imported on integrate.
-- **This sprint (integrate):** requirements, architecture, `req-qa` / `arch-qa`, and doc cross-links only.
+| Piece | Closes on |
+|-------|-----------|
+| Skill tree + `PROVENANCE.md` (`REQ-DOCLI-NORM-001` bytes) | Planning branch → **`develop`** |
+| Req/arch text, QA agents, cross-links | **b.1** on **`integrate/phase-b`** |
+
+b.1 does not re-vendor the skill. After b.0 sync, integrate must contain the skill directory from `develop` (`test -d .claude/skills/creating-ai-clis`).
+
+**Requirement index:** b.1 adds section 11 rows for every `REQ-DOCLI-*` id **named in Phase B sprint Closes sections**, with a “text lands in sprint X” note. Each later sprint (b.7–b.11) updates requirement **body** text and confirms its index row in the **same PR**.
 
 ## Closes
 

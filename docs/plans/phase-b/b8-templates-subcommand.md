@@ -11,22 +11,25 @@ target: integrate/phase-b
 
 ## Goal
 
-- Agents discover installed template packs and validate custom packs **without**
-  guessing filesystem paths.
-- Every operation uses the version `"1"` envelope when `--json` is set.
+Agents discover and validate template packs via **`docli templates`** with version `"1"` envelopes.
+
+## Closes
+
+- `REQ-DOCLI-CLI-011`
+- `DOCLI.TEMPLATE_INVALID` (requirements section 9 + `tests/error_contract.rs` + `tests/template_contract.rs`)
 
 ## Hard Dependencies
 
-- b.7 — template manifest format and install root resolution
-- b.2 — actionable `DOCLI.*` envelopes
+- b.7 — manifest format and install root
+- b.2 — envelope shape
 
 ## Deliverables
 
 - `src/ops.rs` — `templates_list`, `templates_show`, `templates_validate`
-- `src/cli.rs` — subcommand `Templates { List | Show | Validate }`
-- `REQ-DOCLI-CLI-011` in `docs/requirements.md`
-- `tests/template_contract.rs` — list/show/validate envelopes
-- Bundled templates discoverable under install root (see b.7)
+- `src/cli.rs` — `Templates { List | Show | Validate }`
+- `REQ-DOCLI-CLI-011` + section 11 index update
+- `tests/template_contract.rs` — list/show/validate success envelopes
+- `tests/error_contract.rs` — at least one `templates validate` → `DOCLI.TEMPLATE_INVALID` path
 
 ## Subcommand surface
 
@@ -36,45 +39,54 @@ docli templates show <ID|PATH> [--json]
 docli templates validate <PATH> [--json]
 ```
 
-### `templates list`
-
-Response `data`:
+### `templates list` success `data`
 
 ```json
 {
   "operation": "templates_list",
   "install_root": "/usr/local/share/docli/templates",
-  "templates": [
-    {
-      "id": "default",
-      "name": "docli default",
-      "version": "1",
-      "description": "Two-pane tree + search (Phase A layout)",
-      "path": "/usr/local/share/docli/templates/default"
-    }
-  ]
+  "templates": [{ "id": "default", "name": "docli default", "version": "1", "path": "…" }]
 }
 ```
 
-### `templates show`
+### `templates show` success `data`
 
-`<ID|PATH>`: bundled id (`default`) or absolute path to a pack directory.
-Response includes manifest fields, supported `theme_schema` keys, and example
-`docli generate` argv snippet for agents.
+```json
+{
+  "operation": "templates_show",
+  "id": "default",
+  "manifest": { "id": "default", "version": "1" },
+  "theme_schema": { "accent": "string", "font_body": "string" },
+  "example_generate_argv": ["docli", "generate", "--input", "model.json", "--preview", "--template", "default", "--theme", "{}"]
+}
+```
 
-### `templates validate`
+### `templates validate` failure envelope
 
-Checks pack directory: required files, manifest parse, dry-run render with
-`fixtures/contract/model.json`. Failure → `DOCLI.TEMPLATE_INVALID`.
+```json
+{
+  "ok": false,
+  "version": "1",
+  "error": {
+    "code": "DOCLI.TEMPLATE_INVALID",
+    "kind": "dependency",
+    "message": "…",
+    "suggested_action": "…"
+  }
+}
+```
+
+Exit code **2** on validate failure.
 
 ## Acceptance Criteria
 
-- `docli templates list --json` exits 0; lists at least `default`
-- `docli templates show default --json` includes `theme_schema` and example command
-- `docli templates validate` on a broken pack exits 2 with `suggested_action`
+- `docli templates list --json` lists at least `default`
+- `docli templates show default --json` includes `theme_schema` and `example_generate_argv`
+- Broken pack → validate exits 2, `DOCLI.TEMPLATE_INVALID`, actionable envelope
 - `cargo docli templates list --json` matches `docli` stdout bytes
 
 ## Required Validation
 
-- Phase B host gate in [README.md](README.md)
+- Phase B host gate — [README.md](README.md)
 - `cargo test --test template_contract`
+- `cargo test --test error_contract` (TEMPLATE_INVALID)

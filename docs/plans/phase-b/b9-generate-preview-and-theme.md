@@ -11,67 +11,52 @@ target: integrate/phase-b
 
 ## Goal
 
-- One `generate` call: JSON in → self-contained HTML in **temp or explicit dir**,
-  with chosen template and branding variables — optimized for **3-call agent previews**.
+Extend **`docli generate`** with template selection, theme JSON, and temp preview dirs (agent multi-preview with **default** pack only until b.10 adds `cli-doc`).
+
+## Closes
+
+- `REQ-DOCLI-CLI-012`
+- `DOCLI.TEMPLATE_NOT_FOUND` (requirements + `error_contract`)
 
 ## Hard Dependencies
 
-- b.7 render with template id + theme map
-- b.8 — `templates list` for discovery
+- b.7–b.8
 
 ## Deliverables
 
-- `GenerateRequest` extended: `template_id`, `theme_json`, `preview: bool`
-- CLI flags:
+- CLI flags: `--template ID|PATH`, `--theme JSON`, `--preview`
+- **`--preview` and `--html` are mutually exclusive** — both set → `DOCLI.USAGE`
+- Neither `--preview` nor `--html` → Phase A default `site/cli`
+- **`--preview`**: temp dir `docli-preview-{pid}-{nanos}/index.html`; envelope includes `preview_dir`
+- Invalid theme JSON → `DOCLI.INPUT_INVALID`
+- `REQ-DOCLI-CLI-012` + section 11 index update
+- `tests/template_contract.rs` — three `--preview` runs with **default** + different `--theme` only
+- `tests/error_contract.rs` — `DOCLI.TEMPLATE_NOT_FOUND`
 
-```text
-docli generate \
-  --input cli-model.json \
-  [--html DIR] \
-  [--preview] \
-  [--template ID|PATH] \
-  [--theme JSON] \
-  [--json]
-```
+## Explicit code samples
 
-- **`--preview`**: allocate `std::env::temp_dir()/docli-preview-{pid}-{nanos}/`,
-  write `index.html`, return `preview_dir` in envelope (and `outputs` as today).
-  Mutually exclusive with `--html` unless documented otherwise; if both absent and
-  not preview, keep Phase A default `site/cli`.
-- **`--theme`**: JSON object inlined into template (e.g. `accent`, `font_body`,
-  `font_mono`, `bg`, `fg`). Invalid JSON → `DOCLI.INPUT_INVALID`.
-- Error codes: `DOCLI.TEMPLATE_NOT_FOUND`, `DOCLI.TEMPLATE_INVALID` in requirements + tests
-- `tests/error_contract.rs` extended for new codes
-- `tests/template_contract.rs` — three-preview scenario (same input, three templates/themes)
-- `REQ-DOCLI-CLI-012` in `docs/requirements.md`
-
-## Explicit envelope addition
-
-Success `generate` `data` adds optional fields:
-
-```json
-{
-  "operation": "generate",
-  "template": "default",
-  "theme": { "accent": "#d73a49" },
-  "preview_dir": "/tmp/docli-preview-…",
-  "html_dir": "/tmp/docli-preview-…",
-  "outputs": []
+```rust
+pub struct GenerateRequest {
+    pub input_path: Option<PathBuf>,
+    pub html_dir: Option<PathBuf>,
+    pub preview: bool,
+    pub template_id: Option<String>,
+    pub theme_json: Option<String>,
+    // … existing markdown/json fields
 }
 ```
 
-When not `--preview`, `preview_dir` is JSON `null`.
+Success `generate` `data` adds: `template`, `theme`, `preview_dir` (null when not preview), `html_dir`, `outputs`.
 
 ## Acceptance Criteria
 
-- Three sequential `--preview` runs with different `--template` and `--theme`
-  produce three distinct directories and three success envelopes
-- Each `outputs[0].path` ends with `index.html` and file exists
-- `--json` failures remain single-envelope on stdout
-- Default `--template default` without theme matches b.7 byte lock for contract fixture
+- Three `--preview` runs (default template, distinct themes) → three dirs, three success envelopes
+- `--preview` + `--html` → USAGE
+- Unknown template id → `DOCLI.TEMPLATE_NOT_FOUND`
+- Default template + no theme still matches b.7 contract bytes when writing to explicit `--html`
 
 ## Required Validation
 
-- Phase B host gate in [README.md](README.md)
+- Phase B host gate — [README.md](README.md)
 - `cargo test --test template_contract`
-- Commands in [`docs/templates/AGENT-PREVIEW.md`](../../templates/AGENT-PREVIEW.md) succeed on maintainer machine
+- `cargo test --test error_contract` (TEMPLATE_NOT_FOUND)

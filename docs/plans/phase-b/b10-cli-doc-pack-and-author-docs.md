@@ -11,8 +11,11 @@ target: integrate/phase-b
 
 ## Goal
 
-- Ship a second bundled template **`cli-doc`** (layout reference: [spirali/cli_doc](https://github.com/spirali/cli_doc))
-- Publish author docs and `_skeleton` pack for new templates
+Second bundled pack **`cli-doc`**, `_skeleton` starter, aligned author/agent docs, HTML requirement text.
+
+## Closes
+
+- `REQ-DOCLI-HTML-008`, `REQ-DOCLI-HTML-009`, `REQ-DOCLI-HTML-010` (+ section 11 rows)
 
 ## Hard Dependencies
 
@@ -20,21 +23,21 @@ target: integrate/phase-b
 
 ## Deliverables
 
-- `templates/html/cli-doc/` — card two-column layout, search widget behavior
-- `templates/html/_skeleton/` — copy-paste starter with commented `theme_schema`
-- [`docs/templates/AUTHOR.md`](../../templates/AUTHOR.md), [`AGENT-PREVIEW.md`](../../templates/AGENT-PREVIEW.md)
-- README link under “CLI documentation templates”
-- `REQ-DOCLI-HTML-008`–`010` (bundled packs, inline branding, author validate path)
-- Golden test: render `fixtures/repos/docli.json` with `cli-doc` → snapshot or smoke asserts
+1. **Packs:** `templates/html/cli-doc/`, `templates/html/_skeleton/`
+2. **Docs:** [`AUTHOR.md`](../../templates/AUTHOR.md), [`AGENT-PREVIEW.md`](../../templates/AGENT-PREVIEW.md) — Phase B ids only (b.7–b.11); no `c.*` or fictional `compact` template
+3. **README** link to template docs
+4. **Test:** render `fixtures/repos/docli.json` with `--template cli-doc` (smoke or snapshot)
 
 ## Acceptance Criteria
 
 - `docli templates list --json` includes `default` and `cli-doc`
-- Agent three-call flow in AGENT-PREVIEW.md succeeds (default + cli-doc + themed default)
-- AUTHOR.md describes manifest, theme keys, validate, and install paths
+- Full three-call flow in AGENT-PREVIEW.md (default + cli-doc + themed default) succeeds
+- AUTHOR.md matches install layout and `theme_schema` rules
+- No `c.1` / `c.4` / `compact` template references remain in `docs/templates/`
 
 ## Required Validation
 
-- Phase B host gate in [README.md](README.md)
+- Phase B host gate — [README.md](README.md)
 - `cargo test --test template_contract`
-- Optional: `./scripts/preview-all-templates.sh` or documented manual steps
+- AGENT-PREVIEW.md commands (maintainer machine)
+- `! rg -n 'c\\.(1|4)|compact' docs/templates/`
