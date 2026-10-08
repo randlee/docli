@@ -1,5 +1,8 @@
 # ADR-001 — Operations are the library boundary
 
+> **Canonical copy**: [`docs/architecture.md`](../../architecture.md#adr-001--operations-are-the-library-boundary).
+> `arch-qa` and `req-qa` use that file, not this sprint snapshot.
+
 ## Decision
 
 `ops::generate` and `ops::show` are the stable Rust API. Their request and response structs live in `src/ops.rs`. The `docli` and `cargo-docli` binaries convert argv through `docli::cli` (`#[doc(hidden)]`, a.3): that module prints the envelope and calls `ops`; it is not a supported integration surface for other crates.

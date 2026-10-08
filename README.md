@@ -4,12 +4,32 @@ Language-agnostic CLI documentation generator. `docli` turns a neutral
 command-tree description into a self-contained two-pane HTML reference and a
 Markdown manual — mechanically, never hand-authored.
 
+## Website
+
+<https://randlee.github.io/docli/> — deployed via GitHub Pages from `main`
+(`.github/workflows/pages.yml`); the self-generated CLI reference lives at
+<https://randlee.github.io/docli/cli/>.
+
 ## Why
 
 Every CLI framework knows its own command tree (clap in Rust, cobra in Go,
 System.CommandLine in .NET). `docli` gives all of them one output: a
 navigable website page and a distributable Markdown manual, regenerated on
 every release from the same command definitions.
+
+## CLI contract (mandatory)
+
+The `docli` / `cargo docli` tools are **AI-first CLIs** and must follow the
+**creating-ai-clis** skill you supplied for this repo (`.claude/skills/creating-ai-clis/`).
+Hard requirements (`REQ-DOCLI-*`) and QA baselines:
+[`docs/requirements.md`](docs/requirements.md). Architecture decisions and
+`arch-qa` rules (`ADR-*`, `ARCH-RULE-*`):
+[`docs/architecture.md`](docs/architecture.md).
+
+Every `DOCLI.*` error code is integration-tested in `tests/error_contract.rs`
+(`REQ-DOCLI-CLI-008`–`010`): one `--json` envelope on stdout, non-empty
+`message` and `suggested_action`, and matching human stderr when not using
+`--json`.
 
 ## Install
 
@@ -28,6 +48,32 @@ docli generate --html site/cli < cli-model.json
 ```
 
 With no `--html`/`--markdown`, the HTML is written to stdout.
+
+## Candidate repo verification
+
+CI uses checked-in JSON under `fixtures/repos/` (see `tests/repo_fixtures.rs`).
+To regenerate those models from live clap trees and run `generate` / `show` in
+**docli**, **atm-core**, **sc-compose**, and **sc-observability** (contract
+smoke only — no sc-observability CLI model):
+
+```sh
+./scripts/verify-candidate-repos.sh
+```
+
+The script runs `docli … --json` and requires `ok: true`. On failure it prints
+the envelope `code`, `message`, and `suggested_action` (per **creating-ai-clis**
+/ `REQ-DOCLI-CLI-003`), not a silent exit.
+
+Override checkout paths with `ATM_CORE_ROOT`, `SC_COMPOSE_ROOT`, and
+`SC_OBSERVABILITY_ROOT`. Optional Rust test:
+
+```sh
+DOCLI_LIVE_CANDIDATE_REPOS=1 \
+  ATM_CORE_ROOT=~/Documents/github/atm-core \
+  SC_COMPOSE_ROOT=~/Documents/github/sc-compose \
+  SC_OBSERVABILITY_ROOT=~/Documents/github/sc-observability \
+  cargo test --test live_candidate_repos -- --nocapture
+```
 
 ## The neutral model
 

@@ -14,6 +14,22 @@ correctness is handled by `rust-qa-agent` and requirements conformance is
 handled by `req-qa`. You reject code that is structurally wrong even if all
 tests pass.
 
+## Mandatory baseline (`docli`)
+
+Always read **`docs/architecture.md`** first:
+
+- **ADRs** (`ADR-001`–`ADR-003`) — canonical architectural decisions
+- **Architectural rules** (`ARCH-RULE-001`–`ARCH-RULE-008`) — blocking checks
+
+Cross-check **`docs/requirements.md`** when an ADR lists `REQ-DOCLI-*` ties.
+Cite findings as `rule`: `ARCH-RULE-00N`, `adr`: `ADR-00N`, with
+`docs/architecture.md` line refs in `evidence_refs`.
+
+The generic **RULE-001**–**RULE-013** section below targets multi-crate ATM-style
+repos. For **`docli`**, apply **ARCH-RULE-*** from `architecture.md` first;
+use RULE-001–013 only when a sprint doc explicitly scopes them (otherwise
+`not-applicable`).
+
 ## Input Contract (Required)
 
 Input must be JSON, either as a raw JSON object or fenced JSON. Do not proceed
@@ -265,12 +281,14 @@ Emit a single fenced JSON block:
   "findings": [
     {
       "id": "ARCH-001",
-      "rule": "RULE-001",
+      "rule": "ARCH-RULE-001",
+      "adr": "ADR-001",
       "severity": "BLOCKING|IMPORTANT|MINOR",
-      "file": "crates/docli/src/lib.rs",
+      "file": "src/lib.rs",
       "line": 46,
       "description": "Short description of the structural violation.",
-      "remediation": "Specific remediation."
+      "remediation": "Specific remediation.",
+      "evidence_refs": ["docs/architecture.md:90"]
     }
   ],
   "gate_artifact_checks": [

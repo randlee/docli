@@ -1,8 +1,41 @@
 # docli Requirements
 
-**Status**: Target contract. The 2026-10-07 tree is a prototype of the neutral model and the HTML/Markdown renderer.
-**Applies to**: `docli`
-**Source of truth**: this document, `src/schema.rs` for the input model, and `fixtures/contract/` for rendered bytes once those fixtures exist.
+**Status**: Authoritative requirements baseline for this repository.  
+**Applies to**: `docli`  
+**Consumers**: `req-qa` (compliance), implementers, sprint plans.
+
+**Hard requirements**: every `REQ-DOCLI-*` id in this document is normative for
+Phase A unless marked **(later)**. Use **MUST** / **MUST NOT** semantics when
+implementing or reviewing.
+
+**Source of truth (product)**
+
+- This file — requirement ids and acceptance criteria
+- [`architecture.md`](architecture.md) — ADRs and `ARCH-RULE-*` (validated by `arch-qa`)
+- `src/schema.rs` — input model fields for `REQ-DOCLI-INPUT-*`
+- `fixtures/contract/` — rendered HTML/Markdown byte lock for `REQ-DOCLI-GEN-*`
+
+**QA validation (`req-qa`)**
+
+1. Read this file, [`architecture.md`](architecture.md), and
+   [`plans/project-plan.md`](plans/project-plan.md) before analysis.
+2. Map each in-scope deliverable and acceptance criterion to one or more
+   `REQ-DOCLI-*` ids (cite `requirements.md` line or section).
+3. Map structural boundaries to `ADR-*` / `ARCH-RULE-*` in `architecture.md`
+   (arch-qa primary; req-qa flags cross-doc conflicts).
+4. **FAIL** on missing deliverables, unverifiable acceptance, or contradiction
+   between sprint docs and these baselines.
+5. External skill rules apply where cited (see `REQ-DOCLI-NORM-001`); skill text
+   lives under `.claude/skills/creating-ai-clis/`.
+
+**Mandatory CLI design basis**: the **creating-ai-clis** skill supplied for this
+project (vendored at `.claude/skills/creating-ai-clis/`, from
+`synaptic-canvas/packages/sc-ai-cli`). The `docli` and `cargo docli` binaries,
+their `--json` envelope, typed actionable errors, and `generate` / `show`
+readback pair MUST conform to that skill and its references (`core-contract.md`,
+`error-contracts.md`, `mcp-compatibility.md`, `simulation-and-auditability.md`
+where applicable). This file names stable requirement ids and docli-specific
+product scope; it does not replace the skill.
 
 Phase A is Rust only. Go, .NET, and Python stay in the contract so later phases match the same bytes and the same CLI envelope, and they are not Phase A deliverables.
 
@@ -140,11 +173,18 @@ These rules apply to every language implementation.
 ## 9. CLI Contract
 
 The machine contract is primary. Human output is a presentation of the same
-result. The contract follows the sc-ai-cli rules: every command has a stable
-operation name, a request model, a response model, `--json`, and one envelope
-for success and failure. Request and response types live outside the CLI
-entrypoint so a later MCP wrapper can call the same operations without
-reshaping the payload.
+result. Section 9 implements the mandatory **creating-ai-clis** skill (see header):
+read `.claude/skills/creating-ai-clis/SKILL.md` and
+`references/core-contract.md` / `references/error-contracts.md` before changing
+CLI behavior. Every command has a stable operation name, a request model, a
+response model, `--json`, and one envelope for success and failure. Failures
+must expose `kind`, stable `code`, structured `details`, and `suggested_action`
+so automated callers (and wrapper scripts) can recover without guessing. Request
+and response types live outside the CLI entrypoint so a later MCP wrapper can
+call the same operations without reshaping the payload.
+
+- `REQ-DOCLI-NORM-001`: `docli` CLI contract changes are invalid unless they
+  remain conformant with the in-repo **creating-ai-clis** skill and references.
 
 There is no interactive prompt. JSON mode emits no color, progress, or
 prompts.
@@ -167,9 +207,12 @@ prompts.
   Success sets `ok` true, `data` to the response, and `error` null. Failure
   sets `ok` false, `data` null, and `error` to the error object.
 - `REQ-DOCLI-CLI-003`: `error` carries `kind`, `code`, `message`, `details`,
-  `suggested_action`, and `docs`. `kind` is one of `validation`, `not_found`,
-  `dependency`, or `internal`. `code` is one of the stable strings below.
-  `details` is an object. `docs` is a string or null. Codes are stable:
+  `suggested_action`, and `docs`. This matches sc-ai-cli actionable error
+  guidance: callers must be able to branch on `kind`/`code` and act on
+  `suggested_action` without parsing prose-only stderr. `kind` is one of
+  `validation`, `not_found`, `dependency`, or `internal`. `code` is one of the
+  stable strings below. `details` is an object. `docs` is a string or null.
+  Codes are stable:
 
   | Code | Kind | When |
   |---|---|---|
@@ -208,7 +251,54 @@ prompts.
 - `REQ-DOCLI-CLI-007`: human-readable output uses only fields that `--json`
   also returns. Human `generate` with output paths prints each path, byte
   length, and sha256. Human `show` prints the same fields.
+- `REQ-DOCLI-CLI-008`: every stable error code in the table below **MUST**
+  have integration coverage in `tests/error_contract.rs` that asserts:
+  - exit code per `REQ-DOCLI-CLI-004`
+  - envelope shape per `REQ-DOCLI-CLI-002` (`data: null` on failure)
+  - `error.message` and `error.suggested_action` are non-empty strings agents
+    can act on without parsing stderr
+  - `error.details` matches the schema row for that code
+- `REQ-DOCLI-CLI-009`: with `--json`, failures **MUST** emit exactly one JSON
+  envelope on stdout. Contract fields **MUST NOT** appear only on stderr.
+  Human mode **MUST** print the same stable `DOCLI.*` code and recovery text on
+  stderr via `ErrorBody`'s display format (code, message, suggested_action,
+  optional cause).
+- `REQ-DOCLI-CLI-010`: `cargo docli` **MUST** match `docli` exit status and
+  stdout bytes for each error scenario exercised in `tests/error_contract.rs`
+  (see `cargo_docli_matches_docli_error_envelopes` and extended cases).
+
+### Error code inventory (normative)
+
+| Code | Exit | `kind` | `details` (required keys) | Covered by |
+|------|------|--------|---------------------------|------------|
+| `DOCLI.USAGE` | 2 | `validation` | `{}` | `docli_usage_*` tests |
+| `DOCLI.INPUT_INVALID` | 2 | `validation` | `{}` or `{ "cause" }` | `docli_input_invalid_*`, `docli_stdin_empty_*` |
+| `DOCLI.INPUT_NOT_FOUND` | 3 | `not_found` | `{ "path" }` | `docli_input_not_found_*` |
+| `DOCLI.OUTPUT_NOT_FOUND` | 3 | `not_found` | `{ "artifacts": [{ "path", "exists" }] }` | `docli_output_not_found_*` |
+| `DOCLI.IO` | 4 | `dependency` | `{ "cause" }`; optional `{ "outputs_written" }` after partial write | `docli_io_*` |
+| `DOCLI.INTERNAL` | 1 | `internal` | `{ "cause" }` | `docli_internal_error_body_contract` |
+
+Adding a new `DOCLI.*` code requires updating this table, `src/contract.rs`,
+and a matching test in `tests/error_contract.rs` before merge.
 
 ## 10. Distribution
 
 - `REQ-DOCLI-DIST-001`: every implementation is licensed MIT.
+
+## 11. Requirement index (Phase A)
+
+Use this table for traceability in QA findings (`source_refs` must cite ids).
+
+| ID | Summary | ADR |
+|----|---------|-----|
+| `REQ-DOCLI-NORM-001` | CLI must conform to creating-ai-clis skill | ADR-003 |
+| `REQ-DOCLI-PRODUCT-001` | Rust library + CLI in repo; crates.io later | — |
+| `REQ-DOCLI-PRODUCT-002` | `docli` and `cargo docli` same operations | ADR-001 |
+| `REQ-DOCLI-PRODUCT-003` | In-process `ops` / `from_clap` / render parity with CLI | ADR-001 |
+| `REQ-DOCLI-INPUT-001`–`005` | Neutral `CliModel` JSON shape and stdin/file input | — |
+| `REQ-DOCLI-RUST-001`–`002` | clap adapter mapping and exclusions | — |
+| `REQ-DOCLI-HTML-001`–`006` | Self-contained two-pane HTML, search, default `site/cli` | ADR-002 |
+| `REQ-DOCLI-MD-001` | Flat Markdown reference | — |
+| `REQ-DOCLI-GEN-001`–`002` | Deterministic output; CI fixture lock | ADR-002 |
+| `REQ-DOCLI-CLI-001`–`010` | `--json` envelope, errors, tests, cargo parity | ADR-001, ADR-003 |
+| `REQ-DOCLI-DIST-001` | MIT license | — |

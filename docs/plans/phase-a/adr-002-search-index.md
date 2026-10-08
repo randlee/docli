@@ -1,5 +1,8 @@
 # ADR-002 — Search index is embedded JSON
 
+> **Canonical copy**: [`docs/architecture.md`](../../architecture.md#adr-002--search-index-is-embedded-json).
+> `arch-qa` and `req-qa` use that file, not this sprint snapshot.
+
 ## Decision
 
 The page keeps `<script id="docli-data" type="application/json">` as the full `CliModel`. Tree building and the detail panel read only that tag.
