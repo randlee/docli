@@ -24,7 +24,7 @@ Operator guide: [`.plan-hardening/README.md`](../../.plan-hardening/README.md).
 | Phase | Integration branch | Plan authority | Status |
 |-------|-------------------|----------------|--------|
 | A | `integrate/phase-a` | [phase-a/README.md](phase-a/README.md) | Complete (merged to `develop`) |
-| B | `integrate/phase-b` | [phase-b/README.md](phase-b/README.md) | Planning branch + harden; execution on integrate after **go** |
+| B | `integrate/phase-b` | [phase-b/README.md](phase-b/README.md) | Execution complete on integrate; phase-end QA → merge to **develop** |
 
 ## Branch model (every phase)
 

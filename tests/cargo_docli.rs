@@ -318,4 +318,17 @@ fn cargo_docli_matches_docli_error_envelopes() {
         ],
         None,
     );
+
+    let broken_pack = dir.join("broken-pack");
+    fs::create_dir_all(&broken_pack).unwrap();
+    fs::write(broken_pack.join("template.toml"), "id = [\n").unwrap();
+    assert_error_parity(
+        &[
+            "templates",
+            "validate",
+            broken_pack.to_str().unwrap(),
+            "--json",
+        ],
+        None,
+    );
 }
