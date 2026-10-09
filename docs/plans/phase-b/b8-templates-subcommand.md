@@ -72,9 +72,9 @@ docli templates validate <PATH> [--json]
   "error": {
     "code": "DOCLI.TEMPLATE_INVALID",
     "kind": "validation",
-    "message": "…",
-    "details": {},
-    "suggested_action": "…",
+    "message": "template pack is invalid",
+    "details": { "cause": "template.toml: …" },
+    "suggested_action": "Run docli templates validate <path> --json and fix template.toml and required pack files",
     "docs": "https://github.com/randlee/docli/blob/develop/docs/requirements.md"
   }
 }
