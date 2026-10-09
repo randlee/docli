@@ -7,9 +7,16 @@
 #   ./scripts/verify-candidate-repos.sh
 #   DOCLI_SKIP_GEN_FIXTURES=1 ./scripts/verify-candidate-repos.sh
 #   DOCLI_REFRESH_FIXTURES=1 ./scripts/verify-candidate-repos.sh
+#   DOCLI_BIN=docli DOCLI_SKIP_GEN_FIXTURES=1 ./scripts/verify-candidate-repos.sh
 #
 # Env:
 #   DOCLI_ROOT          — docli checkout (default: repo root from script path)
+#   DOCLI_BIN           — installed docli for generate/show (post-publish).
+#                         Unset: cargo build --release and use target/release/docli.
+#                         Set to a path (DOCLI_BIN=/path/to/docli) or a PATH
+#                         command (DOCLI_BIN=docli, or DOCLI_BIN="$(command -v docli)").
+#                         A set value skips cargo build --release. gen-fixtures
+#                         still builds from this checkout unless skip is set.
 #   ATM_CORE_ROOT       — atm-core checkout
 #   SC_COMPOSE_ROOT     — sc-compose checkout
 #   SC_OBSERVABILITY_ROOT — sc-observability checkout (no clap CLI; smoke only)
@@ -65,7 +72,30 @@ echo "sc-compose:              $SC_COMPOSE_ROOT"
 echo "sc-observability:        $SC_OBSERVABILITY_ROOT"
 
 cd "$DOCLI_ROOT"
-cargo build --release -q
+
+# Pre-publish default builds this checkout. Post-publish sets DOCLI_BIN.
+if [[ -z "${DOCLI_BIN:-}" ]]; then
+  echo "docli binary: pre-publish (cargo build --release)"
+  cargo build --release -q
+  DOCLI="$DOCLI_ROOT/target/release/docli"
+elif [[ "$DOCLI_BIN" == */* ]]; then
+  if [[ ! -x "$DOCLI_BIN" ]]; then
+    echo "DOCLI_BIN is not an executable file: $DOCLI_BIN" >&2
+    echo "hint: set DOCLI_BIN to the installed docli path, or to the command name docli so PATH is searched; unset DOCLI_BIN to build target/release/docli" >&2
+    exit 1
+  fi
+  DOCLI="$DOCLI_BIN"
+  echo "docli binary: $DOCLI (DOCLI_BIN path; skipped cargo build --release)"
+else
+  resolved_bin="$(command -v "$DOCLI_BIN" || true)"
+  if [[ -z "$resolved_bin" || ! -x "$resolved_bin" ]]; then
+    echo "DOCLI_BIN is not executable on PATH: $DOCLI_BIN" >&2
+    echo "hint: cargo install docli, then DOCLI_BIN=docli or DOCLI_BIN=\"\$(command -v docli)\"; unset DOCLI_BIN to build target/release/docli" >&2
+    exit 1
+  fi
+  DOCLI="$resolved_bin"
+  echo "docli binary: $DOCLI (DOCLI_BIN on PATH; skipped cargo build --release)"
+fi
 
 fixture_snapshot_dir=""
 default_fixture_guard=0
@@ -197,8 +227,6 @@ else
   fi
   release_fixture_guard
 fi
-
-DOCLI="$DOCLI_ROOT/target/release/docli"
 
 generate_show() {
   local label=$1

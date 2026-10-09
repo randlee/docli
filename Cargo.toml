@@ -5,7 +5,28 @@ edition = "2021"
 description = "Language-agnostic CLI documentation generator: HTML + Markdown from a neutral command-tree JSON"
 license = "MIT"
 repository = "https://github.com/randlee/docli"
+homepage = "https://randlee.github.io/docli/"
 readme = "README.md"
+keywords = ["cli", "documentation", "html", "markdown", "clap"]
+categories = [
+    "command-line-utilities",
+    "development-tools::cargo-plugins",
+    "development-tools::build-utils",
+]
+# Published sources must include the include_dir! paths. Dev-only trees
+# (docs, scripts, site, CI) stay out; see docs/release-first-crates-io.md.
+include = [
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/LICENSE",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/src/**",
+    "/templates/html/**",
+    "/tests/**",
+    "/fixtures/**",
+    "/examples/**",
+]
 
 [lib]
 name = "docli"
