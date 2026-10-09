@@ -14,8 +14,8 @@ use crate::contract::{Envelope, ErrorBody};
 use crate::render;
 use crate::schema::CliModel;
 use crate::templates::{
-    install_root, render_pack, resolve_pack, PackResolveError, TemplateManifest, TemplateRef,
-    ThemeKeySpec, ThemeMap,
+    install_root, render_pack, resolve_pack, BundledPackId, PackResolveError, TemplateManifest,
+    TemplateRef, ThemeKeySpec, ThemeMap,
 };
 
 /// Example `generate` argv included in `templates show`.
@@ -293,29 +293,34 @@ pub fn show(req: ShowRequest) -> Envelope<ShowResponse> {
     })
 }
 
-/// List the embedded `default` pack and any valid extra packs under [`install_root`].
+/// List embedded packs and any valid extra packs under [`install_root`].
 ///
+/// Embedded order is [`BundledPackId::all`]: `default`, then `cli-doc`.
 /// A missing install root is an empty extra list, not an error. Unreadable
 /// install roots are `DOCLI.IO`. Extra directories that do not load are omitted
 /// so one broken pack does not hide the others; [`templates_validate`] reports
-/// that failure.
+/// that failure. An extra whose id is already bundled, or whose id starts with
+/// `_` (the `_skeleton` starter), is omitted.
 ///
 /// # Errors
 ///
-/// Returns a failure envelope when the embedded pack cannot load
+/// Returns a failure envelope when an embedded pack cannot load
 /// (`DOCLI.INTERNAL`) or the install root exists but cannot be read (`DOCLI.IO`).
 pub fn templates_list() -> Envelope<TemplatesListResponse> {
     let install_root = install_root();
-    let pack = match resolve_pack(&TemplateRef::bundled_default()) {
-        Ok(pack) => pack,
-        Err(err) => return Envelope::failure(pack_failure(err)),
-    };
-    let mut templates = vec![TemplateSummary {
-        path: format!("embedded:{}", pack.manifest.id),
-        id: pack.manifest.id.clone(),
-        name: pack.manifest.name,
-        version: pack.manifest.version,
-    }];
+    let mut templates = Vec::new();
+    for id in BundledPackId::all() {
+        let pack = match resolve_pack(&TemplateRef::bundled(id)) {
+            Ok(pack) => pack,
+            Err(err) => return Envelope::failure(pack_failure(err)),
+        };
+        templates.push(TemplateSummary {
+            path: format!("embedded:{}", pack.manifest.id),
+            id: pack.manifest.id,
+            name: pack.manifest.name,
+            version: pack.manifest.version,
+        });
+    }
     match installed_summaries(&install_root) {
         Ok(extras) => templates.extend(extras),
         Err(error) => return Envelope::failure(error),
@@ -387,7 +392,9 @@ fn installed_summaries(root: &Path) -> Result<Vec<TemplateSummary>, ErrorBody> {
         let Ok(pack) = resolve_pack(&TemplateRef::dir(&path)) else {
             continue;
         };
-        if pack.manifest.id == "default" {
+        if pack.manifest.id.starts_with('_')
+            || BundledPackId::try_from_str(&pack.manifest.id).is_ok()
+        {
             continue;
         }
         extras

@@ -51,6 +51,14 @@ The default `--html` directory is `site/cli` (`REQ-DOCLI-HTML-006`,
 `REQ-DOCLI-CLI-005`). Omitting `--html` writes `site/cli/index.html`. HTML is
 not written to stdout. With no `--markdown`, no Markdown file is written.
 
+## HTML templates
+
+Bundled packs are `default` and `cli-doc`. `_skeleton` is a starter you copy;
+`docli templates list` does not include it.
+
+- [Authoring a pack](docs/templates/AUTHOR.md)
+- [Agent preview workflow](docs/templates/AGENT-PREVIEW.md)
+
 ## Candidate repo verification
 
 CI uses checked-in JSON under `fixtures/repos/` (see `tests/repo_fixtures.rs`).

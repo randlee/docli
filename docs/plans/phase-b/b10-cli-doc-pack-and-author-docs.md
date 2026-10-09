@@ -1,7 +1,7 @@
 ---
 id: b.10
 title: cli-doc pack and author skeleton
-status: planned
+status: in-review
 branch: feature/phase-b-b10-cli-doc
 worktree: ../docli-worktrees/feature/phase-b-b10-cli-doc
 target: integrate/phase-b

@@ -33,6 +33,24 @@ fn templates_list_json_includes_default() {
     assert_eq!(default["name"], "docli default");
     assert_eq!(default["version"], "1");
     assert_eq!(default["path"], "embedded:default");
+    let cli_doc = templates
+        .iter()
+        .find(|template| template["id"] == "cli-doc")
+        .expect("cli-doc pack");
+    assert_eq!(cli_doc["name"], "docli cli-doc");
+    assert_eq!(cli_doc["version"], "1");
+    assert_eq!(cli_doc["path"], "embedded:cli-doc");
+    assert!(
+        templates
+            .iter()
+            .all(|template| template["id"] != "_skeleton"),
+        "list included _skeleton: {templates:?}"
+    );
+    assert!(templates.iter().all(|template| {
+        template["id"]
+            .as_str()
+            .is_some_and(|id| !id.starts_with('_'))
+    }));
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
 }
 
@@ -195,6 +213,151 @@ fn generate_default_template_explicit_html_matches_contract_bytes() {
         assert_eq!(written, expected, "template={template:?}");
     }
     assert!(!dir.join("site/cli").exists());
+}
+
+#[test]
+fn templates_validate_skeleton_succeeds() {
+    let pack = workspace_fixture("templates/html/_skeleton");
+    let output = run(
+        &mut docli_bin(),
+        &[
+            "templates",
+            "validate",
+            pack.to_str().expect("utf8"),
+            "--json",
+        ],
+    );
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let envelope = parse_envelope(&output.stdout);
+    assert_success(&envelope);
+    let data = &envelope["data"];
+    assert_eq!(data["operation"], "templates_validate");
+    assert_eq!(data["id"], "_skeleton");
+    assert_eq!(data["valid"], true);
+    assert_eq!(data["path"], pack.to_string_lossy().as_ref());
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[test]
+fn generate_cli_doc_docli_repo_fixture_has_layout_markers() {
+    let dir = unique_dir();
+    let model = workspace_fixture("fixtures/repos/docli.json");
+    let cli_dir = dir.join("cli-doc");
+    let default_dir = dir.join("default");
+    let cli_html = render_template(&dir, &model, "cli-doc", &cli_dir);
+    let default_html = render_template(&dir, &model, "default", &default_dir);
+    assert!(cli_html.contains("data-layout=\"two-column\""));
+    assert!(cli_html.contains("class=\"option-card\""));
+    assert!(cli_html.contains("id=\"docli-data\""));
+    assert!(cli_html.contains("id=\"docli-search\""));
+    assert!(cli_html.contains("id=\"docli-cli-doc-pack\""));
+    assert!(!cli_html.contains("id=\"docli-default-pack\""));
+    assert!(!cli_html.contains("<link"));
+    assert!(!cli_html.contains("src=\"http"));
+    assert!(!default_html.contains("data-layout=\"two-column\""));
+    assert!(!default_html.contains("option-card"));
+    assert!(default_html.contains("id=\"docli-data\""));
+    assert!(default_html.contains("id=\"docli-search\""));
+    assert!(default_html.contains("id=\"docli-default-pack\""));
+}
+
+#[test]
+fn agent_preview_three_calls_succeed_on_docli_fixture() {
+    let model = workspace_fixture("fixtures/repos/docli.json");
+    let calls = [
+        (
+            "default",
+            r##"{"accent":"#007acc","font_body":"system-ui"}"##,
+            "#007acc",
+        ),
+        (
+            "cli-doc",
+            r##"{"accent":"#d73a49","font_body":"Monaco"}"##,
+            "#d73a49",
+        ),
+        (
+            "default",
+            r##"{"accent":"#059669","font_body":"Inter"}"##,
+            "#059669",
+        ),
+    ];
+    let mut preview_dirs = Vec::new();
+    for (template, theme, accent) in calls {
+        let output = run(
+            &mut docli_bin(),
+            &[
+                "generate",
+                "--json",
+                "--input",
+                model.to_str().expect("utf8"),
+                "--preview",
+                "--template",
+                template,
+                "--theme",
+                theme,
+            ],
+        );
+        assert_eq!(
+            output.status.code(),
+            Some(0),
+            "template={template} stderr={}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let envelope = parse_envelope(&output.stdout);
+        assert_success(&envelope);
+        assert_eq!(envelope["ok"], true);
+        assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+        let preview_dir = envelope["data"]["preview_dir"]
+            .as_str()
+            .expect("preview_dir");
+        assert_preview_dir_name(preview_dir);
+        let html = fs::read_to_string(Path::new(preview_dir).join("index.html")).expect("html");
+        assert!(
+            html.contains(&format!("--accent:{accent}")),
+            "template={template} missing {accent}"
+        );
+        if template == "cli-doc" {
+            assert!(html.contains("data-layout=\"two-column\""));
+            assert!(html.contains("class=\"option-card\""));
+            assert!(html.contains("font-family:Monaco"));
+        }
+        preview_dirs.push(preview_dir.to_owned());
+    }
+    assert_ne!(preview_dirs[0], preview_dirs[1]);
+    assert_ne!(preview_dirs[1], preview_dirs[2]);
+}
+
+fn render_template(cwd: &Path, model: &Path, template: &str, html_dir: &Path) -> String {
+    let mut cmd = docli_bin();
+    cmd.current_dir(cwd);
+    let output = run(
+        &mut cmd,
+        &[
+            "generate",
+            "--input",
+            model.to_str().expect("utf8"),
+            "--html",
+            html_dir.to_str().expect("utf8"),
+            "--template",
+            template,
+            "--json",
+        ],
+    );
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "template={template} stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let envelope = parse_envelope(&output.stdout);
+    assert_success(&envelope);
+    assert_eq!(envelope["data"]["preview_dir"], serde_json::Value::Null);
+    fs::read_to_string(html_dir.join("index.html")).expect("written html")
 }
 
 fn assert_preview_dir_name(preview_dir: &str) {

@@ -1,8 +1,10 @@
 //! HTML template packs.
 //!
-//! The bundled `default` pack is compiled into the binary with [`include_dir`].
-//! [`resolve_pack`] also loads a pack directory from disk. [`render_pack`]
-//! fills `page.html.j2` and `style.css.j2` with MiniJinja.
+//! The bundled `default` and `cli-doc` packs are compiled into the binary with
+//! [`include_dir`]. [`resolve_pack`] also loads a pack directory from disk.
+//! [`render_pack`] fills `page.html.j2` and `style.css.j2` with MiniJinja.
+//! `templates/html/_skeleton/` is an author starter: it validates from disk and
+//! is not a bundled id.
 //!
 //! Embedded-default failures are `DOCLI.INTERNAL` (the pack is not read from
 //! disk). A filesystem read failure is `DOCLI.IO`. A filesystem pack whose
@@ -43,18 +45,22 @@ use crate::schema::CliModel;
 use crate::search::search_index;
 
 const DEFAULT_PACK_ID: &str = "default";
+const CLI_DOC_PACK_ID: &str = "cli-doc";
 const MANIFEST_FILE: &str = "template.toml";
 const PAGE_FILE: &str = "page.html.j2";
 const STYLE_FILE: &str = "style.css.j2";
 const SCRIPT_FILE: &str = "script.js";
 
 static DEFAULT_PACK: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/templates/html/default");
+static CLI_DOC_PACK: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/templates/html/cli-doc");
 
 /// A bundled pack id compiled into this binary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BundledPackId {
     /// The embedded `default` pack.
     Default,
+    /// The embedded `cli-doc` pack.
+    CliDoc,
 }
 
 impl BundledPackId {
@@ -62,7 +68,15 @@ impl BundledPackId {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Default => DEFAULT_PACK_ID,
+            Self::CliDoc => CLI_DOC_PACK_ID,
         }
+    }
+
+    /// Bundled packs in `templates list` order.
+    ///
+    /// `default` is first, then `cli-doc`. `_skeleton` is not a bundled id.
+    pub const fn all() -> [Self; 2] {
+        [Self::Default, Self::CliDoc]
     }
 
     /// Accept only ids that are compiled into this binary.
@@ -71,10 +85,17 @@ impl BundledPackId {
     ///
     /// Returns [`PackResolveError`] when `id` is not embedded.
     pub fn try_from_str(id: &str) -> Result<Self, PackResolveError> {
-        if id == DEFAULT_PACK_ID {
-            Ok(Self::Default)
-        } else {
-            Err(PackResolveError::not_bundled(id))
+        match id {
+            DEFAULT_PACK_ID => Ok(Self::Default),
+            CLI_DOC_PACK_ID => Ok(Self::CliDoc),
+            _ => Err(PackResolveError::not_bundled(id)),
+        }
+    }
+
+    fn embedded_dir(self) -> &'static Dir<'static> {
+        match self {
+            Self::Default => &DEFAULT_PACK,
+            Self::CliDoc => &CLI_DOC_PACK,
         }
     }
 }
@@ -82,7 +103,7 @@ impl BundledPackId {
 /// Bundled pack id or a filesystem pack directory.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TemplateRef {
-    /// Pack compiled into this binary. Phase B embeds `default` only.
+    /// Pack compiled into this binary. Phase B embeds `default` and `cli-doc`.
     Bundled(BundledPackId),
     /// Directory that contains `template.toml`, `page.html.j2`, `style.css.j2`,
     /// and `script.js`.
@@ -95,7 +116,12 @@ impl TemplateRef {
         Self::Bundled(BundledPackId::Default)
     }
 
-    /// A bundled pack id such as `default`.
+    /// A compiled-in pack.
+    pub fn bundled(id: BundledPackId) -> Self {
+        Self::Bundled(id)
+    }
+
+    /// A bundled pack id such as `default` or `cli-doc`.
     ///
     /// # Errors
     ///
@@ -342,7 +368,7 @@ impl PackResolveError {
     pub fn suggested_action(&self) -> String {
         match &self.kind {
             PackResolveKind::NotBundled { id } => format!(
-                "Run `docli templates list --json` and pass a bundled id such as default instead of {id}"
+                "Run `docli templates list --json` and pass a bundled id such as default or cli-doc instead of {id}"
             ),
             PackResolveKind::Invalid { path, .. } => format!(
                 "Run `docli templates validate {} --json` and fix template.toml and the pack templates",
@@ -352,7 +378,7 @@ impl PackResolveError {
                 format!("Check that {} exists and is readable", path.display())
             }
             PackResolveKind::Embedded { .. } => {
-                "Retry or report a bug — the embedded default pack failed to load".to_owned()
+                "Retry or report a bug — an embedded template pack failed to load".to_owned()
             }
         }
     }
@@ -495,7 +521,7 @@ impl std::error::Error for EmbeddedDefaultError {}
 /// `DOCLI.TEMPLATE_INVALID`.
 pub fn resolve_pack(template: &TemplateRef) -> Result<Pack, PackResolveError> {
     match template {
-        TemplateRef::Bundled(BundledPackId::Default) => load_embedded(),
+        TemplateRef::Bundled(id) => load_embedded(*id),
         TemplateRef::Dir(path) => load_dir(path),
     }
 }
@@ -577,20 +603,21 @@ fn merge_theme(pack: &Pack, theme: &ThemeMap) -> ThemeMap {
     merged
 }
 
-fn load_embedded() -> Result<Pack, PackResolveError> {
-    let manifest_text = embedded_file(MANIFEST_FILE)?;
+fn load_embedded(id: BundledPackId) -> Result<Pack, PackResolveError> {
+    let manifest_text = embedded_file(id, MANIFEST_FILE)?;
     let manifest = parse_manifest(&manifest_text, Path::new(MANIFEST_FILE), true)?;
-    if manifest.id != DEFAULT_PACK_ID {
+    if manifest.id != id.as_str() {
         return Err(PackResolveError::embedded(format!(
-            "embedded pack id is {}, expected {DEFAULT_PACK_ID}",
-            manifest.id
+            "embedded pack id is {}, expected {}",
+            manifest.id,
+            id.as_str()
         )));
     }
     pack_from_sources(
         manifest,
-        embedded_file(PAGE_FILE)?,
-        embedded_file(STYLE_FILE)?,
-        embedded_file(SCRIPT_FILE)?,
+        embedded_file(id, PAGE_FILE)?,
+        embedded_file(id, STYLE_FILE)?,
+        embedded_file(id, SCRIPT_FILE)?,
         CompileSite::Embedded,
     )
 }
@@ -659,9 +686,9 @@ fn compile_environment(
     Ok(env)
 }
 
-fn embedded_file(name: &str) -> Result<String, PackResolveError> {
-    let file = DEFAULT_PACK.get_file(name).ok_or_else(|| {
-        PackResolveError::embedded(format!("embedded default pack is missing {name}"))
+fn embedded_file(id: BundledPackId, name: &str) -> Result<String, PackResolveError> {
+    let file = id.embedded_dir().get_file(name).ok_or_else(|| {
+        PackResolveError::embedded(format!("embedded {} pack is missing {name}", id.as_str()))
     })?;
     file.contents_utf8()
         .map(str::to_owned)
@@ -780,12 +807,12 @@ mod tests {
 
     #[test]
     fn unknown_bundled_id_maps_to_template_not_found() {
-        let err = TemplateRef::try_bundled("cli-doc").expect_err("missing id");
+        let err = TemplateRef::try_bundled("not-a-bundled-pack").expect_err("missing id");
         assert!(err.is_not_bundled());
-        assert_eq!(err.not_bundled_id(), Some("cli-doc"));
+        assert_eq!(err.not_bundled_id(), Some("not-a-bundled-pack"));
         assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_NOT_FOUND");
         assert!(err.suggested_action().contains("templates list"));
-        assert!(err.suggested_action().contains("cli-doc"));
+        assert!(err.suggested_action().contains("not-a-bundled-pack"));
         let cause = err.cause();
         let wrapped = EmbeddedDefaultError::from_resolve(err);
         assert_eq!(wrapped.cause(), cause);
@@ -794,6 +821,33 @@ mod tests {
             TemplateRef::try_bundled("default"),
             Ok(TemplateRef::Bundled(BundledPackId::Default))
         ));
+        assert!(matches!(
+            TemplateRef::try_bundled("cli-doc"),
+            Ok(TemplateRef::Bundled(BundledPackId::CliDoc))
+        ));
+    }
+
+    #[test]
+    fn cli_doc_render_has_layout_markers_absent_from_default() {
+        let model = demo_model();
+        let cli_doc = resolve_pack(&TemplateRef::bundled(BundledPackId::CliDoc)).expect("cli-doc");
+        let default = resolve_pack(&TemplateRef::bundled_default()).expect("default");
+        let cli_html =
+            render_pack(&cli_doc, &model, &ThemeMap::defaults(&cli_doc)).expect("render");
+        let default_html =
+            render_pack(&default, &model, &ThemeMap::defaults(&default)).expect("render");
+        assert!(cli_html.contains("data-layout=\"two-column\""));
+        assert!(cli_html.contains("class=\"option-card\""));
+        assert!(cli_html.contains("id=\"docli-data\""));
+        assert!(cli_html.contains("id=\"docli-search\""));
+        assert!(cli_html.contains("id=\"docli-cli-doc-pack\""));
+        assert!(!default_html.contains("data-layout=\"two-column\""));
+        assert!(!default_html.contains("option-card"));
+        assert!(default_html.contains("id=\"docli-default-pack\""));
+        assert_eq!(
+            BundledPackId::all().map(BundledPackId::as_str),
+            ["default", "cli-doc"]
+        );
     }
 
     #[test]

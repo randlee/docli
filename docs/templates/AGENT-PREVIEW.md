@@ -8,7 +8,7 @@ choosing a template or brand colors. Requires Phase B **b.8–b.9** (`docli temp
 
 - `cli-model.json` exists (from `docli::from_clap`, `dump-cli-model`, or hand-written)
 - `docli` on `PATH` (or `target/release/docli`)
-- Phase B template sprints shipped (bundled packs on disk or dev tree)
+- Phase B template sprints shipped (`default` and `cli-doc` embedded)
 
 ## Step 1 — Discover templates
 
@@ -16,7 +16,7 @@ choosing a template or brand colors. Requires Phase B **b.8–b.9** (`docli temp
 docli templates list --json
 ```
 
-Confirm `data.templates[].id` values (expect at least `default`, and `cli-doc` after **b.10**).
+Confirm `data.templates[].id` includes `default` and `cli-doc`. `_skeleton` is not listed.
 
 ## Step 2 — Render three previews
 
@@ -27,13 +27,13 @@ so output goes to a temp directory without touching `site/cli`.
 MODEL=/absolute/path/to/cli-model.json
 
 docli generate --json --input "$MODEL" --preview --template default \
-  --theme '{"accent":"#007acc","font_body":"-apple-system,BlinkMacSystemFont,sans-serif","font_mono":"ui-monospace,monospace"}'
+  --theme '{"accent":"#007acc","font_body":"system-ui"}'
 
 docli generate --json --input "$MODEL" --preview --template cli-doc \
-  --theme '{"accent":"#005a9e","font_body":"Monaco,Consolas,monospace","font_mono":"Monaco,Consolas,monospace"}'
+  --theme '{"accent":"#d73a49","font_body":"Monaco"}'
 
 docli generate --json --input "$MODEL" --preview --template default \
-  --theme '{"accent":"#059669","font_body":"Inter,system-ui,sans-serif","font_mono":"JetBrains Mono,monospace"}'
+  --theme '{"accent":"#059669","font_body":"Inter"}'
 ```
 
 Third call reuses `default` with a different theme so the user can compare **brand**
