@@ -5,7 +5,7 @@ mod common;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use common::envelope::{assert_failure, assert_success, parse_envelope};
+use common::envelope::{assert_success, parse_envelope};
 use common::harness::{cargo_docli_bin, docli_bin, run, unique_dir};
 use docli::ops::{templates_list, templates_show, TemplatesListRequest, TemplatesShowRequest};
 
@@ -175,30 +175,6 @@ fn templates_list_includes_install_root_pack_and_skips_bundled_id() {
         .unwrap();
     assert_eq!(extra.version, "2");
     assert_eq!(extra.path, root.join("extra").display().to_string());
-}
-
-#[test]
-fn templates_show_unknown_id_is_template_invalid() {
-    let output = run(
-        &mut docli_bin(),
-        &["templates", "show", "not-a-pack", "--json"],
-    );
-    assert_exit(&output, 2);
-    let error = assert_failure(
-        output.status.code(),
-        &parse_envelope(&output.stdout),
-        2,
-        "validation",
-        "DOCLI.TEMPLATE_INVALID",
-    );
-    assert!(error["details"]["cause"]
-        .as_str()
-        .unwrap()
-        .contains("not-a-pack"));
-    assert!(error["suggested_action"]
-        .as_str()
-        .unwrap()
-        .contains("templates list"));
 }
 
 #[test]

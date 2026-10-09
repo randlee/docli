@@ -231,8 +231,9 @@ impl Default for ThemeMap {
 ///
 /// Filesystem reads are `DOCLI.IO`. A damaged embedded pack is
 /// `DOCLI.INTERNAL`. An invalid on-disk manifest or template is
-/// `DOCLI.TEMPLATE_INVALID`. An unknown bundled id stays `DOCLI.INTERNAL`
-/// until sprint b.9 adds `DOCLI.TEMPLATE_NOT_FOUND`. [`suggested_action`]
+/// `DOCLI.TEMPLATE_INVALID`. Unknown bundled ids on template commands are
+/// also `DOCLI.TEMPLATE_INVALID`; b.9 adds `DOCLI.TEMPLATE_NOT_FOUND` for
+/// `generate --template` only. [`suggested_action`]
 /// names `templates list` or `templates validate`.
 #[derive(Debug)]
 pub struct PackResolveError {
@@ -482,10 +483,9 @@ impl std::error::Error for EmbeddedDefaultError {}
 /// Returns [`PackResolveError`] when a required file cannot be read,
 /// `template.toml` is not the expected manifest, or a template fails to compile.
 ///
-/// Unknown bundled ids fail in [`TemplateRef::try_bundled`]. Their
-/// [`PackResolveError::machine_code`] stays `DOCLI.INTERNAL` until b.9 adds
-/// `DOCLI.TEMPLATE_NOT_FOUND`. Invalid directory packs are
-/// `DOCLI.TEMPLATE_INVALID`.
+/// Unknown bundled ids fail in [`TemplateRef::try_bundled`] with
+/// [`PackResolveError::machine_code`] `DOCLI.TEMPLATE_INVALID` for template
+/// CLI paths. Invalid directory packs are also `DOCLI.TEMPLATE_INVALID`.
 pub fn resolve_pack(template: &TemplateRef) -> Result<Pack, PackResolveError> {
     match template {
         TemplateRef::Bundled(BundledPackId::Default) => load_embedded(),

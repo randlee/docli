@@ -474,6 +474,52 @@ fn write_broken_pack(dir: &std::path::Path) -> std::path::PathBuf {
 }
 
 #[test]
+fn templates_show_unknown_id_is_template_invalid() {
+    let output = run(
+        &mut docli_bin(),
+        &["templates", "show", "not-a-pack", "--json"],
+    );
+    assert_exit(&output, 2);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        2,
+        "validation",
+        "DOCLI.TEMPLATE_INVALID",
+    );
+    assert!(error["details"]["cause"]
+        .as_str()
+        .unwrap()
+        .contains("not-a-pack"));
+    assert!(error["suggested_action"]
+        .as_str()
+        .unwrap()
+        .contains("templates list"));
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[test]
+fn docli_io_validate_missing_pack_directory_json() {
+    let output = run(
+        &mut docli_bin(),
+        &["templates", "validate", "not-a-real-pack", "--json"],
+    );
+    assert_exit(&output, 4);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        4,
+        "dependency",
+        "DOCLI.IO",
+    );
+    assert!(error["details"]["cause"]
+        .as_str()
+        .unwrap()
+        .contains("not-a-real-pack"));
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[test]
 fn docli_template_invalid_validate_json() {
     let dir = unique_dir();
     let pack = write_broken_pack(&dir);

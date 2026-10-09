@@ -346,10 +346,10 @@ pub fn templates_show(req: TemplatesShowRequest) -> Envelope<TemplatesShowRespon
 ///
 /// Returns `DOCLI.TEMPLATE_INVALID` for an invalid manifest, a template that
 /// does not compile, or an unknown `embedded:<id>`. Returns `DOCLI.IO` when
-/// a required file cannot be read. Returns `DOCLI.INTERNAL` for a damaged
-/// embedded pack.
+/// the pack directory or a required file cannot be read (including a missing
+/// directory path). Returns `DOCLI.INTERNAL` for a damaged embedded pack.
 pub fn templates_validate(req: TemplatesValidateRequest) -> Envelope<TemplatesValidateResponse> {
-    match resolve_selector(&req.path) {
+    match resolve_validate_path(&req.path) {
         Ok(pack) => Envelope::success(TemplatesValidateResponse {
             operation: "templates_validate",
             path: req.path,
@@ -485,6 +485,16 @@ fn resolve_selector(selector: &str) -> Result<Pack, PackResolveError> {
         return resolve_pack(&TemplateRef::dir(path));
     }
     resolve_pack(&TemplateRef::try_bundled(selector)?)
+}
+
+/// Resolve a `templates validate` argument: pack directory or `embedded:<id>` only.
+fn resolve_validate_path(selector: &str) -> Result<Pack, PackResolveError> {
+    if let Some(id) = selector.strip_prefix(EMBEDDED_PATH_PREFIX) {
+        if !id.is_empty() && !id.contains(['/', '\\']) {
+            return resolve_pack(&TemplateRef::try_bundled(id)?);
+        }
+    }
+    resolve_pack(&TemplateRef::dir(Path::new(selector)))
 }
 
 fn pack_failure(err: PackResolveError) -> ErrorBody {
