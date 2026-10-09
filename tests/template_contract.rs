@@ -51,8 +51,10 @@ fn templates_list_json_includes_default() {
     let data = &envelope["data"];
     assert_eq!(data["operation"], "templates_list");
     let install_root = data["install_root"].as_str().expect("install_root");
+    let install_root_path = Path::new(install_root);
+    let expected_suffix = Path::new("share").join("docli").join("templates");
     assert!(
-        install_root.ends_with("share/docli/templates"),
+        install_root_path.ends_with(&expected_suffix),
         "{install_root}"
     );
     let default = data["templates"]
