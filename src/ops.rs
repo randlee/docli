@@ -636,15 +636,8 @@ mod tests {
 
     #[test]
     fn directory_render_failure_is_template_invalid() {
-        let dir = std::env::temp_dir().join(format!(
-            "docli-b10-render-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .expect("clock")
-                .as_nanos()
-        ));
-        std::fs::create_dir_all(&dir).expect("mkdir");
+        let scratch = tempfile::tempdir().expect("temp dir");
+        let dir = scratch.path();
         std::fs::write(
             dir.join("template.toml"),
             "id = \"custom\"\nname = \"custom\"\nversion = \"1\"\ndescription = \"custom\"\ntheme_schema = {}\n",
@@ -659,7 +652,6 @@ mod tests {
         assert!(err.suggested_action.contains("templates validate"));
         assert!(err.suggested_action.contains("custom"));
         assert!(!err.suggested_action.contains("embedded template pack"));
-        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
