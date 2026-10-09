@@ -99,8 +99,10 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
   the index from `docli-data` alone. Rust tests lock `matching_anchors` without a
   browser; embedded JSON is part of the HTML byte lock under `fixtures/contract/`.
 - `SearchEntry`, `search_index`, and `matching_anchors` live in `src/search.rs`
-  and are re-exported from `src/lib.rs`. `src/render/html.rs` calls
-  `search_index` and embeds the result; it **must not** define `SearchEntry`.
+  and are re-exported from `src/lib.rs`. The default HTML pack (ADR-004) calls
+  `search_index` in `src/templates/mod.rs` (`render_pack`) and embeds the
+  result in `#docli-search`. `src/render/html.rs` delegates to that pack and
+  **must not** define `SearchEntry`.
 - Later language implementations that match `fixtures/contract/index.html` emit
   the same `docli-search` JSON for the same model (no client-side substitute
   schema).
@@ -191,7 +193,7 @@ These rules implement the ADRs above. **Severity: BLOCKING** unless noted.
 | **ARCH-RULE-003** | ADR-001 | `src/cli.rs` must delegate to `ops`; no duplicated generate/show write logic in binaries. |
 | **ARCH-RULE-004** | ADR-001 | `Envelope`, `ErrorBody`, and exit codes live in `src/contract.rs`; ops returns envelopes CLI serializes verbatim. |
 | **ARCH-RULE-005** | ADR-002 | `SearchEntry`, `search_index`, `matching_anchors` are defined only in `src/search.rs`. |
-| **ARCH-RULE-006** | ADR-002 | `html.rs` embeds `docli-data` and `docli-search`; search JSON comes from `search_index(model)`. |
+| **ARCH-RULE-006** | ADR-002 | The rendered HTML embeds `docli-data` and `docli-search`; search JSON comes from `search_index(model)` in the default pack pipeline (`src/templates/mod.rs` / `render_pack`). `html.rs` must not redefine search types. |
 | **ARCH-RULE-007** | ADR-003 | CLI envelope and error shape changes require `REQ-DOCLI-CLI-*` and creating-ai-clis alignment. |
 | **ARCH-RULE-008** | ADR-001 | Widening `cli` visibility or moving argv parsing into `ops` requires a new ADR and requirements update. |
 | **ARCH-RULE-009** | ADR-004 | Bundled packs are embedded with `include_dir`. `html::render` takes `&CliModel` only and uses the embedded `default` pack. `src/render/**` does not select a caller template or return an envelope. |
