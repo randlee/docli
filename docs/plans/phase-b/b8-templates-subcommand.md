@@ -1,7 +1,7 @@
 ---
 id: b.8
 title: templates subcommand
-status: planned
+status: in-progress
 branch: feature/phase-b-b8-templates-cmd
 worktree: ../docli-worktrees/feature/phase-b-b8-templates-cmd
 target: integrate/phase-b
