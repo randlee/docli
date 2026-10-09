@@ -57,7 +57,7 @@ not a site framework or a theme library.
 | Phase | Closes | Does not close |
 |---|---|---|
 | A | Rust library, `docli` CLI, `cargo docli`, clap adapter, HTML and Markdown renderer, `generate` / `show` envelope, and `fixtures/contract/` produced by that Rust tool | Go, .NET, Python, crates.io publish, MCP wrapper |
-| Later | `REQ-DOCLI-GO-001`, `REQ-DOCLI-NET-001`, `REQ-DOCLI-PY-001`, cross-language byte match (`REQ-DOCLI-GEN-003`), per-language installers (`REQ-DOCLI-MD-002`), crates.io (`REQ-DOCLI-PRODUCT-001` publish step) | — |
+| Later | `REQ-DOCLI-GO-001`, `REQ-DOCLI-NET-001`, `REQ-DOCLI-PY-001`, cross-language byte match (`REQ-DOCLI-GEN-003`), per-language installers (`REQ-DOCLI-MD-002`). The crates.io upload (`cargo publish`) stays a maintainer step after publish-readiness | — |
 
 Phase A acceptance is the Rust rows in the sections below. A later-phase id is not a Phase A gap.
 
@@ -67,9 +67,18 @@ Rust is the reference implementation. Go, .NET, and Python are later peer
 implementations of the same generator and the same command contract.
 
 - `REQ-DOCLI-PRODUCT-001`: the Rust implementation is a library and a
-  command-line tool. Phase A builds and tests it from this repo. Publishing
-  to crates.io (`cargo install docli` from the registry) is a later release
-  step.
+  command-line tool (`docli` and `cargo docli`). The crates.io package is
+  version `0.1.0` under semver `0.x` until `CHANGELOG.md` declares a stable
+  API. Package metadata MUST include `description`, `license`, `repository`,
+  `readme`, and `keywords`. Published sources MUST include `templates/html/`
+  so `include_dir!` embeds `default` and `cli-doc` when a user runs
+  `cargo install docli`; that install MUST NOT read those packs from disk.
+  After the first publish, `cargo install docli` is the primary install.
+  `cargo publish` runs only after this work merges to `develop`
+  (`docs/release-first-crates-io.md`). Publish-readiness means
+  `cargo publish --dry-run` succeeds and `cargo package --list` includes
+  `README.md`, `LICENSE`, the template packs, and the fixtures the tests
+  read.
 - `REQ-DOCLI-PRODUCT-002`: a Rust project runs the tool in either of two ways,
   and both ways perform the same operations:
   - CLI: `docli <command> [flags]`
@@ -217,6 +226,8 @@ CI (`cargo test`, including `tests/repo_fixtures.rs`) reads only the committed f
 3. `DOCLI_REFRESH_FIXTURES=1` (and skip unset) — write the captured JSON over the committed files. That write is a reviewed pull request. It is not the proof command.
 
 Live capture may differ from committed JSON when upstream help text is empty. That difference is a refresh pull request, not a silent verify success.
+
+When `DOCLI_BIN` is unset, the script builds `target/release/docli` with `cargo build --release` and uses that binary. That is the pre-publish default. After `cargo install docli`, set `DOCLI_BIN` to the installed path, or to the bare command name `docli` so `PATH` is searched (`DOCLI_BIN=docli` or `DOCLI_BIN="$(command -v docli)"`). A set `DOCLI_BIN` skips `cargo build --release`. `gen-fixtures` still runs via `cargo run` in this checkout unless `DOCLI_SKIP_GEN_FIXTURES=1`.
 
 ## 9. CLI Contract
 
@@ -400,7 +411,7 @@ sprint’s PR. An index row is not a substitute for the body.
 | ID | Summary | Text | ADR |
 |----|---------|------|-----|
 | `REQ-DOCLI-NORM-001` | CLI conforms to the vendored creating-ai-clis skill | text lands in sprint b.1 (section 9) | ADR-003 |
-| `REQ-DOCLI-PRODUCT-001` | Rust library and CLI in this repo; registry install is later | product text is in section 3; registry-install text lands in sprint b.11 (b.5 records pre-publish evidence only) | — |
+| `REQ-DOCLI-PRODUCT-001` | Rust library and CLI; crates.io metadata and bundled templates are publish-ready | section 3 | — |
 | `REQ-DOCLI-PRODUCT-002` | `docli` and `cargo docli` perform the same operations | section 3 | ADR-001 |
 | `REQ-DOCLI-PRODUCT-003` | In-process `ops`, `from_clap`, and render match the CLI | section 3 | ADR-001 |
 | `REQ-DOCLI-PRODUCT-004` | Go, .NET, and Python peer implementations (later) | section 3 | — |
