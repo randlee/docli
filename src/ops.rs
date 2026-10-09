@@ -6,6 +6,7 @@
 use std::collections::BTreeMap;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -61,7 +62,7 @@ pub struct GenerateRequest {
     pub input: InputSource,
     /// HTML output directory. `None` resolves to `site/cli` unless [`Self::preview`].
     pub html_dir: Option<PathBuf>,
-    /// Write HTML under a temporary `docli-preview-{pid}-{nanos}` directory.
+    /// Write HTML under a temporary `docli-preview-{pid}-{nanos}-{seq}` directory.
     ///
     /// Mutually exclusive with [`Self::html_dir`].
     pub preview: bool,
@@ -163,9 +164,10 @@ pub struct TemplatesValidateResponse {
 /// Render the model and write HTML (and optional Markdown).
 ///
 /// `--preview` and `html_dir` together are `DOCLI.USAGE`. Preview writes
-/// `docli-preview-{pid}-{nanos}/index.html` under the system temp directory
-/// and sets both `html_dir` and `preview_dir` to that directory. Otherwise
-/// `html_dir: None` resolves to `site/cli` and `preview_dir` is null.
+/// `docli-preview-{pid}-{nanos}-{seq}/index.html` under the system temp
+/// directory and sets both `html_dir` and `preview_dir` to that directory.
+/// `{seq}` is a per-process counter so parallel calls do not share a path.
+/// Otherwise `html_dir: None` resolves to `site/cli` and `preview_dir` is null.
 ///
 /// Omitting `template` and `theme` renders the embedded `default` pack with its
 /// default theme, the same bytes as [`crate::render::html::render`]. A write failure after
@@ -535,11 +537,16 @@ pub fn parse_theme_json(theme_json: &str) -> Result<ThemeMap, ErrorBody> {
 }
 
 fn preview_output_dir() -> PathBuf {
+    static NEXT_PREVIEW: AtomicU64 = AtomicU64::new(0);
+    let seq = NEXT_PREVIEW.fetch_add(1, Ordering::Relaxed);
     let nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|duration| duration.as_nanos())
         .unwrap_or(0);
-    std::env::temp_dir().join(format!("docli-preview-{}-{nanos}", std::process::id()))
+    std::env::temp_dir().join(format!(
+        "docli-preview-{}-{nanos}-{seq}",
+        std::process::id()
+    ))
 }
 
 fn read_input(input: &InputSource) -> Result<(String, String), ErrorBody> {
@@ -660,6 +667,38 @@ mod tests {
         assert!(!listed_extra(&PackId::new("default").expect("default")));
         assert!(!listed_extra(&PackId::new("cli-doc").expect("cli-doc")));
         assert!(listed_extra(&PackId::new("brand").expect("brand")));
+    }
+
+    #[test]
+    fn preview_output_dirs_are_unique_per_call() {
+        let mut handles = Vec::new();
+        for _ in 0..8 {
+            handles.push(std::thread::spawn(|| {
+                (0..32).map(|_| preview_output_dir()).collect::<Vec<_>>()
+            }));
+        }
+        let mut dirs = Vec::new();
+        for handle in handles {
+            dirs.extend(handle.join().expect("preview thread"));
+        }
+        let unique: std::collections::HashSet<_> = dirs.iter().cloned().collect();
+        assert_eq!(unique.len(), dirs.len());
+        let prefix = format!("docli-preview-{}-", std::process::id());
+        for dir in &dirs {
+            assert_eq!(dir.parent(), Some(std::env::temp_dir().as_path()));
+            let name = dir
+                .file_name()
+                .and_then(|name| name.to_str())
+                .expect("name");
+            let rest = name
+                .strip_prefix(&prefix)
+                .unwrap_or_else(|| panic!("preview dir {name}"));
+            let (nanos, seq) = rest
+                .split_once('-')
+                .unwrap_or_else(|| panic!("preview dir {name}"));
+            assert!(nanos.chars().all(|ch| ch.is_ascii_digit()) && !nanos.is_empty());
+            assert!(seq.chars().all(|ch| ch.is_ascii_digit()) && !seq.is_empty());
+        }
     }
 
     #[test]

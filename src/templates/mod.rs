@@ -899,36 +899,21 @@ mod tests {
 
     #[test]
     fn invalid_manifest_maps_to_template_invalid() {
-        let dir = std::env::temp_dir().join(format!(
-            "docli-b7-invalid-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .expect("clock")
-                .as_nanos()
-        ));
-        std::fs::create_dir_all(&dir).expect("mkdir");
+        let scratch = tempfile::tempdir().expect("temp dir");
+        let dir = scratch.path();
         std::fs::write(dir.join("template.toml"), "id = [\n").expect("write");
-        let err = resolve_pack(&TemplateRef::dir(&dir)).expect_err("invalid");
+        let err = resolve_pack(&TemplateRef::dir(dir)).expect_err("invalid");
         assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_INVALID");
         assert!(err.suggested_action().contains("templates validate"));
         assert!(err.cause().contains("template.toml"));
         assert!(!err.cause().contains("templates validate"));
         assert!(err.failed_path().is_some());
-        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
     fn uncompilable_directory_template_maps_to_template_invalid() {
-        let dir = std::env::temp_dir().join(format!(
-            "docli-b7-compile-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .expect("clock")
-                .as_nanos()
-        ));
-        std::fs::create_dir_all(&dir).expect("mkdir");
+        let scratch = tempfile::tempdir().expect("temp dir");
+        let dir = scratch.path();
         std::fs::write(
             dir.join("template.toml"),
             "id = \"broken\"\nname = \"broken\"\nversion = \"1\"\ndescription = \"broken\"\ntheme_schema = {}\n",
@@ -937,10 +922,9 @@ mod tests {
         std::fs::write(dir.join("page.html.j2"), "{{ unclosed").expect("page");
         std::fs::write(dir.join("style.css.j2"), "body{}\n").expect("style");
         std::fs::write(dir.join("script.js"), "").expect("script");
-        let err = resolve_pack(&TemplateRef::dir(&dir)).expect_err("compile");
+        let err = resolve_pack(&TemplateRef::dir(dir)).expect_err("compile");
         assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_INVALID");
         assert!(err.suggested_action().contains("templates validate"));
-        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
@@ -1026,15 +1010,8 @@ mod tests {
 
     #[test]
     fn empty_manifest_id_is_template_invalid() {
-        let dir = std::env::temp_dir().join(format!(
-            "docli-b10-empty-id-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .expect("clock")
-                .as_nanos()
-        ));
-        std::fs::create_dir_all(&dir).expect("mkdir");
+        let scratch = tempfile::tempdir().expect("temp dir");
+        let dir = scratch.path();
         std::fs::write(
             dir.join("template.toml"),
             "id = \"\"\nname = \"x\"\nversion = \"1\"\ndescription = \"x\"\ntheme_schema = {}\n",
@@ -1043,9 +1020,8 @@ mod tests {
         std::fs::write(dir.join("page.html.j2"), "ok").expect("page");
         std::fs::write(dir.join("style.css.j2"), "body{}\n").expect("style");
         std::fs::write(dir.join("script.js"), "").expect("script");
-        let err = resolve_pack(&TemplateRef::dir(&dir)).expect_err("empty id");
+        let err = resolve_pack(&TemplateRef::dir(dir)).expect_err("empty id");
         assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_INVALID");
         assert!(err.cause().contains("pack id must not be empty"));
-        let _ = std::fs::remove_dir_all(&dir);
     }
 }

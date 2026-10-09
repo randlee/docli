@@ -367,10 +367,10 @@ prompts.
     the pack's `theme_schema` defaults. Invalid JSON, a non-object, or a
     non-string value is `DOCLI.INPUT_INVALID`. `details` is `{ "cause" }`.
   - `--preview` writes `index.html` under a temporary directory named
-    `docli-preview-{pid}-{nanos}` (the process id and a nanosecond timestamp,
-    inside the system temp directory). Success `data.html_dir` and
-    `data.preview_dir` are both that directory. This mode does not write
-    `site/cli`.
+    `docli-preview-{pid}-{nanos}-{seq}` (the process id, a nanosecond timestamp,
+    and a per-process call counter, inside the system temp directory). Success
+    `data.html_dir` and `data.preview_dir` are both that directory. This mode
+    does not write `site/cli`.
   - `--preview` and `--html` together are `DOCLI.USAGE`.
   - Neither `--preview` nor `--html` resolves HTML output to `site/cli`
     (`REQ-DOCLI-HTML-006`). `data.preview_dir` is null.

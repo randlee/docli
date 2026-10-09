@@ -368,11 +368,17 @@ fn assert_preview_dir_name(preview_dir: &str) {
     let rest = name
         .strip_prefix("docli-preview-")
         .unwrap_or_else(|| panic!("preview dir {name}"));
-    let (pid, nanos) = rest
-        .split_once('-')
-        .unwrap_or_else(|| panic!("preview dir {name}"));
-    assert!(pid.chars().all(|ch| ch.is_ascii_digit()) && !pid.is_empty());
-    assert!(nanos.chars().all(|ch| ch.is_ascii_digit()) && !nanos.is_empty());
+    let mut parts = rest.split('-');
+    let pid = parts.next().unwrap_or_else(|| panic!("preview dir {name}"));
+    let nanos = parts.next().unwrap_or_else(|| panic!("preview dir {name}"));
+    let seq = parts.next().unwrap_or_else(|| panic!("preview dir {name}"));
+    assert!(parts.next().is_none(), "preview dir {name}");
+    for part in [pid, nanos, seq] {
+        assert!(
+            part.chars().all(|ch| ch.is_ascii_digit()) && !part.is_empty(),
+            "preview dir {name}"
+        );
+    }
 }
 
 #[test]
