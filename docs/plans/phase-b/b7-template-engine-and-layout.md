@@ -1,7 +1,7 @@
 ---
 id: b.7
 title: template engine and default pack
-status: planned
+status: in-progress
 branch: feature/phase-b-b7-engine
 worktree: ../docli-worktrees/feature/phase-b-b7-engine
 target: integrate/phase-b

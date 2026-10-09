@@ -86,7 +86,8 @@ pub struct ShowResponse {
 ///
 /// # Errors
 ///
-/// Returns a failure envelope for missing input, invalid JSON, or I/O errors.
+/// Returns a failure envelope for missing input, invalid JSON, I/O errors,
+/// or an embedded default-pack failure (`DOCLI.INTERNAL`).
 pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
     let html_dir = req.html_dir.unwrap_or_else(|| PathBuf::from("site/cli"));
     let (input_label, json) = match read_input(&req.input) {
@@ -106,7 +107,13 @@ pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
         }
     };
 
-    let html = render::html::render(&model);
+    let html = match render::html::try_render(&model) {
+        Ok(html) => html,
+        Err(error) => {
+            debug_assert_eq!(error.code(), "DOCLI.INTERNAL");
+            return Envelope::failure(ErrorBody::internal(error.cause()));
+        }
+    };
     let html_path = html_dir.join("index.html");
     let mut outputs = Vec::new();
 
