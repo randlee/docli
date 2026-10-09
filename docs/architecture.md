@@ -164,12 +164,14 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
   the theme defaults in that pack's `theme_schema`. It does not take a template
   id or a theme override.
 - Only `ops::generate` applies a caller-selected template or theme, and only
-  `ops::generate` returns the version `"1"` envelope for that choice. This
-  sprint does not add `--template`. Caller-selected pack codes
-  (`DOCLI.TEMPLATE_*`) arrive in later sprints.
+  `ops::generate` returns the version `"1"` envelope for that choice.
+  `--template` arrives in b.9. `docli templates` lists, shows, and validates
+  packs (`REQ-DOCLI-CLI-011`).
 - Failures while rendering the embedded `default` pack are `DOCLI.INTERNAL`.
   A filesystem read of a pack directory is `DOCLI.IO`. The embedded pack does
-  not perform that read.
+  not perform that read. A filesystem pack whose manifest or templates do not
+  compile is `DOCLI.TEMPLATE_INVALID`. Unknown bundled ids stay
+  `DOCLI.INTERNAL` until `DOCLI.TEMPLATE_NOT_FOUND` in b.9.
 - The default page root element carries `id="docli-default-pack"`. That marker
   is written only in `templates/html/default/page.html.j2`.
 - ADR-002 is unchanged: the pack embeds `#docli-data` and `#docli-search`, and
@@ -216,5 +218,5 @@ CLI error shape is part of the architecture boundary (ADR-001, ADR-003).
 `tests/error_contract.rs` is the merge gate for every `DOCLI.*` code listed in
 `requirements.md` §9. `req-qa` treats a new or changed error code without a
 matching test as **Blocking**. Embedded default-pack failures reuse
-`DOCLI.INTERNAL`. Filesystem pack reads reuse `DOCLI.IO`. This boundary does
-not add a `DOCLI.*` code.
+`DOCLI.INTERNAL`. Filesystem pack reads reuse `DOCLI.IO`. Invalid filesystem
+pack content is `DOCLI.TEMPLATE_INVALID` (`REQ-DOCLI-CLI-011`).

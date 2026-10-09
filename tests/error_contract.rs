@@ -402,6 +402,55 @@ fn docli_io_show_unreadable_index_human() {
 }
 
 #[test]
+fn docli_template_invalid_validate_json() {
+    let dir = unique_dir();
+    fs::write(dir.join("template.toml"), "id = [\n").unwrap();
+    let output = run(
+        &mut docli_bin(),
+        &["templates", "validate", dir.to_str().unwrap(), "--json"],
+    );
+    assert_exit(&output, 2);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        2,
+        "validation",
+        "DOCLI.TEMPLATE_INVALID",
+    );
+    let cause = error["details"]["cause"].as_str().expect("cause");
+    assert!(cause.contains("template.toml"), "cause was {cause}");
+    assert_eq!(error["details"].as_object().expect("object").len(), 1);
+    let action = error["suggested_action"].as_str().unwrap();
+    assert!(action.contains("templates validate"), "action was {action}");
+    assert!(
+        action.contains(dir.to_string_lossy().as_ref()),
+        "action was {action}"
+    );
+    assert!(!error["message"].as_str().unwrap().is_empty());
+    assert_eq!(
+        error["docs"],
+        "https://github.com/randlee/docli/blob/develop/docs/requirements.md"
+    );
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[test]
+fn docli_template_invalid_validate_human() {
+    let dir = unique_dir();
+    fs::write(dir.join("template.toml"), "id = [\n").unwrap();
+    let output = run(
+        &mut docli_bin(),
+        &["templates", "validate", dir.to_str().unwrap()],
+    );
+    assert_exit(&output, 2);
+    assert_human_actionable(
+        &output.stderr,
+        "DOCLI.TEMPLATE_INVALID",
+        &["templates validate", "template.toml"],
+    );
+}
+
+#[test]
 fn docli_internal_error_body_contract() {
     let body = docli::contract::ErrorBody::internal("serialization failed");
     assert_eq!(body.code, docli::contract::ErrorCode::Internal);

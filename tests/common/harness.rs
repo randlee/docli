@@ -1,3 +1,5 @@
+#![allow(dead_code)] // shared across integration test binaries; each crate uses a subset.
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -24,7 +26,6 @@ pub fn docli_bin() -> Command {
     Command::new(env!("CARGO_BIN_EXE_docli"))
 }
 
-#[allow(dead_code)] // parity assertions live in tests/cargo_docli.rs
 pub fn cargo_docli_bin() -> Command {
     Command::new(env!("CARGO_BIN_EXE_cargo-docli"))
 }
@@ -37,7 +38,6 @@ pub fn run(bin: &mut Command, args: &[&str]) -> Output {
         .expect("run binary")
 }
 
-#[allow(dead_code)] // fixture paths are resolved by the cargo_docli parity test
 pub fn workspace_fixture(rel: &str) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join(rel)
 }

@@ -7,7 +7,11 @@ use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
 use serde::Serialize;
 
 use crate::contract::{Envelope, ErrorBody};
-use crate::ops::{generate, show, ArtifactReport, GenerateRequest, InputSource, ShowRequest};
+use crate::ops::{
+    generate, show, templates_list, templates_show, templates_validate, ArtifactReport,
+    GenerateRequest, InputSource, ShowRequest, TemplatesListResponse, TemplatesShowResponse,
+    TemplatesValidateResponse,
+};
 
 #[derive(Parser)]
 #[command(version, about = "Language-agnostic CLI documentation generator")]
@@ -42,6 +46,28 @@ pub enum Command {
         #[arg(long, value_name = "FILE")]
         markdown: Option<PathBuf>,
     },
+    /// Discover and validate HTML template packs.
+    Templates {
+        #[command(subcommand)]
+        action: TemplatesAction,
+    },
+}
+
+/// `templates` subcommand.
+#[derive(Subcommand)]
+pub enum TemplatesAction {
+    /// List the embedded `default` pack and optional extra packs.
+    List,
+    /// Show one pack's manifest, theme schema, and example generate argv.
+    Show {
+        /// Bundled id, installed extra id, or pack directory.
+        template: String,
+    },
+    /// Check that a pack directory loads and its templates compile.
+    Validate {
+        /// Pack directory containing `template.toml`.
+        path: PathBuf,
+    },
 }
 
 /// Run with the clap-visible application name (`docli` or `cargo docli`).
@@ -53,7 +79,7 @@ pub fn run_with_name(app_name: &'static str) {
             _ => finish(
                 json_flag_present(),
                 Envelope::<()>::failure(ErrorBody::usage(usage_suggestion(&err))),
-                |_| &[],
+                |_| {},
             ),
         },
     };
@@ -74,22 +100,37 @@ pub fn run_with_name(app_name: &'static str) {
                 markdown,
             };
             let envelope = generate(request);
-            finish(cli.json, envelope, |data| &data.outputs);
+            finish(cli.json, envelope, |data| print_artifacts(&data.outputs));
         }
         Command::Show { html, markdown } => {
             let envelope = show(ShowRequest {
                 html_dir: html,
                 markdown,
             });
-            finish(cli.json, envelope, |data| &data.artifacts);
+            finish(cli.json, envelope, |data| print_artifacts(&data.artifacts));
         }
+        Command::Templates { action } => match action {
+            TemplatesAction::List => {
+                finish(cli.json, templates_list(), print_templates_list);
+            }
+            TemplatesAction::Show { template } => {
+                finish(cli.json, templates_show(&template), print_templates_show);
+            }
+            TemplatesAction::Validate { path } => {
+                finish(
+                    cli.json,
+                    templates_validate(&path),
+                    print_templates_validate,
+                );
+            }
+        },
     }
 }
 
-fn finish<T, F>(json: bool, envelope: Envelope<T>, artifacts: F) -> !
+fn finish<T, F>(json: bool, envelope: Envelope<T>, human: F) -> !
 where
     T: Serialize,
-    F: FnOnce(&T) -> &[ArtifactReport],
+    F: FnOnce(&T),
 {
     if json {
         emit_and_exit(&envelope);
@@ -99,12 +140,33 @@ where
         std::process::exit(envelope.exit_code());
     }
     if let Some(data) = &envelope.data {
-        print_human(artifacts(data));
+        human(data);
     }
     std::process::exit(envelope.exit_code());
 }
 
-fn print_human(artifacts: &[ArtifactReport]) {
+fn print_templates_list(data: &TemplatesListResponse) {
+    for template in &data.templates {
+        println!(
+            "{} {} {} {}",
+            template.id, template.name, template.version, template.path
+        );
+    }
+}
+
+fn print_templates_show(data: &TemplatesShowResponse) {
+    println!("{}", data.id);
+    println!("{}", data.example_generate_argv.join(" "));
+    for (key, spec) in &data.theme_schema {
+        println!("{key} {} {}", spec.value_type, spec.default);
+    }
+}
+
+fn print_templates_validate(data: &TemplatesValidateResponse) {
+    println!("{} {}", data.id, data.path.display());
+}
+
+fn print_artifacts(artifacts: &[ArtifactReport]) {
     for artifact in artifacts {
         println!(
             "{} ({} bytes) {}",

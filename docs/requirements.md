@@ -247,6 +247,7 @@ prompts.
   | `DOCLI.INPUT_NOT_FOUND` | `not_found` | `--input` path does not exist |
   | `DOCLI.OUTPUT_NOT_FOUND` | `not_found` | `show` was asked for an artifact that is not on disk |
   | `DOCLI.IO` | `dependency` | reading or writing a file failed |
+  | `DOCLI.TEMPLATE_INVALID` | `validation` | a template pack manifest or template does not compile |
   | `DOCLI.INTERNAL` | `internal` | an unexpected failure |
 
 - `REQ-DOCLI-CLI-004`: exit codes are `0` success, `2` validation, `3` not
@@ -292,6 +293,28 @@ prompts.
 - `REQ-DOCLI-CLI-010`: `cargo docli` **MUST** match `docli` exit status and
   stdout bytes for each error scenario exercised in `tests/error_contract.rs`
   (see `cargo_docli_matches_docli_error_envelopes` and extended cases).
+- `REQ-DOCLI-CLI-011`: `docli templates` discovers and validates template packs.
+  Subcommands are `list`, `show <ID|PATH>`, and `validate <PATH>`. Each accepts
+  the global `--json` flag and returns a version `"1"` envelope.
+  - `list` data includes `operation` (`"templates_list"`), `install_root`
+    (optional extra packs at `<prefix>/share/docli/templates`), and `templates`.
+    Each template has `id`, `name`, `version`, and `path`. The embedded
+    `default` pack is always listed. Its `path` is `embedded:default`. Extra
+    directories that fail to load are omitted; `validate` reports that failure.
+    A missing install root is an empty extra list.
+  - `show` data includes `operation` (`"templates_show"`), `id`, `manifest`
+    (including `id` and `version`), `theme_schema`, and `example_generate_argv`
+    (`docli generate --input model.json --html site/cli`). A selector with a
+    path separator, an absolute path, or an existing path is a pack directory.
+    Any other selector is a pack id (embedded, then `<install_root>/<id>`).
+  - `validate` success data includes `operation` (`"templates_validate"`),
+    `id`, `path`, and `valid` (`true`).
+  - A filesystem pack whose manifest or templates do not compile is
+    `DOCLI.TEMPLATE_INVALID` (kind `validation`, exit `2`). `details` is
+    `{ "cause": "..." }`. `suggested_action` names `templates validate`.
+    A filesystem read failure stays `DOCLI.IO` (`REQ-DOCLI-HTML-007`).
+  - `cargo docli templates list --json` matches `docli templates list --json`
+    stdout bytes (`cargo_docli_templates_list_matches_docli`).
 
 ### Error code inventory (normative)
 
@@ -302,6 +325,7 @@ prompts.
 | `DOCLI.INPUT_NOT_FOUND` | 3 | `not_found` | `{ "path" }` | `docli_input_not_found_json`, `docli_input_not_found_human` |
 | `DOCLI.OUTPUT_NOT_FOUND` | 3 | `not_found` | `{ "artifacts": [{ "path", "exists" }] }` | `docli_output_not_found_single_html_json`, `docli_output_not_found_html_and_markdown_json`, `docli_output_not_found_human` |
 | `DOCLI.IO` | 4 | `dependency` | `{ "cause" }`; optional `{ "outputs_written" }` after partial write | `docli_io_generate_html_dir_not_writable_json`, `docli_io_generate_partial_write_lists_outputs_written_json`, `docli_io_show_unreadable_index_json`, `docli_io_show_unreadable_index_human` |
+| `DOCLI.TEMPLATE_INVALID` | 2 | `validation` | `{ "cause" }` | `docli_template_invalid_validate_json`, `docli_template_invalid_validate_human` |
 | `DOCLI.INTERNAL` | 1 | `internal` | `{ "cause" }` | `docli_internal_error_body_contract` |
 
 Adding a new `DOCLI.*` code requires updating this table, `src/contract.rs`,
@@ -361,6 +385,6 @@ sprint’s PR. An index row is not a substitute for the body.
 | `REQ-DOCLI-CLI-008` | Every stable code has `tests/error_contract.rs` coverage | text lands in sprint b.1 (section 9); test closure is sprint b.2 | ADR-003 |
 | `REQ-DOCLI-CLI-009` | `--json` failures are one stdout envelope; human mode uses stderr | text lands in sprint b.1 (section 9); test closure is sprint b.2 (also cited by b.3) | ADR-003 |
 | `REQ-DOCLI-CLI-010` | `cargo docli` matches `docli` exit and stdout on error scenarios | text lands in sprint b.1 (section 9); test closure is sprint b.2 | ADR-003 |
-| `REQ-DOCLI-CLI-011` | `docli templates` list, show, and validate | text lands in sprint b.8 | ADR-001 |
+| `REQ-DOCLI-CLI-011` | `docli templates` list, show, and validate | section 9 | ADR-001 |
 | `REQ-DOCLI-CLI-012` | `generate --template`, `--theme`, and `--preview` | text lands in sprint b.9 | ADR-001 |
 | `REQ-DOCLI-DIST-001` | MIT license | section 10 | — |
