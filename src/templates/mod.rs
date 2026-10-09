@@ -224,9 +224,10 @@ impl Default for ThemeMap {
 
 /// Failure loading a pack.
 ///
-/// Filesystem reads are `DOCLI.IO`. A damaged embedded pack is
-/// `DOCLI.INTERNAL`. Unknown bundled ids and invalid manifests map to
-/// `DOCLI.TEMPLATE_NOT_FOUND` and `DOCLI.TEMPLATE_INVALID`.
+/// Filesystem reads are `DOCLI.IO`. Every other failure, including unknown
+/// bundled ids, invalid manifests, and a damaged embedded pack, maps to
+/// `DOCLI.INTERNAL` in Phase B b.7. [`suggested_action`] names list/validate
+/// steps; `DOCLI.TEMPLATE_*` envelope codes arrive in b.8+.
 #[derive(Debug)]
 pub struct PackResolveError {
     kind: PackResolveKind,
@@ -457,8 +458,8 @@ impl std::error::Error for EmbeddedDefaultError {}
 /// Returns [`PackResolveError`] when a required file cannot be read,
 /// `template.toml` is not the expected manifest, or a template fails to compile.
 ///
-/// Unknown bundled ids fail in [`TemplateRef::try_bundled`] with
-/// `DOCLI.TEMPLATE_NOT_FOUND`.
+/// Unknown bundled ids fail in [`TemplateRef::try_bundled`]; [`PackResolveError::machine_code`] is
+/// `DOCLI.INTERNAL` until b.8 adds template CLI codes.
 pub fn resolve_pack(template: &TemplateRef) -> Result<Pack, PackResolveError> {
     match template {
         TemplateRef::Bundled(BundledPackId::Default) => load_embedded(),
