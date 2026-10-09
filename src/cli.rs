@@ -8,9 +8,9 @@ use serde::Serialize;
 
 use crate::contract::{Envelope, ErrorBody};
 use crate::ops::{
-    generate, parse_template_selector, show, templates_list, templates_show, templates_validate,
-    ArtifactReport, GenerateRequest, InputSource, ShowRequest, TemplatesListResponse,
-    TemplatesShowResponse, TemplatesValidateResponse,
+    generate, parse_template_selector, parse_theme_json, show, templates_list, templates_show,
+    templates_validate, ArtifactReport, GenerateRequest, InputSource, ShowRequest,
+    TemplatesListResponse, TemplatesShowResponse, TemplatesValidateResponse,
 };
 
 #[derive(Parser)]
@@ -118,6 +118,13 @@ pub fn run_with_name(app_name: &'static str) {
                 },
                 None => None,
             };
+            let theme = match theme.as_deref() {
+                Some(json) => match parse_theme_json(json) {
+                    Ok(theme) => Some(theme),
+                    Err(error) => finish(cli.json, Envelope::<()>::failure(error), |_| {}),
+                },
+                None => None,
+            };
             let request = GenerateRequest {
                 input: if input == "-" {
                     InputSource::Stdin
@@ -127,7 +134,7 @@ pub fn run_with_name(app_name: &'static str) {
                 html_dir: html,
                 preview,
                 template,
-                theme_json: theme,
+                theme,
                 markdown,
             };
             let envelope = generate(request);
@@ -145,7 +152,11 @@ pub fn run_with_name(app_name: &'static str) {
                 finish(cli.json, templates_list(), print_templates_list);
             }
             TemplatesAction::Show { template } => {
-                finish(cli.json, templates_show(&template), print_templates_show);
+                let template = match parse_template_selector(&template) {
+                    Ok(template) => template,
+                    Err(error) => finish(cli.json, Envelope::<()>::failure(error), |_| {}),
+                };
+                finish(cli.json, templates_show(template), print_templates_show);
             }
             TemplatesAction::Validate { path } => {
                 finish(

@@ -254,8 +254,8 @@ fn show_json_without_paths_is_usage() {
         "validation",
         "DOCLI.USAGE",
     );
-    assert_eq!(error["details"], serde_json::json!({}));
     assert_suggested_action_contains(&error, &["--html", "--markdown"]);
+    assert_eq!(error["details"]["cause"], error["suggested_action"]);
 }
 
 #[test]
@@ -441,7 +441,7 @@ fn ops_generate_writes_index_html_in_tmp() {
         html_dir: Some(tmp.clone()),
         preview: false,
         template: None,
-        theme_json: None,
+        theme: None,
         markdown: None,
     });
 
@@ -484,8 +484,8 @@ fn invalid_flag_is_usage_with_and_without_json() {
         "validation",
         "DOCLI.USAGE",
     );
-    assert_eq!(error["details"], serde_json::json!({}));
     assert_suggested_action_contains(&error, &["--not-a-flag"]);
+    assert_eq!(error["details"]["cause"], error["suggested_action"]);
 
     let human = bin()
         .args(["generate", "--not-a-flag"])
@@ -512,8 +512,8 @@ fn unknown_command_is_usage_with_and_without_json() {
         "validation",
         "DOCLI.USAGE",
     );
-    assert_eq!(error["details"], serde_json::json!({}));
     assert_suggested_action_contains(&error, &["not-a-command"]);
+    assert_eq!(error["details"]["cause"], error["suggested_action"]);
 
     let human = bin()
         .args(["not-a-command"])

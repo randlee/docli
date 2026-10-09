@@ -33,11 +33,9 @@ fn docli_usage_unknown_command_json() {
         "validation",
         "DOCLI.USAGE",
     );
-    assert_eq!(error["details"], serde_json::json!({}));
-    assert!(error["suggested_action"]
-        .as_str()
-        .unwrap()
-        .contains("not-a-command"));
+    let action = error["suggested_action"].as_str().unwrap();
+    assert!(action.contains("not-a-command"));
+    assert_eq!(error["details"]["cause"], action);
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
 }
 
@@ -52,11 +50,9 @@ fn docli_usage_invalid_flag_json() {
         "validation",
         "DOCLI.USAGE",
     );
-    assert_eq!(error["details"], serde_json::json!({}));
-    assert!(error["suggested_action"]
-        .as_str()
-        .unwrap()
-        .contains("--not-a-flag"));
+    let action = error["suggested_action"].as_str().unwrap();
+    assert!(action.contains("--not-a-flag"));
+    assert_eq!(error["details"]["cause"], action);
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
 }
 
@@ -71,10 +67,10 @@ fn docli_usage_show_without_paths_json() {
         "validation",
         "DOCLI.USAGE",
     );
-    assert_eq!(error["details"], serde_json::json!({}));
     let action = error["suggested_action"].as_str().unwrap();
     assert!(action.contains("--html"));
     assert!(action.contains("--markdown"));
+    assert_eq!(error["details"]["cause"], action);
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
 }
 
@@ -513,10 +509,10 @@ fn docli_usage_preview_with_html_json() {
         "validation",
         "DOCLI.USAGE",
     );
-    assert_eq!(error["details"], serde_json::json!({}));
     let action = error["suggested_action"].as_str().unwrap();
     assert!(action.contains("--preview"), "action was {action}");
     assert!(action.contains("--html"), "action was {action}");
+    assert_eq!(error["details"]["cause"], action);
     assert!(!html.join("index.html").exists());
     assert!(!dir.join("site/cli").exists());
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);

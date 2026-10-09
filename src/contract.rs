@@ -169,14 +169,15 @@ impl ErrorBody {
         }
     }
 
-    /// Usage failure with empty `details`.
+    /// Usage failure. `details.cause` mirrors `suggested_action` for JSON consumers.
     pub fn usage(suggested_action: impl Into<String>) -> Self {
+        let suggested_action = suggested_action.into();
         Self {
             kind: ErrorKind::Validation,
             code: ErrorCode::Usage,
             message: "unknown command or invalid flags".to_owned(),
-            details: serde_json::json!({}),
-            suggested_action: suggested_action.into(),
+            details: serde_json::json!({ "cause": suggested_action }),
+            suggested_action,
             docs: None,
         }
     }

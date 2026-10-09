@@ -348,7 +348,7 @@ prompts.
 
 | Code | Exit | `kind` | `details` (required keys) | Covered by |
 |------|------|--------|---------------------------|------------|
-| `DOCLI.USAGE` | 2 | `validation` | `{}` | `docli_usage_unknown_command_json`, `docli_usage_invalid_flag_json`, `docli_usage_show_without_paths_json`, `docli_usage_show_without_paths_human`, `docli_usage_preview_with_html_json` |
+| `DOCLI.USAGE` | 2 | `validation` | `{ "cause" }` | `docli_usage_unknown_command_json`, `docli_usage_invalid_flag_json`, `docli_usage_show_without_paths_json`, `docli_usage_show_without_paths_human`, `docli_usage_preview_with_html_json` |
 | `DOCLI.INPUT_INVALID` | 2 | `validation` | `{}` or `{ "cause" }` | `docli_input_invalid_parse_error_json`, `docli_input_invalid_empty_file_json`, `docli_stdin_empty_is_input_invalid`, `docli_input_invalid_human`, `docli_input_invalid_theme_json` |
 | `DOCLI.INPUT_NOT_FOUND` | 3 | `not_found` | `{ "path" }` | `docli_input_not_found_json`, `docli_input_not_found_human` |
 | `DOCLI.OUTPUT_NOT_FOUND` | 3 | `not_found` | `{ "artifacts": [{ "path", "exists" }] }` | `docli_output_not_found_single_html_json`, `docli_output_not_found_html_and_markdown_json`, `docli_output_not_found_human` |

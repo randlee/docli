@@ -66,8 +66,8 @@ pub struct GenerateRequest {
     pub preview: bool,
     /// Bundled pack or pack directory. `None` uses the embedded `default` pack.
     pub template: Option<TemplateRef>,
-    /// Theme overrides as a JSON object of strings. `None` uses pack defaults.
-    pub theme_json: Option<String>,
+    /// Theme overrides. `None` uses pack defaults.
+    pub theme: Option<ThemeMap>,
     /// Optional Markdown output path. Omitted means no Markdown file.
     pub markdown: Option<PathBuf>,
 }
@@ -166,9 +166,8 @@ pub struct TemplatesValidateResponse {
 /// and sets both `html_dir` and `preview_dir` to that directory. Otherwise
 /// `html_dir: None` resolves to `site/cli` and `preview_dir` is null.
 ///
-/// Omitting `template` and `theme_json` renders the embedded `default` pack
-/// with its default theme, the same bytes as [`crate::render::html::render`].
-/// Invalid `theme_json` is `DOCLI.INPUT_INVALID`. A write failure after
+/// Omitting `template` and `theme` renders the embedded `default` pack with its
+/// default theme, the same bytes as [`crate::render::html::render`]. A write failure after
 /// another file landed returns `DOCLI.IO` with `details.outputs_written`.
 ///
 /// # Errors
@@ -182,11 +181,7 @@ pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
             "Pass either --preview or --html DIR, not both",
         ));
     }
-    let theme = match req.theme_json.as_deref().map(parse_theme_json) {
-        None => None,
-        Some(Ok(theme)) => Some(theme),
-        Some(Err(error)) => return Envelope::failure(error),
-    };
+    let theme = req.theme.clone();
     let (html_dir, preview_dir) = if req.preview {
         let dir = preview_output_dir();
         (dir.clone(), Some(dir))
@@ -231,7 +226,7 @@ pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
     if let Some(markdown_path) = req.markdown {
         let markdown = render::markdown::render(&model);
         if let Err(error) = write_file(&markdown_path, markdown.as_bytes()) {
-            let written = serde_json::to_value(&outputs).unwrap_or_else(|_| serde_json::json!([]));
+            let written = serde_json::to_value(&outputs).expect("ArtifactReport vector serializes");
             return Envelope::failure(ErrorBody::io(error, &markdown_path, Some(written)));
         }
         outputs.push(artifact("markdown", markdown_path, markdown.as_bytes()));
@@ -343,11 +338,7 @@ pub fn templates_list() -> Envelope<TemplatesListResponse> {
 /// Returns `DOCLI.TEMPLATE_INVALID` when the pack content does not compile,
 /// `DOCLI.IO` when a directory cannot be read, `DOCLI.TEMPLATE_NOT_FOUND` for
 /// an unknown pack id, and `DOCLI.INTERNAL` for a damaged embedded pack.
-pub fn templates_show(selector: &str) -> Envelope<TemplatesShowResponse> {
-    let template = match parse_template_selector(selector) {
-        Ok(template) => template,
-        Err(error) => return Envelope::failure(error),
-    };
+pub fn templates_show(template: TemplateRef) -> Envelope<TemplatesShowResponse> {
     let pack = match resolve_pack(&template) {
         Ok(pack) => pack,
         Err(err) => return Envelope::failure(pack_failure(err)),
@@ -481,10 +472,24 @@ fn render_generate_html(
         .unwrap_or_else(TemplateRef::bundled_default);
     let pack = resolve_pack(&template_ref).map_err(pack_failure)?;
     let theme = theme.cloned().unwrap_or_else(ThemeMap::new);
-    render_pack(&pack, model, &theme).map_err(|err| ErrorBody::internal(err.cause()))
+    render_pack(&pack, model, &theme).map_err(|err| {
+        ErrorBody::template_invalid(
+            err.cause(),
+            format!(
+                "Run `docli templates validate` on the `{}` template pack and fix the reported issue",
+                pack.manifest.id
+            ),
+        )
+    })
 }
 
-fn parse_theme_json(theme_json: &str) -> Result<ThemeMap, ErrorBody> {
+/// Parse `--theme` JSON into a [`ThemeMap`].
+///
+/// # Errors
+///
+/// Returns [`ErrorBody`] with `DOCLI.INPUT_INVALID` when JSON is invalid, not an
+/// object, or contains non-string values.
+pub fn parse_theme_json(theme_json: &str) -> Result<ThemeMap, ErrorBody> {
     let value: serde_json::Value = match serde_json::from_str(theme_json) {
         Ok(value) => value,
         Err(err) => return Err(ErrorBody::theme_invalid(err.to_string())),
