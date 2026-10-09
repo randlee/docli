@@ -332,7 +332,7 @@ prompts.
 | `DOCLI.OUTPUT_NOT_FOUND` | 3 | `not_found` | `{ "artifacts": [{ "path", "exists" }] }` | `docli_output_not_found_single_html_json`, `docli_output_not_found_html_and_markdown_json`, `docli_output_not_found_human` |
 | `DOCLI.IO` | 4 | `dependency` | `{ "cause" }`; optional `{ "outputs_written" }` after partial write | `docli_io_generate_html_dir_not_writable_json`, `docli_io_generate_partial_write_lists_outputs_written_json`, `docli_io_show_unreadable_index_json`, `docli_io_show_unreadable_index_human` |
 | `DOCLI.INTERNAL` | 1 | `internal` | `{ "cause" }` | `docli_internal_error_body_contract` |
-| `DOCLI.TEMPLATE_INVALID` | 2 | `validation` | `{ "cause" }` | `docli_template_invalid_validate_json`, `docli_template_invalid_validate_human` |
+| `DOCLI.TEMPLATE_INVALID` | 2 | `validation` | `{ "cause" }` | `docli_template_invalid_validate_json`, `docli_template_invalid_validate_human`, `templates_show_unknown_id_is_template_invalid` |
 
 Adding a new `DOCLI.*` code requires updating this table, `src/contract.rs`,
 and a matching test in `tests/error_contract.rs` before merge.

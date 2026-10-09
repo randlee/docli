@@ -488,18 +488,21 @@ fn resolve_selector(selector: &str) -> Result<Pack, PackResolveError> {
 }
 
 fn pack_failure(err: PackResolveError) -> ErrorBody {
-    if err.is_invalid() || err.is_not_bundled() {
-        let suggested_action = err.suggested_action();
-        ErrorBody::template_invalid(err.cause(), suggested_action)
-    } else if err.is_io() {
-        let path = err
-            .path()
-            .map(Path::to_path_buf)
-            .unwrap_or_else(|| PathBuf::from("template"));
-        ErrorBody::io(err.cause(), path, None)
-    } else {
-        debug_assert_eq!(err.machine_code(), "DOCLI.INTERNAL");
-        ErrorBody::internal(err.cause())
+    match err.machine_code() {
+        "DOCLI.TEMPLATE_INVALID" => {
+            ErrorBody::template_invalid(err.cause(), err.suggested_action())
+        }
+        "DOCLI.IO" => {
+            let path = err
+                .path()
+                .map(Path::to_path_buf)
+                .unwrap_or_else(|| PathBuf::from("template"));
+            ErrorBody::io(err.cause(), path, None)
+        }
+        _ => {
+            debug_assert_eq!(err.machine_code(), "DOCLI.INTERNAL");
+            ErrorBody::internal(err.cause())
+        }
     }
 }
 

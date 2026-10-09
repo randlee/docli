@@ -316,16 +316,16 @@ impl PackResolveError {
 
     /// Stable `DOCLI.*` code for envelope mapping.
     ///
-    /// Filesystem reads are `DOCLI.IO`. Embedded-pack failures and unknown
-    /// bundled ids are `DOCLI.INTERNAL`. Invalid on-disk packs are
-    /// `DOCLI.TEMPLATE_INVALID`.
+    /// Filesystem reads are `DOCLI.IO`. Invalid on-disk packs and unknown
+    /// bundled ids (templates commands) are `DOCLI.TEMPLATE_INVALID`.
+    /// Embedded-pack load failures are `DOCLI.INTERNAL`.
     pub fn machine_code(&self) -> &'static str {
         match self.kind {
             PackResolveKind::Io { .. } => "DOCLI.IO",
-            PackResolveKind::Invalid { .. } => "DOCLI.TEMPLATE_INVALID",
-            PackResolveKind::Embedded { .. } | PackResolveKind::NotBundled { .. } => {
-                "DOCLI.INTERNAL"
+            PackResolveKind::Invalid { .. } | PackResolveKind::NotBundled { .. } => {
+                "DOCLI.TEMPLATE_INVALID"
             }
+            PackResolveKind::Embedded { .. } => "DOCLI.INTERNAL",
         }
     }
 
@@ -774,10 +774,10 @@ mod tests {
     }
 
     #[test]
-    fn unknown_bundled_id_stays_internal_until_not_found_code() {
+    fn unknown_bundled_id_is_template_invalid_for_templates_ops() {
         let err = TemplateRef::try_bundled("cli-doc").expect_err("missing id");
         assert!(err.is_not_bundled());
-        assert_eq!(err.machine_code(), "DOCLI.INTERNAL");
+        assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_INVALID");
         assert!(err.suggested_action().contains("templates list"));
         assert!(err.suggested_action().contains("cli-doc"));
         let cause = err.cause();
