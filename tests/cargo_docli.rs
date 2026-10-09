@@ -134,6 +134,10 @@ fn help_lists_generate_and_show() {
     let help = String::from_utf8_lossy(&output.stdout);
     assert!(help.contains("generate"), "help missing generate:\n{help}");
     assert!(help.contains("show"), "help missing show:\n{help}");
+    assert!(
+        help.contains("templates"),
+        "help missing templates:\n{help}"
+    );
 }
 
 fn run_with_stdin(bin: &mut Command, args: &[&str], stdin_bytes: Option<&[u8]>) -> Output {
@@ -278,6 +282,14 @@ fn cargo_docli_matches_docli_error_envelopes() {
     fs::create_dir(&index).unwrap();
     assert_error_parity(
         &["show", "--html", show_html.to_str().unwrap(), "--json"],
+        None,
+    );
+
+    let broken = dir.join("broken-pack");
+    fs::create_dir_all(&broken).unwrap();
+    fs::write(broken.join("template.toml"), "id = [\n").unwrap();
+    assert_error_parity(
+        &["templates", "validate", broken.to_str().unwrap(), "--json"],
         None,
     );
 }

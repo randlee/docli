@@ -7,7 +7,12 @@ use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
 use serde::Serialize;
 
 use crate::contract::{Envelope, ErrorBody};
-use crate::ops::{generate, show, ArtifactReport, GenerateRequest, InputSource, ShowRequest};
+use crate::ops::{
+    default_template_install_root, generate, show, templates_list, templates_show,
+    templates_validate, ArtifactReport, GenerateRequest, InputSource, ShowRequest,
+    TemplatesListRequest, TemplatesListResponse, TemplatesShowRequest, TemplatesShowResponse,
+    TemplatesValidateRequest, TemplatesValidateResponse,
+};
 
 #[derive(Parser)]
 #[command(version, about = "Language-agnostic CLI documentation generator")]
@@ -42,6 +47,30 @@ pub enum Command {
         #[arg(long, value_name = "FILE")]
         markdown: Option<PathBuf>,
     },
+    /// Discover and validate HTML template packs.
+    Templates {
+        #[command(subcommand)]
+        action: TemplatesCommand,
+    },
+}
+
+/// `docli templates` subcommands.
+#[derive(Subcommand)]
+pub enum TemplatesCommand {
+    /// List the embedded default pack and optional packs under the install root.
+    List,
+    /// Show one pack's manifest, theme schema, and example generate argv.
+    Show {
+        /// Bundled id (`default`), `embedded:<id>`, or a pack directory.
+        #[arg(value_name = "ID|PATH")]
+        id_or_path: String,
+    },
+    /// Validate a pack directory or `embedded:<id>`.
+    Validate {
+        /// Pack directory or `embedded:<id>`.
+        #[arg(value_name = "PATH")]
+        path: String,
+    },
 }
 
 /// Run with the clap-visible application name (`docli` or `cargo docli`).
@@ -53,7 +82,7 @@ pub fn run_with_name(app_name: &'static str) {
             _ => finish(
                 json_flag_present(),
                 Envelope::<()>::failure(ErrorBody::usage(usage_suggestion(&err))),
-                |_| &[],
+                |_| {},
             ),
         },
     };
@@ -74,22 +103,38 @@ pub fn run_with_name(app_name: &'static str) {
                 markdown,
             };
             let envelope = generate(request);
-            finish(cli.json, envelope, |data| &data.outputs);
+            finish(cli.json, envelope, |data| print_artifacts(&data.outputs));
         }
         Command::Show { html, markdown } => {
             let envelope = show(ShowRequest {
                 html_dir: html,
                 markdown,
             });
-            finish(cli.json, envelope, |data| &data.artifacts);
+            finish(cli.json, envelope, |data| print_artifacts(&data.artifacts));
         }
+        Command::Templates { action } => match action {
+            TemplatesCommand::List => {
+                let envelope = templates_list(TemplatesListRequest {
+                    install_root: default_template_install_root(),
+                });
+                finish(cli.json, envelope, print_template_list);
+            }
+            TemplatesCommand::Show { id_or_path } => {
+                let envelope = templates_show(TemplatesShowRequest { id_or_path });
+                finish(cli.json, envelope, print_template_show);
+            }
+            TemplatesCommand::Validate { path } => {
+                let envelope = templates_validate(TemplatesValidateRequest { path });
+                finish(cli.json, envelope, print_template_validate);
+            }
+        },
     }
 }
 
-fn finish<T, F>(json: bool, envelope: Envelope<T>, artifacts: F) -> !
+fn finish<T, F>(json: bool, envelope: Envelope<T>, human: F) -> !
 where
     T: Serialize,
-    F: FnOnce(&T) -> &[ArtifactReport],
+    F: FnOnce(&T),
 {
     if json {
         emit_and_exit(&envelope);
@@ -99,12 +144,12 @@ where
         std::process::exit(envelope.exit_code());
     }
     if let Some(data) = &envelope.data {
-        print_human(artifacts(data));
+        human(data);
     }
     std::process::exit(envelope.exit_code());
 }
 
-fn print_human(artifacts: &[ArtifactReport]) {
+fn print_artifacts(artifacts: &[ArtifactReport]) {
     for artifact in artifacts {
         println!(
             "{} ({} bytes) {}",
@@ -113,6 +158,31 @@ fn print_human(artifacts: &[ArtifactReport]) {
             artifact.sha256
         );
     }
+}
+
+fn print_template_list(data: &TemplatesListResponse) {
+    println!("{}", data.install_root.display());
+    for template in &data.templates {
+        println!(
+            "{} {} {} {}",
+            template.id, template.name, template.version, template.path
+        );
+    }
+}
+
+fn print_template_show(data: &TemplatesShowResponse) {
+    println!("{}", data.id);
+    for (key, spec) in &data.theme_schema {
+        println!(
+            "{key} {} {} {}",
+            spec.value_type, spec.default, spec.description
+        );
+    }
+    println!("{}", data.example_generate_argv.join(" "));
+}
+
+fn print_template_validate(data: &TemplatesValidateResponse) {
+    println!("{} {} {} {}", data.path, data.id, data.version, data.valid);
 }
 
 /// Last-resort JSON when even the internal-error envelope cannot serialize.

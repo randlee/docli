@@ -5,11 +5,12 @@
 //! fills `page.html.j2` and `style.css.j2` with MiniJinja.
 //!
 //! Embedded-default failures are `DOCLI.INTERNAL` (the pack is not read from
-//! disk). A filesystem read failure is `DOCLI.IO`. Phase B b.7 does not expose
-//! `DOCLI.TEMPLATE_*` codes yet; [`PackResolveError::machine_code`] maps every
-//! resolve failure to `DOCLI.IO` or `DOCLI.INTERNAL` until b.8 adds template
-//! CLI codes. [`PackResolveError::suggested_action`] still names list/validate
-//! steps for later sprints. The embedded-default path stores
+//! disk). A filesystem read failure is `DOCLI.IO`. An on-disk manifest or
+//! template that does not compile is `DOCLI.TEMPLATE_INVALID`
+//! ([`PackResolveError::machine_code`]). Unknown bundled ids stay
+//! `DOCLI.INTERNAL` until b.9 adds `DOCLI.TEMPLATE_NOT_FOUND`.
+//! [`PackResolveError::suggested_action`] names `templates list` or
+//! `templates validate`. The embedded-default path stores
 //! [`PackResolveError::cause`] and does not copy [`Display`] into that cause.
 //!
 //! # Examples
@@ -41,6 +42,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::schema::CliModel;
 use crate::search::search_index;
+
+/// Path prefix for a bundled pack in `templates list` (`embedded:default`).
+pub const EMBEDDED_PATH_PREFIX: &str = "embedded:";
 
 const DEFAULT_PACK_ID: &str = "default";
 const MANIFEST_FILE: &str = "template.toml";
@@ -224,10 +228,11 @@ impl Default for ThemeMap {
 
 /// Failure loading a pack.
 ///
-/// Filesystem reads are `DOCLI.IO`. Every other failure, including unknown
-/// bundled ids, invalid manifests, and a damaged embedded pack, maps to
-/// `DOCLI.INTERNAL` in Phase B b.7. [`suggested_action`] names list/validate
-/// steps; `DOCLI.TEMPLATE_*` envelope codes arrive in b.8+.
+/// Filesystem reads are `DOCLI.IO`. A damaged embedded pack is
+/// `DOCLI.INTERNAL`. An invalid on-disk manifest or template is
+/// `DOCLI.TEMPLATE_INVALID`. An unknown bundled id stays `DOCLI.INTERNAL`
+/// until sprint b.9 adds `DOCLI.TEMPLATE_NOT_FOUND`. [`suggested_action`]
+/// names `templates list` or `templates validate`.
 #[derive(Debug)]
 pub struct PackResolveError {
     kind: PackResolveKind,
@@ -296,13 +301,31 @@ impl PackResolveError {
         matches!(self.kind, PackResolveKind::NotBundled { .. })
     }
 
-    /// Stable `DOCLI.*` code for envelope mapping (b.7: IO and INTERNAL only).
+    /// Whether an on-disk manifest or template failed validation.
+    pub fn is_invalid(&self) -> bool {
+        matches!(self.kind, PackResolveKind::Invalid { .. })
+    }
+
+    /// Pack directory or file this failure names, when it has one.
+    pub fn path(&self) -> Option<&Path> {
+        match &self.kind {
+            PackResolveKind::Io { path, .. } | PackResolveKind::Invalid { path, .. } => Some(path),
+            PackResolveKind::NotBundled { .. } | PackResolveKind::Embedded { .. } => None,
+        }
+    }
+
+    /// Stable `DOCLI.*` code for envelope mapping.
+    ///
+    /// Filesystem reads are `DOCLI.IO`. Embedded-pack failures and unknown
+    /// bundled ids are `DOCLI.INTERNAL`. Invalid on-disk packs are
+    /// `DOCLI.TEMPLATE_INVALID`.
     pub fn machine_code(&self) -> &'static str {
         match self.kind {
             PackResolveKind::Io { .. } => "DOCLI.IO",
-            PackResolveKind::Embedded { .. }
-            | PackResolveKind::NotBundled { .. }
-            | PackResolveKind::Invalid { .. } => "DOCLI.INTERNAL",
+            PackResolveKind::Invalid { .. } => "DOCLI.TEMPLATE_INVALID",
+            PackResolveKind::Embedded { .. } | PackResolveKind::NotBundled { .. } => {
+                "DOCLI.INTERNAL"
+            }
         }
     }
 
@@ -314,7 +337,7 @@ impl PackResolveError {
             ),
             PackResolveKind::Invalid { path, .. } => format!(
                 "Run `docli templates validate {} --json` and fix template.toml and the pack templates",
-                path.display()
+                pack_dir_for_validate(path).display()
             ),
             PackResolveKind::Io { path, .. } => {
                 format!("Check that {} exists and is readable", path.display())
@@ -458,8 +481,10 @@ impl std::error::Error for EmbeddedDefaultError {}
 /// Returns [`PackResolveError`] when a required file cannot be read,
 /// `template.toml` is not the expected manifest, or a template fails to compile.
 ///
-/// Unknown bundled ids fail in [`TemplateRef::try_bundled`]; [`PackResolveError::machine_code`] is
-/// `DOCLI.INTERNAL` until b.8 adds template CLI codes.
+/// Unknown bundled ids fail in [`TemplateRef::try_bundled`]. Their
+/// [`PackResolveError::machine_code`] stays `DOCLI.INTERNAL` until b.9 adds
+/// `DOCLI.TEMPLATE_NOT_FOUND`. Invalid directory packs are
+/// `DOCLI.TEMPLATE_INVALID`.
 pub fn resolve_pack(template: &TemplateRef) -> Result<Pack, PackResolveError> {
     match template {
         TemplateRef::Bundled(BundledPackId::Default) => load_embedded(),
@@ -621,6 +646,18 @@ fn embedded_file(name: &str) -> Result<String, PackResolveError> {
         .ok_or_else(|| PackResolveError::embedded(format!("{name} is not valid UTF-8")))
 }
 
+/// `templates validate` takes a pack directory. Manifest errors store the
+/// `template.toml` path; point the recovery command at the directory.
+fn pack_dir_for_validate(path: &Path) -> &Path {
+    if path.file_name().is_some_and(|name| name == MANIFEST_FILE) {
+        path.parent()
+            .filter(|parent| !parent.as_os_str().is_empty())
+            .unwrap_or(path)
+    } else {
+        path
+    }
+}
+
 fn read_required(path: &Path) -> Result<String, PackResolveError> {
     std::fs::read_to_string(path).map_err(|source| PackResolveError::io(path.to_path_buf(), source))
 }
@@ -686,7 +723,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_manifest_maps_to_internal_code_for_b7() {
+    fn invalid_manifest_is_template_invalid() {
         let dir = std::env::temp_dir().join(format!(
             "docli-b7-invalid-{}-{}",
             std::process::id(),
@@ -698,16 +735,19 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("mkdir");
         std::fs::write(dir.join("template.toml"), "id = [\n").expect("write");
         let err = resolve_pack(&TemplateRef::dir(&dir)).expect_err("invalid");
-        assert_eq!(err.machine_code(), "DOCLI.INTERNAL");
-        assert!(err.suggested_action().contains("templates validate"));
+        assert!(err.is_invalid());
+        assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_INVALID");
+        let action = err.suggested_action();
+        assert!(action.contains("templates validate"));
+        assert!(action.contains(&dir.display().to_string()));
+        assert!(!action.contains(&dir.join("template.toml").display().to_string()));
         assert!(err.cause().contains("template.toml"));
         assert!(!err.cause().contains("templates validate"));
-        assert!(!err.machine_code().contains("TEMPLATE"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
-    fn uncompilable_directory_template_maps_to_internal_for_b7() {
+    fn uncompilable_directory_template_is_template_invalid() {
         let dir = std::env::temp_dir().join(format!(
             "docli-b7-compile-{}-{}",
             std::process::id(),
@@ -726,14 +766,15 @@ mod tests {
         std::fs::write(dir.join("style.css.j2"), "body{}\n").expect("style");
         std::fs::write(dir.join("script.js"), "").expect("script");
         let err = resolve_pack(&TemplateRef::dir(&dir)).expect_err("compile");
-        assert_eq!(err.machine_code(), "DOCLI.INTERNAL");
+        assert!(err.is_invalid());
+        assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_INVALID");
         assert!(err.suggested_action().contains("templates validate"));
-        assert!(!err.machine_code().contains("TEMPLATE"));
+        assert!(err.suggested_action().contains(&dir.display().to_string()));
         let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
-    fn unknown_bundled_id_maps_to_internal_for_b7() {
+    fn unknown_bundled_id_stays_internal_until_not_found_code() {
         let err = TemplateRef::try_bundled("cli-doc").expect_err("missing id");
         assert!(err.is_not_bundled());
         assert_eq!(err.machine_code(), "DOCLI.INTERNAL");
