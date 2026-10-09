@@ -248,6 +248,7 @@ enum PackResolveKind {
         id: String,
     },
     Embedded {
+        pack_id: String,
         cause: String,
     },
     Io {
@@ -268,9 +269,10 @@ impl PackResolveError {
         }
     }
 
-    fn embedded(cause: impl Into<String>) -> Self {
+    fn embedded(pack_id: impl Into<String>, cause: impl Into<String>) -> Self {
         Self {
             kind: PackResolveKind::Embedded {
+                pack_id: pack_id.into(),
                 cause: cause.into(),
             },
             backtrace: Backtrace::capture(),
@@ -359,9 +361,9 @@ impl PackResolveError {
             PackResolveKind::Io { path, .. } => {
                 format!("Check that {} exists and is readable", path.display())
             }
-            PackResolveKind::Embedded { .. } => {
-                "Retry or report a bug — the embedded default pack failed to load".to_owned()
-            }
+            PackResolveKind::Embedded { pack_id, .. } => format!(
+                "Retry or report a bug — the embedded {pack_id} pack failed to load"
+            ),
         }
     }
 
@@ -374,7 +376,9 @@ impl PackResolveError {
     pub fn cause(&self) -> String {
         match &self.kind {
             PackResolveKind::NotBundled { id } => format!("bundled template pack not found: {id}"),
-            PackResolveKind::Embedded { cause } => cause.clone(),
+            PackResolveKind::Embedded { pack_id, cause } => {
+                format!("embedded {pack_id} pack: {cause}")
+            }
             PackResolveKind::Invalid { path, cause } => {
                 format!("{}: {cause}", path.display())
             }
@@ -595,27 +599,27 @@ fn embedded_pack_dir(id: BundledPackId) -> &'static Dir<'static> {
 fn load_embedded(id: BundledPackId) -> Result<Pack, PackResolveError> {
     let dir = embedded_pack_dir(id);
     let expected = id.as_str();
-    let manifest_text = embedded_file_in(dir, MANIFEST_FILE)?;
-    let manifest = parse_manifest(&manifest_text, Path::new(MANIFEST_FILE), true)?;
+    let manifest_text = embedded_file_in(expected, dir, MANIFEST_FILE)?;
+    let manifest = parse_manifest(&manifest_text, Path::new(MANIFEST_FILE), Some(expected))?;
     if manifest.id != expected {
-        return Err(PackResolveError::embedded(format!(
-            "embedded pack id is {}, expected {expected}",
-            manifest.id
-        )));
+        return Err(PackResolveError::embedded(
+            expected,
+            format!("embedded pack id is {}, expected {expected}", manifest.id),
+        ));
     }
     pack_from_sources(
         manifest,
-        embedded_file_in(dir, PAGE_FILE)?,
-        embedded_file_in(dir, STYLE_FILE)?,
-        embedded_file_in(dir, SCRIPT_FILE)?,
-        CompileSite::Embedded,
+        embedded_file_in(expected, dir, PAGE_FILE)?,
+        embedded_file_in(expected, dir, STYLE_FILE)?,
+        embedded_file_in(expected, dir, SCRIPT_FILE)?,
+        CompileSite::Embedded { pack_id: expected },
     )
 }
 
 fn load_dir(dir: &Path) -> Result<Pack, PackResolveError> {
     let manifest_path = dir.join(MANIFEST_FILE);
     let manifest_text = read_required(&manifest_path)?;
-    let manifest = parse_manifest(&manifest_text, &manifest_path, false)?;
+    let manifest = parse_manifest(&manifest_text, &manifest_path, None)?;
     pack_from_sources(
         manifest,
         read_required(&dir.join(PAGE_FILE))?,
@@ -627,7 +631,7 @@ fn load_dir(dir: &Path) -> Result<Pack, PackResolveError> {
 
 /// Where a pack's templates were loaded, so compile failures keep the right code.
 enum CompileSite<'a> {
-    Embedded,
+    Embedded { pack_id: &'static str },
     Dir(&'a Path),
 }
 
@@ -641,7 +645,7 @@ fn pack_from_sources(
     let env = compile_environment(&page_template, &style_template).map_err(|err| {
         let cause = err.cause().to_owned();
         match site {
-            CompileSite::Embedded => PackResolveError::embedded(cause),
+            CompileSite::Embedded { pack_id } => PackResolveError::embedded(pack_id, cause),
             CompileSite::Dir(dir) => PackResolveError::invalid(dir.to_path_buf(), cause),
         }
     })?;
@@ -676,13 +680,17 @@ fn compile_environment(
     Ok(env)
 }
 
-fn embedded_file_in(pack: &'static Dir<'static>, name: &str) -> Result<String, PackResolveError> {
-    let file = pack
-        .get_file(name)
-        .ok_or_else(|| PackResolveError::embedded(format!("embedded pack is missing {name}")))?;
+fn embedded_file_in(
+    pack_id: &str,
+    pack: &'static Dir<'static>,
+    name: &str,
+) -> Result<String, PackResolveError> {
+    let file = pack.get_file(name).ok_or_else(|| {
+        PackResolveError::embedded(pack_id, format!("embedded pack is missing {name}"))
+    })?;
     file.contents_utf8()
         .map(str::to_owned)
-        .ok_or_else(|| PackResolveError::embedded(format!("{name} is not valid UTF-8")))
+        .ok_or_else(|| PackResolveError::embedded(pack_id, format!("{name} is not valid UTF-8")))
 }
 
 fn read_required(path: &Path) -> Result<String, PackResolveError> {
@@ -692,12 +700,12 @@ fn read_required(path: &Path) -> Result<String, PackResolveError> {
 fn parse_manifest(
     text: &str,
     path: &Path,
-    embedded: bool,
+    embedded_pack_id: Option<&str>,
 ) -> Result<TemplateManifest, PackResolveError> {
     toml::from_str(text).map_err(|err| {
         let cause = format!("template.toml: {err}");
-        if embedded {
-            PackResolveError::embedded(cause)
+        if let Some(pack_id) = embedded_pack_id {
+            PackResolveError::embedded(pack_id, cause)
         } else {
             PackResolveError::invalid(path.to_path_buf(), cause)
         }

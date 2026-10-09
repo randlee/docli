@@ -1,19 +1,27 @@
 # Authoring docli HTML template packs
 
 Template packs turn a **neutral [`CliModel`](../schema.md)** JSON document into one
-self-contained HTML file (`index.html`). Packs ship **with docli** under the install
-root and can be added locally for custom branding.
+self-contained HTML file (`index.html`). Phase B ships **`default`** and
+**`cli-doc`** as **`include_dir` embeds** compiled into the `docli` binary
+(ADR-004). Optional extras may live under `<install-root>/share/docli/templates/`;
+that directory is not required to render bundled packs after `cargo install`.
 
 ## Install layout
 
-Bundled packs are compiled into the `docli` binary with `include_dir`
-(ADR-004). `default` is embedded from `templates/html/default/` and is the
-pack `html::render` uses when the caller does not pass `--template`.
-`share/docli/templates/` holds **optional extra** packs only. It is not
-required to render `default`, including after `cargo install`.
+Bundled ids **`default`** and **`cli-doc`** are embedded from
+`templates/html/default/` and `templates/html/cli-doc/`. `html::render` uses
+`default` when the caller omits `--template`. The author starter
+`templates/html/_skeleton/` is **on disk only** — copy it to your repo,
+customize, and point `docli generate --template` at the copy. `templates list`
+does not register `_skeleton` until you install a copy under
+`share/docli/templates/`.
 
 ```text
-templates/html/<id>/          # source of a bundled pack (embedded at build)
+templates/html/default/       # bundled default (embedded at build)
+templates/html/cli-doc/       # bundled cli-doc (embedded at build)
+templates/html/_skeleton/     # disk-only starter (not embedded, not listed)
+
+templates/html/<id>/          # layout of any pack directory
   template.toml               # manifest (required)
   page.html.j2                # shell (required)
   style.css.j2                # inlined into <style> (required)

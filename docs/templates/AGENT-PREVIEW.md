@@ -45,10 +45,10 @@ For each success envelope:
 
 | Field | Use |
 |-------|-----|
-| `data.template` | label in UI |
-| `data.theme` | what was applied |
+| `data.preview_dir` | directory containing `index.html` (same as `data.html_dir` with `--preview`) |
+| `data.html_dir` | output directory reported in the envelope |
 | `data.outputs[0].path` | open this file in a browser |
-| `data.preview_dir` | directory containing `index.html` |
+| argv `--template` / `--theme` | label which layout and theme JSON you passed (not repeated in `data`) |
 
 Example message:
 
