@@ -16,8 +16,7 @@ use crate::render;
 use crate::schema::CliModel;
 use crate::templates::{
     install_root, render_pack, resolve_pack, BundledPackId, EmbeddedDefaultError, PackId,
-    PackResolveError, TemplateManifest, TemplateRef, ThemeKeySpec, ThemeMap,
-    EMBEDDED_PACK_RECOVERY,
+    PackResolveError, RenderError, TemplateManifest, TemplateRef, ThemeKeySpec, ThemeMap,
 };
 
 /// Example `generate` argv included in `templates show`.
@@ -481,8 +480,7 @@ fn render_generate_html(
     let pack = resolve_pack(&template_ref).map_err(pack_failure)?;
     let empty_theme = ThemeMap::new();
     let theme = theme.unwrap_or(&empty_theme);
-    render_pack(&pack, model, theme)
-        .map_err(|err| map_render_failure(&template_ref, &pack.manifest.id, err.cause()))
+    render_pack(&pack, model, theme).map_err(map_render_failure)
 }
 
 fn embedded_default_failure(error: EmbeddedDefaultError) -> ErrorBody {
@@ -490,16 +488,15 @@ fn embedded_default_failure(error: EmbeddedDefaultError) -> ErrorBody {
     ErrorBody::internal_with_action(error.cause(), error.suggested_action())
 }
 
-/// Embedded packs stay `DOCLI.INTERNAL`. Directory packs use `templates validate`.
-fn map_render_failure(template: &TemplateRef, pack_id: &PackId, cause: &str) -> ErrorBody {
-    match template {
-        TemplateRef::Bundled(_) => ErrorBody::internal_with_action(cause, EMBEDDED_PACK_RECOVERY),
-        TemplateRef::Dir(_) => ErrorBody::template_invalid(
-            cause,
-            format!(
-                "Run `docli templates validate` on the `{pack_id}` template pack and fix the reported issue"
-            ),
-        ),
+/// Uses the pack origin recorded on [`RenderError`].
+///
+/// Directory packs are `DOCLI.TEMPLATE_INVALID`. Embedded packs stay
+/// `DOCLI.INTERNAL`. Recovery text comes from [`RenderError::suggested_action`].
+fn map_render_failure(err: RenderError) -> ErrorBody {
+    if err.machine_code() == "DOCLI.TEMPLATE_INVALID" {
+        ErrorBody::template_invalid(err.cause(), err.suggested_action())
+    } else {
+        ErrorBody::internal_with_action(err.cause(), err.suggested_action())
     }
 }
 
@@ -602,6 +599,7 @@ mod tests {
     use super::*;
     use crate::contract::ErrorCode;
     use crate::schema::CliModel;
+    use crate::templates::EMBEDDED_PACK_RECOVERY;
 
     fn demo_model() -> CliModel {
         serde_json::from_str(r#"{"name":"demo"}"#).expect("model")
@@ -624,21 +622,15 @@ mod tests {
 
     #[test]
     fn bundled_render_failure_is_internal() {
-        let body = map_render_failure(
-            &TemplateRef::bundled_default(),
-            &PackId::new("default").expect("id"),
-            "missing value",
-        );
+        let pack = resolve_pack(&TemplateRef::bundled_default()).expect("default");
+        let body = map_render_failure(RenderError::from_pack(&pack, "missing value"));
         assert_eq!(body.code, ErrorCode::Internal);
         assert_eq!(body.suggested_action, EMBEDDED_PACK_RECOVERY);
         assert!(!body.suggested_action.contains("templates validate"));
-        let cli_doc = map_render_failure(
-            &TemplateRef::bundled(BundledPackId::CliDoc),
-            &PackId::new("cli-doc").expect("id"),
-            "missing value",
-        );
-        assert_eq!(cli_doc.code, ErrorCode::Internal);
-        assert_eq!(cli_doc.suggested_action, EMBEDDED_PACK_RECOVERY);
+        let cli_doc = resolve_pack(&TemplateRef::bundled(BundledPackId::CliDoc)).expect("cli-doc");
+        let body = map_render_failure(RenderError::from_pack(&cli_doc, "missing value"));
+        assert_eq!(body.code, ErrorCode::Internal);
+        assert_eq!(body.suggested_action, EMBEDDED_PACK_RECOVERY);
     }
 
     #[test]
