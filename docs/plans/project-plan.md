@@ -3,6 +3,10 @@
 Product requirements: [docs/requirements.md](../requirements.md).  
 Architecture (ADRs, `ARCH-RULE-*`): [docs/architecture.md](../architecture.md).
 
+Default `docli generate --html` is `site/cli` per `REQ-DOCLI-HTML-006` and
+`REQ-DOCLI-CLI-005`. Omitting `--html` writes `site/cli/index.html`. HTML is
+not written to stdout.
+
 ## Standard phase Git workflow (all repos)
 
 This repository uses the **same process on every phase** (and the same pattern is used
@@ -20,7 +24,7 @@ Operator guide: [`.plan-hardening/README.md`](../../.plan-hardening/README.md).
 | Phase | Integration branch | Plan authority | Status |
 |-------|-------------------|----------------|--------|
 | A | `integrate/phase-a` | [phase-a/README.md](phase-a/README.md) | Complete (merged to `develop`) |
-| B | `integrate/phase-b` | [phase-b/README.md](phase-b/README.md) | Planning branch + harden; execution on integrate after **go** |
+| B | `integrate/phase-b` | [phase-b/README.md](phase-b/README.md) | Execution complete on integrate; phase-end QA → merge to **develop** |
 
 ## Branch model (every phase)
 
@@ -56,3 +60,21 @@ execution already started.
 
 **`/plan-hardening`** runs on the **planning branch**, not on `develop` or `integrate/phase-b`.
 **Go** means execute against the **current correct plan**, not “plan was merged once.”
+
+## Sprint index
+
+Phase B authority is [phase-b/README.md](phase-b/README.md). This index is the
+planning entry each sprint confirms before closeout.
+
+| Sprint | Doc | Branch | Worktree |
+|--------|-----|--------|----------|
+| b.0 | [b0-integrate-branch.md](phase-b/b0-integrate-branch.md) | `integrate/phase-b` | `../docli-worktrees/integrate/phase-b` |
+| b.1 | [b1-normative-baselines-and-skill.md](phase-b/b1-normative-baselines-and-skill.md) | `feature/phase-b-b1-baselines` | `../docli-worktrees/feature/phase-b-b1-baselines` |
+| b.2 | [b2-error-contract-gate.md](phase-b/b2-error-contract-gate.md) | `feature/phase-b-b2-errors` | `../docli-worktrees/feature/phase-b-b2-errors` |
+| b.3 | [b3-verification-tooling.md](phase-b/b3-verification-tooling.md) | `feature/phase-b-b3-verify` | `../docli-worktrees/feature/phase-b-b3-verify` |
+| b.5 | [b5-consumer-proof-fixture-policy.md](phase-b/b5-consumer-proof-fixture-policy.md) | `feature/phase-b-b5-consumers` | `../docli-worktrees/feature/phase-b-b5-consumers` |
+| b.7 | [b7-template-engine-and-layout.md](phase-b/b7-template-engine-and-layout.md) | `feature/phase-b-b7-engine` | `../docli-worktrees/feature/phase-b-b7-engine` |
+| b.8 | [b8-templates-subcommand.md](phase-b/b8-templates-subcommand.md) | `feature/phase-b-b8-templates-cmd` | `../docli-worktrees/feature/phase-b-b8-templates-cmd` |
+| b.9 | [b9-generate-preview-and-theme.md](phase-b/b9-generate-preview-and-theme.md) | `feature/phase-b-b9-preview` | `../docli-worktrees/feature/phase-b-b9-preview` |
+| b.10 | [b10-cli-doc-pack-and-author-docs.md](phase-b/b10-cli-doc-pack-and-author-docs.md) | `feature/phase-b-b10-cli-doc` | `../docli-worktrees/feature/phase-b-b10-cli-doc` |
+| b.11 | [b11-publish-readiness.md](phase-b/b11-publish-readiness.md) | `feature/phase-b-b11-publish` | `../docli-worktrees/feature/phase-b-b11-publish` |

@@ -1,7 +1,7 @@
 ---
 id: b.2
 title: error contract integration gate
-status: planned
+status: complete
 branch: feature/phase-b-b2-errors
 worktree: ../docli-worktrees/feature/phase-b-b2-errors
 target: integrate/phase-b
@@ -39,13 +39,17 @@ Every stable `DOCLI.*` code is integration-tested so `docli --json` and `cargo d
 
 ### Error-test manifest
 
+The **authoritative** error inventory is [`docs/requirements.md`](../../../requirements.md) section 9 (*Error code inventory*). The table below is the b.2 baseline; Phase B sprints **b.8+** append rows here and in requirements in the same PR.
+
 | Code | Test | Exit | kind | details | Channel | Parity |
 |------|------|------|------|---------|---------|--------|
-| `DOCLI.USAGE` | `docli_usage_unknown_command_json` | 2 | `validation` | `{}`. `suggested_action` contains `not-a-command` | `--json` argv `not-a-command --json` | yes |
-| `DOCLI.USAGE` | `docli_usage_invalid_flag_json` | 2 | `validation` | `{}`. `suggested_action` contains `--not-a-flag` | `--json` argv `generate --not-a-flag --json` | yes |
-| `DOCLI.USAGE` | `docli_usage_show_without_paths_json` | 2 | `validation` | `{}`. `suggested_action` contains `--html` and `--markdown` | `--json` argv `show --json` | yes |
+| `DOCLI.USAGE` | `docli_usage_unknown_command_json` | 2 | `validation` | `{ "cause" }` equals `suggested_action`; contains `not-a-command` | `--json` argv `not-a-command --json` | yes |
+| `DOCLI.USAGE` | `docli_usage_invalid_flag_json` | 2 | `validation` | `{ "cause" }` equals `suggested_action`; contains `--not-a-flag` | `--json` argv `generate --not-a-flag --json` | yes |
+| `DOCLI.USAGE` | `docli_usage_show_without_paths_json` | 2 | `validation` | `{ "cause" }` equals `suggested_action`; contains `--html` and `--markdown` | `--json` argv `show --json` | yes |
 | `DOCLI.USAGE` | `docli_usage_show_without_paths_human` | 2 | `validation` | human stderr | argv `show` | no |
+| `DOCLI.USAGE` | `docli_usage_preview_with_html_json` | 2 | `validation` | `{ "cause" }` equals `suggested_action`; mentions `--preview` and `--html` | `--json` `generate --preview --html DIR` | yes |
 | `DOCLI.INPUT_INVALID` | `docli_input_invalid_parse_error_json` | 2 | `validation` | `{ "cause": <non-empty> }`. `suggested_action` contains the input path and that cause. File bytes: `{"name": 1}` | `--json` | yes |
+| `DOCLI.INPUT_INVALID` | `docli_input_invalid_theme_json` | 2 | `validation` | `{ "cause" }`. Invalid `--theme` JSON | `--json` generate with bad theme | yes |
 | `DOCLI.INPUT_INVALID` | `docli_input_invalid_empty_file_json` | 2 | `validation` | `{}` | `--json`, empty file | yes |
 | `DOCLI.INPUT_INVALID` | `docli_stdin_empty_is_input_invalid` | 2 | `validation` | `{}` | `--json` argv `generate --json`, stdin empty | yes |
 | `DOCLI.INPUT_INVALID` | `docli_input_invalid_human` | 2 | `validation` | human stderr contains `DOCLI.INPUT_INVALID` and the parse cause | file bytes `{"name": 1}` | no |
@@ -58,6 +62,11 @@ Every stable `DOCLI.*` code is integration-tested so `docli --json` and `cargo d
 | `DOCLI.IO` | `docli_io_generate_partial_write_lists_outputs_written_json` | 4 | `dependency` | `cause` present. `outputs_written` length 1, `kind` `html`. `index.html` exists on disk. Markdown parent path is a file | `--json` | yes |
 | `DOCLI.IO` | `docli_io_show_unreadable_index_json` | 4 | `dependency` | `cause` present. Setup: generate HTML, replace `index.html` with a directory, then `show` | `--json` | yes |
 | `DOCLI.IO` | `docli_io_show_unreadable_index_human` | 4 | `dependency` | human stderr contains `DOCLI.IO` and `index.html` | human | no |
+| `DOCLI.TEMPLATE_INVALID` | `docli_template_invalid_validate_json` | 2 | `validation` | `{ "cause" }` | `--json` `templates validate` on broken pack | yes |
+| `DOCLI.TEMPLATE_INVALID` | `docli_template_invalid_validate_human` | 2 | `validation` | human stderr | human | no |
+| `DOCLI.TEMPLATE_NOT_FOUND` | `docli_template_not_found_unknown_id_json` | 3 | `not_found` | `{ "template" }` | `--json` generate unknown id | yes |
+| `DOCLI.TEMPLATE_NOT_FOUND` | `docli_template_not_found_unknown_id_human` | 3 | `not_found` | human stderr | human | no |
+| `DOCLI.TEMPLATE_NOT_FOUND` | `docli_templates_show_unknown_bundled_id_json` | 3 | `not_found` | `{ "template" }` | `--json` templates show unknown id | yes |
 | `DOCLI.INTERNAL` | `docli_internal_error_body_contract` | 1 | `internal` | `{ "cause": "serialization failed" }` from `ErrorBody::internal`. In-process only. `Envelope::failure` serializes `data: null` and `exit_code()` is `1` | in-process | no |
 
 Adding a `DOCLI.*` variant requires a new manifest row, a requirements section 9 row, and a test before merge.
@@ -90,10 +99,11 @@ Fix the model JSON at /path/to/file: <cause>
 <cause>
 ```
 
-`DOCLI.USAGE` with empty details omits the cause line:
+`DOCLI.USAGE` mirrors recovery text in `details.cause` and `suggested_action`:
 
 ```text
 DOCLI.USAGE: unknown command or invalid flags
+Pass --html DIR and/or --markdown FILE
 Pass --html DIR and/or --markdown FILE
 ```
 

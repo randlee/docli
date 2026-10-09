@@ -1,7 +1,7 @@
 ---
 id: b.11
 title: crates.io publish readiness
-status: planned
+status: complete
 branch: feature/phase-b-b11-publish
 worktree: ../docli-worktrees/feature/phase-b-b11-publish
 target: integrate/phase-b

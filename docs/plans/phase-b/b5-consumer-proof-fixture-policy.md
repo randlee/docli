@@ -1,7 +1,7 @@
 ---
 id: b.5
 title: consumer proof and fixture policy
-status: planned
+status: complete
 branch: feature/phase-b-b5-consumers
 worktree: ../docli-worktrees/feature/phase-b-b5-consumers
 target: integrate/phase-b

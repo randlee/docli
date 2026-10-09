@@ -1,0 +1,16 @@
+# Author starter (REQ-DOCLI-HTML-009). Not a bundled id.
+# `docli templates validate` accepts this directory.
+# `docli templates list` omits ids that start with `_`.
+# Copy this directory and set `id` before publishing a pack.
+id = "_skeleton"
+name = "docli pack skeleton"
+version = "1"
+description = "Starter pack. Copy this directory, set id, and edit the templates."
+min_docli = "0.1.0"
+
+# Each key is an object: type, default, and description (AUTHOR.md).
+[theme_schema]
+accent = { type = "color", default = "#007acc", description = "Primary accent" }
+font_body = { type = "string", default = "system-ui, sans-serif", description = "Body font family" }
+bg = { type = "color", default = "#ffffff", description = "Page background" }
+fg = { type = "color", default = "#1a1a2e", description = "Primary text" }

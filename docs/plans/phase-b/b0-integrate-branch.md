@@ -1,7 +1,7 @@
 ---
 id: b.0
 title: integrate/phase-b branch bootstrap
-status: planned
+status: complete
 branch: integrate/phase-b
 worktree: ../docli-worktrees/integrate/phase-b
 target: develop

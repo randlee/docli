@@ -9,14 +9,18 @@ use serde::{Deserialize, Serialize};
 
 /// Process exit code for a successful command.
 pub const EXIT_SUCCESS: i32 = 0;
-/// Process exit code for validation failures (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`).
+/// Process exit code for validation failures (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`, `DOCLI.TEMPLATE_INVALID`).
 pub const EXIT_VALIDATION: i32 = 2;
-/// Process exit code for missing paths (`DOCLI.INPUT_NOT_FOUND`, `DOCLI.OUTPUT_NOT_FOUND`).
+/// Process exit code for missing paths (`DOCLI.INPUT_NOT_FOUND`, `DOCLI.OUTPUT_NOT_FOUND`, `DOCLI.TEMPLATE_NOT_FOUND`).
 pub const EXIT_NOT_FOUND: i32 = 3;
 /// Process exit code for I/O dependency failures (`DOCLI.IO`).
 pub const EXIT_DEPENDENCY: i32 = 4;
 /// Process exit code for unexpected failures (`DOCLI.INTERNAL`).
 pub const EXIT_INTERNAL: i32 = 1;
+
+/// Requirements document linked from template-pack errors.
+const REQUIREMENTS_DOCS: &str =
+    "https://github.com/randlee/docli/blob/develop/docs/requirements.md";
 
 /// Version `"1"` success or failure wrapper.
 #[derive(Debug, Serialize)]
@@ -93,6 +97,12 @@ pub enum ErrorCode {
     /// Reading or writing a file failed.
     #[serde(rename = "DOCLI.IO")]
     Io,
+    /// A template pack manifest or template failed to compile.
+    #[serde(rename = "DOCLI.TEMPLATE_INVALID")]
+    TemplateInvalid,
+    /// `--template` names a pack id that is not bundled or installed.
+    #[serde(rename = "DOCLI.TEMPLATE_NOT_FOUND")]
+    TemplateNotFound,
     /// An unexpected failure.
     #[serde(rename = "DOCLI.INTERNAL")]
     Internal,
@@ -102,8 +112,8 @@ impl ErrorCode {
     /// Process exit code for this error code.
     pub fn exit_code(self) -> i32 {
         match self {
-            Self::Usage | Self::InputInvalid => EXIT_VALIDATION,
-            Self::InputNotFound | Self::OutputNotFound => EXIT_NOT_FOUND,
+            Self::Usage | Self::InputInvalid | Self::TemplateInvalid => EXIT_VALIDATION,
+            Self::InputNotFound | Self::OutputNotFound | Self::TemplateNotFound => EXIT_NOT_FOUND,
             Self::Io => EXIT_DEPENDENCY,
             Self::Internal => EXIT_INTERNAL,
         }
@@ -153,18 +163,21 @@ impl ErrorBody {
             ErrorCode::InputNotFound => "DOCLI.INPUT_NOT_FOUND",
             ErrorCode::OutputNotFound => "DOCLI.OUTPUT_NOT_FOUND",
             ErrorCode::Io => "DOCLI.IO",
+            ErrorCode::TemplateInvalid => "DOCLI.TEMPLATE_INVALID",
+            ErrorCode::TemplateNotFound => "DOCLI.TEMPLATE_NOT_FOUND",
             ErrorCode::Internal => "DOCLI.INTERNAL",
         }
     }
 
-    /// Usage failure with empty `details`.
+    /// Usage failure. `details.cause` mirrors `suggested_action` for JSON consumers.
     pub fn usage(suggested_action: impl Into<String>) -> Self {
+        let suggested_action = suggested_action.into();
         Self {
             kind: ErrorKind::Validation,
             code: ErrorCode::Usage,
             message: "unknown command or invalid flags".to_owned(),
-            details: serde_json::json!({}),
-            suggested_action: suggested_action.into(),
+            details: serde_json::json!({ "cause": suggested_action }),
+            suggested_action,
             docs: None,
         }
     }
@@ -238,15 +251,71 @@ impl ErrorBody {
         }
     }
 
+    /// Template pack content failed validation. `cause` becomes `details.cause`.
+    ///
+    /// `suggested_action` is the recovery sentence (for example, re-run
+    /// `docli templates validate` on the pack directory).
+    pub fn template_invalid(cause: impl Into<String>, suggested_action: impl Into<String>) -> Self {
+        let cause = cause.into();
+        Self {
+            kind: ErrorKind::Validation,
+            code: ErrorCode::TemplateInvalid,
+            message: "template pack is invalid".to_owned(),
+            details: serde_json::json!({ "cause": cause }),
+            suggested_action: suggested_action.into(),
+            docs: Some(REQUIREMENTS_DOCS.to_owned()),
+        }
+    }
+
+    /// `--theme` JSON is not an object of strings. The code is `DOCLI.INPUT_INVALID`.
+    pub fn theme_invalid(cause: impl Into<String>) -> Self {
+        let cause = cause.into();
+        Self {
+            kind: ErrorKind::Validation,
+            code: ErrorCode::InputInvalid,
+            message: "theme JSON is not an object of strings".to_owned(),
+            details: serde_json::json!({ "cause": cause }),
+            suggested_action: format!("Fix the --theme JSON: {cause}"),
+            docs: None,
+        }
+    }
+
+    /// Unknown template id. `details` is `{ "template": "<id>" }`.
+    ///
+    /// `suggested_action` is the recovery sentence (for example, run
+    /// `docli templates list`).
+    pub fn template_not_found(
+        template: impl Into<String>,
+        suggested_action: impl Into<String>,
+    ) -> Self {
+        let template = template.into();
+        Self {
+            kind: ErrorKind::NotFound,
+            code: ErrorCode::TemplateNotFound,
+            message: format!("template not found: {template}"),
+            details: serde_json::json!({ "template": template }),
+            suggested_action: suggested_action.into(),
+            docs: Some(REQUIREMENTS_DOCS.to_owned()),
+        }
+    }
+
     /// Unexpected failure.
     pub fn internal(cause: impl Into<String>) -> Self {
         let cause = cause.into();
+        Self::internal_with_action(cause.clone(), format!("Report this cause: {cause}"))
+    }
+
+    /// Unexpected failure with an operator-facing recovery sentence.
+    pub fn internal_with_action(
+        cause: impl Into<String>,
+        suggested_action: impl Into<String>,
+    ) -> Self {
         Self {
             kind: ErrorKind::Internal,
             code: ErrorCode::Internal,
             message: "an unexpected failure occurred".to_owned(),
-            details: serde_json::json!({ "cause": cause }),
-            suggested_action: format!("Report this cause: {cause}"),
+            details: serde_json::json!({ "cause": cause.into() }),
+            suggested_action: suggested_action.into(),
             docs: None,
         }
     }
