@@ -5,9 +5,11 @@
 //! fills `page.html.j2` and `style.css.j2` with MiniJinja.
 //!
 //! Embedded-default failures are `DOCLI.INTERNAL` (the pack is not read from
-//! disk). A filesystem read failure is `DOCLI.IO`. An unknown bundled id is
-//! `DOCLI.TEMPLATE_NOT_FOUND`. An on-disk manifest or template that does not
-//! compile is `DOCLI.TEMPLATE_INVALID`. The embedded-default path stores
+//! disk). A filesystem read failure is `DOCLI.IO`. Phase B b.7 does not expose
+//! `DOCLI.TEMPLATE_*` codes yet; [`PackResolveError::machine_code`] maps every
+//! resolve failure to `DOCLI.IO` or `DOCLI.INTERNAL` until b.8 adds template
+//! CLI codes. [`PackResolveError::suggested_action`] still names list/validate
+//! steps for later sprints. The embedded-default path stores
 //! [`PackResolveError::cause`] and does not copy [`Display`] into that cause.
 //!
 //! # Examples
@@ -293,13 +295,13 @@ impl PackResolveError {
         matches!(self.kind, PackResolveKind::NotBundled { .. })
     }
 
-    /// Stable `DOCLI.*` code for envelope mapping.
+    /// Stable `DOCLI.*` code for envelope mapping (b.7: IO and INTERNAL only).
     pub fn machine_code(&self) -> &'static str {
         match self.kind {
             PackResolveKind::Io { .. } => "DOCLI.IO",
-            PackResolveKind::Embedded { .. } => "DOCLI.INTERNAL",
-            PackResolveKind::NotBundled { .. } => "DOCLI.TEMPLATE_NOT_FOUND",
-            PackResolveKind::Invalid { .. } => "DOCLI.TEMPLATE_INVALID",
+            PackResolveKind::Embedded { .. }
+            | PackResolveKind::NotBundled { .. }
+            | PackResolveKind::Invalid { .. } => "DOCLI.INTERNAL",
         }
     }
 
@@ -683,7 +685,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_manifest_uses_template_invalid_code() {
+    fn invalid_manifest_maps_to_internal_code_for_b7() {
         let dir = std::env::temp_dir().join(format!(
             "docli-b7-invalid-{}-{}",
             std::process::id(),
@@ -695,15 +697,16 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("mkdir");
         std::fs::write(dir.join("template.toml"), "id = [\n").expect("write");
         let err = resolve_pack(&TemplateRef::dir(&dir)).expect_err("invalid");
-        assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_INVALID");
+        assert_eq!(err.machine_code(), "DOCLI.INTERNAL");
         assert!(err.suggested_action().contains("templates validate"));
         assert!(err.cause().contains("template.toml"));
         assert!(!err.cause().contains("templates validate"));
+        assert!(!err.machine_code().contains("TEMPLATE"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
-    fn uncompilable_directory_template_is_template_invalid() {
+    fn uncompilable_directory_template_maps_to_internal_for_b7() {
         let dir = std::env::temp_dir().join(format!(
             "docli-b7-compile-{}-{}",
             std::process::id(),
@@ -722,17 +725,17 @@ mod tests {
         std::fs::write(dir.join("style.css.j2"), "body{}\n").expect("style");
         std::fs::write(dir.join("script.js"), "").expect("script");
         let err = resolve_pack(&TemplateRef::dir(&dir)).expect_err("compile");
-        assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_INVALID");
+        assert_eq!(err.machine_code(), "DOCLI.INTERNAL");
         assert!(err.suggested_action().contains("templates validate"));
-        assert_ne!(err.machine_code(), "DOCLI.INTERNAL");
+        assert!(!err.machine_code().contains("TEMPLATE"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
-    fn unknown_bundled_id_uses_template_not_found_code() {
+    fn unknown_bundled_id_maps_to_internal_for_b7() {
         let err = TemplateRef::try_bundled("cli-doc").expect_err("missing id");
         assert!(err.is_not_bundled());
-        assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_NOT_FOUND");
+        assert_eq!(err.machine_code(), "DOCLI.INTERNAL");
         assert!(err.suggested_action().contains("templates list"));
         assert!(err.suggested_action().contains("cli-doc"));
         let cause = err.cause();
