@@ -646,7 +646,7 @@ mod tests {
         std::fs::write(dir.join("page.html.j2"), "{{ missing_render_value }}").expect("page");
         std::fs::write(dir.join("style.css.j2"), "body{}\n").expect("style");
         std::fs::write(dir.join("script.js"), "").expect("script");
-        let template = TemplateRef::dir(&dir);
+        let template = TemplateRef::dir(dir);
         let err = render_generate_html(&demo_model(), Some(&template), None).expect_err("render");
         assert_eq!(err.code, ErrorCode::TemplateInvalid);
         assert!(err.suggested_action.contains("templates validate"));
