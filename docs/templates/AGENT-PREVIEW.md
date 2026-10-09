@@ -41,12 +41,14 @@ without changing layout.
 
 ## Step 3 — Report to the user
 
-For each success envelope:
+Label each preview from that call's `--template` and `--theme` arguments.
+Success `data` follows `REQ-DOCLI-CLI-005`: `operation`, `input`, `model_name`,
+`html_dir`, `outputs`, and `preview_dir` when `--preview` is set.
 
-| Field | Use |
-|-------|-----|
-| `data.template` | label in UI |
-| `data.theme` | what was applied |
+| Source | Use |
+|--------|-----|
+| this call's `--template` | label in UI |
+| this call's `--theme` | what was applied |
 | `data.outputs[0].path` | open this file in a browser |
 | `data.preview_dir` | directory containing `index.html` |
 

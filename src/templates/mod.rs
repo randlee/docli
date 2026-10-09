@@ -46,6 +46,10 @@ use crate::search::search_index;
 
 const DEFAULT_PACK_ID: &str = "default";
 const CLI_DOC_PACK_ID: &str = "cli-doc";
+
+/// Recovery sentence for a damaged embedded pack (`DOCLI.INTERNAL`).
+pub(crate) const EMBEDDED_PACK_RECOVERY: &str =
+    "Retry or report a bug — an embedded template pack failed to load";
 const MANIFEST_FILE: &str = "template.toml";
 const PAGE_FILE: &str = "page.html.j2";
 const STYLE_FILE: &str = "style.css.j2";
@@ -81,15 +85,17 @@ impl BundledPackId {
 
     /// Accept only ids that are compiled into this binary.
     ///
+    /// Parses [`PackId`] once. Callers that already hold a [`PackId`] use
+    /// [`PackId::to_bundled`] instead of parsing again.
+    ///
     /// # Errors
     ///
-    /// Returns [`PackResolveError`] when `id` is not embedded.
+    /// Returns [`PackResolveError`] when `id` is not a pack id or is not embedded.
     pub fn try_from_str(id: &str) -> Result<Self, PackResolveError> {
-        match id {
-            DEFAULT_PACK_ID => Ok(Self::Default),
-            CLI_DOC_PACK_ID => Ok(Self::CliDoc),
-            _ => Err(PackResolveError::not_bundled(id)),
-        }
+        let pack_id = PackId::new(id).map_err(|_| PackResolveError::not_bundled(id))?;
+        pack_id
+            .to_bundled()
+            .ok_or_else(|| PackResolveError::not_bundled(id))
     }
 
     fn embedded_dir(self) -> &'static Dir<'static> {
@@ -99,6 +105,117 @@ impl BundledPackId {
         }
     }
 }
+
+/// A validated template pack id.
+///
+/// Parsed once from a non-path `--template` selector or from `template.toml`.
+/// An id that starts with `_` stays valid so `templates validate` can load an
+/// author starter. [`Self::excluded_from_list`] is the only list filter for
+/// that prefix.
+///
+/// # Examples
+///
+/// ```
+/// use docli::templates::PackId;
+///
+/// let id = PackId::new("cli-doc")?;
+/// assert!(!id.excluded_from_list());
+/// assert!(PackId::new("_skeleton")?.excluded_from_list());
+/// Ok::<(), docli::templates::PackIdError>(())
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
+#[serde(transparent)]
+pub struct PackId(String);
+
+impl PackId {
+    /// Parse `id` as a pack id.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PackIdError`] when `id` is empty or is a path (a separator,
+    /// `.`, or `..`).
+    pub fn new(id: impl Into<String>) -> Result<Self, PackIdError> {
+        let id = id.into();
+        if id.is_empty() {
+            return Err(PackIdError::Empty);
+        }
+        if id.contains('/') || id.contains('\\') || id == "." || id == ".." {
+            return Err(PackIdError::Path);
+        }
+        Ok(Self(id))
+    }
+
+    /// Borrow the id text.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Whether `templates list` omits this id.
+    ///
+    /// Author starters and any other id that starts with `_` are omitted
+    /// (`REQ-DOCLI-HTML-009`).
+    pub fn excluded_from_list(&self) -> bool {
+        self.0.starts_with('_')
+    }
+
+    /// Bundled pack when this id is compiled into the binary.
+    pub fn to_bundled(&self) -> Option<BundledPackId> {
+        match self.0.as_str() {
+            DEFAULT_PACK_ID => Some(BundledPackId::Default),
+            CLI_DOC_PACK_ID => Some(BundledPackId::CliDoc),
+            _ => None,
+        }
+    }
+}
+
+impl Display for PackId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl AsRef<str> for PackId {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::str::FromStr for PackId {
+    type Err = PackIdError;
+
+    fn from_str(id: &str) -> Result<Self, Self::Err> {
+        Self::new(id)
+    }
+}
+
+impl<'de> Deserialize<'de> for PackId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Self::new(String::deserialize(deserializer)?).map_err(serde::de::Error::custom)
+    }
+}
+
+/// Why [`PackId::new`] rejected text.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PackIdError {
+    /// The id was empty.
+    Empty,
+    /// The id is a path (separator, `.`, or `..`).
+    Path,
+}
+
+impl Display for PackIdError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Empty => f.write_str("pack id must not be empty"),
+            Self::Path => f.write_str("pack id must not be a path"),
+        }
+    }
+}
+
+impl std::error::Error for PackIdError {}
 
 /// Bundled pack id or a filesystem pack directory.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -130,6 +247,17 @@ impl TemplateRef {
         Ok(Self::Bundled(BundledPackId::try_from_str(id)?))
     }
 
+    /// A bundled pack from an id already parsed at the CLI or manifest boundary.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PackResolveError`] when `id` is not embedded.
+    pub fn from_pack_id(id: &PackId) -> Result<Self, PackResolveError> {
+        id.to_bundled()
+            .map(Self::Bundled)
+            .ok_or_else(|| PackResolveError::not_bundled(id.as_str()))
+    }
+
     /// A pack directory on disk.
     pub fn dir(path: impl Into<PathBuf>) -> Self {
         Self::Dir(path.into())
@@ -153,7 +281,7 @@ pub struct ThemeKeySpec {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TemplateManifest {
     /// Stable pack id.
-    pub id: String,
+    pub id: PackId,
     /// Display name.
     pub name: String,
     /// Pack version string.
@@ -279,6 +407,13 @@ enum PackResolveKind {
 }
 
 impl PackResolveError {
+    /// Selector that is not an embedded pack id.
+    ///
+    /// Callers that already parsed a [`PackId`] use [`TemplateRef::from_pack_id`].
+    pub(crate) fn unknown_id(id: impl Into<String>) -> Self {
+        Self::not_bundled(id)
+    }
+
     fn not_bundled(id: impl Into<String>) -> Self {
         Self {
             kind: PackResolveKind::NotBundled { id: id.into() },
@@ -377,9 +512,7 @@ impl PackResolveError {
             PackResolveKind::Io { path, .. } => {
                 format!("Check that {} exists and is readable", path.display())
             }
-            PackResolveKind::Embedded { .. } => {
-                "Retry or report a bug — an embedded template pack failed to load".to_owned()
-            }
+            PackResolveKind::Embedded { .. } => EMBEDDED_PACK_RECOVERY.to_owned(),
         }
     }
 
@@ -495,6 +628,11 @@ impl EmbeddedDefaultError {
         &self.cause
     }
 
+    /// Recovery sentence for `DOCLI.INTERNAL`.
+    pub fn suggested_action(&self) -> &'static str {
+        EMBEDDED_PACK_RECOVERY
+    }
+
     /// Captured backtrace from the point of failure.
     pub fn backtrace(&self) -> &Backtrace {
         &self.backtrace
@@ -606,7 +744,7 @@ fn merge_theme(pack: &Pack, theme: &ThemeMap) -> ThemeMap {
 fn load_embedded(id: BundledPackId) -> Result<Pack, PackResolveError> {
     let manifest_text = embedded_file(id, MANIFEST_FILE)?;
     let manifest = parse_manifest(&manifest_text, Path::new(MANIFEST_FILE), true)?;
-    if manifest.id != id.as_str() {
+    if manifest.id.as_str() != id.as_str() {
         return Err(PackResolveError::embedded(format!(
             "embedded pack id is {}, expected {}",
             manifest.id,
@@ -856,5 +994,58 @@ mod tests {
         assert_eq!(err.code(), "DOCLI.INTERNAL");
         assert!(!err.code().contains("TEMPLATE"));
         assert!(err.cause().contains("broken pack"));
+        assert_eq!(err.suggested_action(), EMBEDDED_PACK_RECOVERY);
+        assert!(!err.suggested_action().contains("templates validate"));
+    }
+
+    #[test]
+    fn pack_id_parses_once_and_owns_list_exclusion() {
+        let bundled = PackId::new("default").expect("default");
+        assert_eq!(bundled.to_bundled(), Some(BundledPackId::Default));
+        assert!(!bundled.excluded_from_list());
+        let cli_doc = PackId::new("cli-doc").expect("cli-doc");
+        assert_eq!(cli_doc.to_bundled(), Some(BundledPackId::CliDoc));
+        let starter = PackId::new("_skeleton").expect("starter");
+        assert!(starter.excluded_from_list());
+        assert!(starter.to_bundled().is_none());
+        let extra = PackId::new("brand").expect("extra");
+        assert!(!extra.excluded_from_list());
+        assert!(extra.to_bundled().is_none());
+        assert_eq!(PackId::new("").unwrap_err(), PackIdError::Empty);
+        assert_eq!(PackId::new("a/b").unwrap_err(), PackIdError::Path);
+        assert_eq!(PackId::new(r"a\b").unwrap_err(), PackIdError::Path);
+        assert_eq!(PackId::new(".").unwrap_err(), PackIdError::Path);
+        assert_eq!(PackId::new("..").unwrap_err(), PackIdError::Path);
+        assert_eq!(
+            BundledPackId::try_from_str("default").expect("bundled"),
+            BundledPackId::Default
+        );
+        assert!(BundledPackId::try_from_str("").is_err());
+        assert!(BundledPackId::try_from_str("a/b").is_err());
+    }
+
+    #[test]
+    fn empty_manifest_id_is_template_invalid() {
+        let dir = std::env::temp_dir().join(format!(
+            "docli-b10-empty-id-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).expect("mkdir");
+        std::fs::write(
+            dir.join("template.toml"),
+            "id = \"\"\nname = \"x\"\nversion = \"1\"\ndescription = \"x\"\ntheme_schema = {}\n",
+        )
+        .expect("manifest");
+        std::fs::write(dir.join("page.html.j2"), "ok").expect("page");
+        std::fs::write(dir.join("style.css.j2"), "body{}\n").expect("style");
+        std::fs::write(dir.join("script.js"), "").expect("script");
+        let err = resolve_pack(&TemplateRef::dir(&dir)).expect_err("empty id");
+        assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_INVALID");
+        assert!(err.cause().contains("pack id must not be empty"));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
