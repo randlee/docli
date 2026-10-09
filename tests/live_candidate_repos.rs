@@ -10,6 +10,9 @@
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static NEXT_LIVE_HTML_ID: AtomicU64 = AtomicU64::new(0);
 
 use serde_json::Value;
 
@@ -99,11 +102,12 @@ struct TempHtmlDir(PathBuf);
 
 impl TempHtmlDir {
     fn new() -> Self {
+        let id = NEXT_LIVE_HTML_ID.fetch_add(1, Ordering::Relaxed);
         let nanos = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("clock")
             .as_nanos();
-        Self(std::env::temp_dir().join(format!("docli-live-{nanos}")))
+        Self(std::env::temp_dir().join(format!("docli-live-{}-{}-{id}", std::process::id(), nanos)))
     }
 }
 
