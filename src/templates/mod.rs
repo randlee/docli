@@ -7,8 +7,9 @@
 //! Embedded-default failures are `DOCLI.INTERNAL` (the pack is not read from
 //! disk). A filesystem read failure is `DOCLI.IO`. An on-disk manifest or
 //! template that does not compile is `DOCLI.TEMPLATE_INVALID`
-//! ([`PackResolveError::machine_code`]). Unknown bundled ids stay
-//! `DOCLI.INTERNAL` until b.9 adds `DOCLI.TEMPLATE_NOT_FOUND`.
+//! ([`PackResolveError::machine_code`]). Unknown bundled ids on template
+//! commands are also `DOCLI.TEMPLATE_INVALID` until b.9 adds
+//! `DOCLI.TEMPLATE_NOT_FOUND` for `generate --template`.
 //! [`PackResolveError::suggested_action`] names `templates list` or
 //! `templates validate`. The embedded-default path stores
 //! [`PackResolveError::cause`] and does not copy [`Display`] into that cause.
