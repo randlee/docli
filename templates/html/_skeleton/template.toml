@@ -6,8 +6,16 @@ description = "Minimal valid pack for authors; omitted from templates list."
 min_docli = "0.1.0"
 
 [theme_schema]
-accent = { type = "color", default = "#007acc", description = "Primary accent" }
-font_body = { type = "string", default = "system-ui, sans-serif", description = "Body font stack" }
-font_mono = { type = "string", default = "ui-monospace, monospace", description = "Monospace stack" }
-bg = { type = "color", default = "#ffffff", description = "Page background" }
+bg = { type = "color", default = "#fff", description = "Page background" }
 fg = { type = "color", default = "#1a1a2e", description = "Primary text" }
+border = { type = "color", default = "#ddd", description = "Hairline borders" }
+hover = { type = "color", default = "#f0f0f0", description = "Hover and table-header fill" }
+accent = { type = "color", default = "#007acc", description = "Primary accent" }
+muted = { type = "color", default = "#666", description = "Secondary text" }
+font_body = { type = "string", default = "16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif", description = "Body font shorthand, including size and line height" }
+bg_dark = { type = "color", default = "#16181d", description = "Dark-scheme background" }
+fg_dark = { type = "color", default = "#e6e6e6", description = "Dark-scheme text" }
+border_dark = { type = "color", default = "#333", description = "Dark-scheme borders" }
+hover_dark = { type = "color", default = "#23262e", description = "Dark-scheme hover fill" }
+accent_dark = { type = "color", default = "#4da3ff", description = "Dark-scheme accent" }
+muted_dark = { type = "color", default = "#999", description = "Dark-scheme secondary text" }

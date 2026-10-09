@@ -7,10 +7,15 @@
 <style>{{ style }}</style>
 </head>
 <body>
-<header><h1>{{ title|docli_escape }}</h1></header>
-<main><nav id="tree">{{ tree }}</nav><article id="detail"></article></main>
+<header><a class="crumb" href="../">Documentation</a><h1>{{ title|docli_escape }} CLI Reference</h1>{% if version %}<span class="meta">Version {{ version|docli_escape }}</span>{% endif %}<label class="search">Search <input id="search" type="search" autocomplete="off" placeholder="commands and options"></label></header>
+<main>
+<aside class="pane"><h2>Commands</h2><nav id="tree">{{ tree }}</nav></aside>
+<article class="pane" id="detail" aria-live="polite"></article>
+</main>
 <script id="docli-data" type="application/json">{{ model_json }}</script>
 <script id="docli-search" type="application/json">{{ search_json }}</script>
-<script>{{ script }}</script>
+<script>
+{{ script }}
+</script>
 </body>
 </html>

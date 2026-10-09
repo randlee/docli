@@ -293,7 +293,7 @@ pub fn show(req: ShowRequest) -> Envelope<ShowResponse> {
     })
 }
 
-/// List the embedded `default` pack and any valid extra packs under [`install_root`].
+/// List every embedded bundled pack and any valid extra packs under [`install_root`].
 ///
 /// A missing install root is an empty extra list, not an error. Unreadable
 /// install roots are `DOCLI.IO`. Extra directories that do not load are omitted
@@ -390,7 +390,10 @@ fn installed_summaries(root: &Path) -> Result<Vec<TemplateSummary>, ErrorBody> {
         let Ok(pack) = resolve_pack(&TemplateRef::dir(&path)) else {
             continue;
         };
-        if pack.manifest.id == "default" {
+        if crate::templates::BundledPackId::ALL
+            .iter()
+            .any(|bundled| bundled.as_str() == pack.manifest.id)
+        {
             continue;
         }
         extras

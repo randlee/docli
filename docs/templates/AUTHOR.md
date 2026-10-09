@@ -33,11 +33,19 @@ description = "Acme Corp colors and Inter typography"
 min_docli = "0.2.0"
 
 [theme_schema]
+bg = { type = "color", default = "#fff", description = "Page background" }
+fg = { type = "color", default = "#1a1a2e", description = "Primary text" }
+border = { type = "color", default = "#ddd", description = "Hairline borders" }
+hover = { type = "color", default = "#f0f0f0", description = "Hover and table-header fill" }
 accent = { type = "color", default = "#007acc", description = "Primary accent" }
-font_body = { type = "string", default = "system-ui, sans-serif" }
-font_mono = { type = "string", default = "ui-monospace, monospace" }
-bg = { type = "color", default = "#ffffff" }
-fg = { type = "color", default = "#1a1a2e" }
+muted = { type = "color", default = "#666", description = "Secondary text" }
+font_body = { type = "string", default = "16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif", description = "Body font shorthand, including size and line height" }
+bg_dark = { type = "color", default = "#16181d", description = "Dark-scheme background" }
+fg_dark = { type = "color", default = "#e6e6e6", description = "Dark-scheme text" }
+border_dark = { type = "color", default = "#333", description = "Dark-scheme borders" }
+hover_dark = { type = "color", default = "#23262e", description = "Dark-scheme hover fill" }
+accent_dark = { type = "color", default = "#4da3ff", description = "Dark-scheme accent" }
+muted_dark = { type = "color", default = "#999", description = "Dark-scheme secondary text" }
 ```
 
 `theme_schema` drives `docli templates show` and documents keys for `--theme` JSON.
@@ -80,7 +88,7 @@ docli generate --json --input "$MODEL" --preview --template default \
   --theme '{"accent":"#007acc","font_body":"system-ui"}'
 
 docli generate --json --input "$MODEL" --preview --template cli-doc \
-  --theme '{"accent":"#007acc","font_body":"Monaco"}'
+  --theme '{"accent":"#d73a49","font_body":"Monaco"}'
 
 docli generate --json --input "$MODEL" --preview --template default \
   --theme '{"accent":"#059669","font_body":"Inter"}'

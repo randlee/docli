@@ -149,7 +149,7 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
 
 **Status**: Accepted
 
-**Requirements**: `REQ-DOCLI-HTML-007`
+**Requirements**: `REQ-DOCLI-HTML-007`, `REQ-DOCLI-HTML-008`, `REQ-DOCLI-HTML-009`, `REQ-DOCLI-HTML-010`
 
 **Amends**: ADR-001
 
@@ -177,7 +177,9 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
   that is not installed under `share/docli/templates`, is
   `DOCLI.TEMPLATE_NOT_FOUND`.
 - The default page root element carries `id="docli-default-pack"`. That marker
-  is written only in `templates/html/default/page.html.j2`.
+  is written only in `templates/html/default/page.html.j2`. The `cli-doc` pack
+  carries `id="docli-cli-doc-pack"`, class `cli-doc-columns`, and option cards
+  with class `cli-doc-option-card` (`REQ-DOCLI-HTML-008`).
 - ADR-002 is unchanged: the pack embeds `#docli-data` and `#docli-search`, and
   the search JSON still comes from `search_index`.
 

@@ -125,15 +125,37 @@ fn templates_list_omits_skeleton_starter() {
     let output = run(&mut docli_bin(), &["templates", "list", "--json"]);
     assert_eq!(output.status.code(), Some(0));
     let envelope = parse_envelope(&output.stdout);
-    let templates = envelope["data"]["templates"]
-        .as_array()
-        .expect("templates");
+    let templates = envelope["data"]["templates"].as_array().expect("templates");
     assert!(
         !templates
             .iter()
             .any(|template| template["id"] == "_skeleton"),
         "skeleton must not appear in list"
     );
+}
+
+#[test]
+fn generate_skeleton_template_smoke() {
+    let dir = unique_dir();
+    let model = workspace_fixture("fixtures/contract/model.json");
+    let pack = workspace_fixture("templates/html/_skeleton");
+    let html_dir = dir.join("skeleton-out");
+    let output = run(
+        &mut docli_bin(),
+        &[
+            "generate",
+            "--input",
+            model.to_str().expect("utf8"),
+            "--html",
+            html_dir.to_str().expect("utf8"),
+            "--template",
+            pack.to_str().expect("utf8"),
+            "--json",
+        ],
+    );
+    assert_eq!(output.status.code(), Some(0));
+    assert_success(&parse_envelope(&output.stdout));
+    assert!(html_dir.join("index.html").is_file());
 }
 
 #[test]
