@@ -194,7 +194,9 @@ renderer does not care which language produced the input.
 - `index.html` — a self-contained two-pane page: an indented, collapsible
   command tree (left) and a detail panel with description, usage, and an
   arguments/options table (right). Hash-routed per command, with search.
-- Markdown — a flat reference for offline use, distributed with the installer.
+- Markdown — a flat reference for offline use from `docli generate`. Bundling
+  Markdown with the installer is out of scope for Phase B (see
+  REQ-DOCLI-MD-002 in `docs/requirements.md`).
 
 ## License
 
