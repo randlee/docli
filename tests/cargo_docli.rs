@@ -280,4 +280,42 @@ fn cargo_docli_matches_docli_error_envelopes() {
         &["show", "--html", show_html.to_str().unwrap(), "--json"],
         None,
     );
+
+    assert_error_parity(&["templates", "show", "not-a-bundled-pack", "--json"], None);
+    assert_error_parity(
+        &[
+            "generate",
+            "--input",
+            model,
+            "--template",
+            "not-a-bundled-pack",
+            "--json",
+        ],
+        None,
+    );
+    assert_error_parity(
+        &[
+            "generate",
+            "--input",
+            model,
+            "--preview",
+            "--html",
+            dir.join("preview-and-html").to_str().unwrap(),
+            "--json",
+        ],
+        None,
+    );
+    assert_error_parity(
+        &[
+            "generate",
+            "--input",
+            model,
+            "--html",
+            dir.join("theme-out").to_str().unwrap(),
+            "--theme",
+            "not-json",
+            "--json",
+        ],
+        None,
+    );
 }

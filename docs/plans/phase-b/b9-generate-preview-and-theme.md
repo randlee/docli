@@ -1,7 +1,7 @@
 ---
 id: b.9
 title: generate preview, template, and theme
-status: planned
+status: in-review
 branch: feature/phase-b-b9-preview
 worktree: ../docli-worktrees/feature/phase-b-b9-preview
 target: integrate/phase-b
@@ -44,7 +44,7 @@ pub struct GenerateRequest {
     pub html_dir: Option<PathBuf>,
     pub preview: bool,
     pub template: Option<TemplateRef>,
-    pub theme_json: Option<String>,
+    pub theme: Option<ThemeMap>, // CLI parses --theme JSON before ops
     // … existing markdown/json fields
 }
 ```

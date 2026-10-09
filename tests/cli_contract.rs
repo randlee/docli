@@ -212,6 +212,7 @@ fn generate_json_defaults_html_dir_to_site_cli() {
     assert_eq!(envelope["ok"], true);
     assert_eq!(envelope["error"], Value::Null);
     assert_eq!(envelope["data"]["html_dir"], "site/cli");
+    assert_eq!(envelope["data"]["preview_dir"], Value::Null);
     assert!(dir.join("site/cli/index.html").is_file());
 }
 
@@ -253,8 +254,8 @@ fn show_json_without_paths_is_usage() {
         "validation",
         "DOCLI.USAGE",
     );
-    assert_eq!(error["details"], serde_json::json!({}));
     assert_suggested_action_contains(&error, &["--html", "--markdown"]);
+    assert_eq!(error["details"]["cause"], error["suggested_action"]);
 }
 
 #[test]
@@ -438,6 +439,9 @@ fn ops_generate_writes_index_html_in_tmp() {
     let envelope = generate(GenerateRequest {
         input: InputSource::File(model),
         html_dir: Some(tmp.clone()),
+        preview: false,
+        template: None,
+        theme: None,
         markdown: None,
     });
 
@@ -445,6 +449,7 @@ fn ops_generate_writes_index_html_in_tmp() {
     assert!(envelope.error.is_none());
     let data = envelope.data.expect("success data");
     assert_eq!(data.html_dir, tmp);
+    assert!(data.preview_dir.is_none());
     assert!(tmp.join("index.html").is_file());
 }
 
@@ -479,8 +484,8 @@ fn invalid_flag_is_usage_with_and_without_json() {
         "validation",
         "DOCLI.USAGE",
     );
-    assert_eq!(error["details"], serde_json::json!({}));
     assert_suggested_action_contains(&error, &["--not-a-flag"]);
+    assert_eq!(error["details"]["cause"], error["suggested_action"]);
 
     let human = bin()
         .args(["generate", "--not-a-flag"])
@@ -507,8 +512,8 @@ fn unknown_command_is_usage_with_and_without_json() {
         "validation",
         "DOCLI.USAGE",
     );
-    assert_eq!(error["details"], serde_json::json!({}));
     assert_suggested_action_contains(&error, &["not-a-command"]);
+    assert_eq!(error["details"]["cause"], error["suggested_action"]);
 
     let human = bin()
         .args(["not-a-command"])
@@ -685,6 +690,10 @@ fn error_kind_and_code_serialize_to_contract_strings() {
     assert_eq!(
         serde_json::to_string(&docli::contract::ErrorCode::TemplateInvalid).unwrap(),
         "\"DOCLI.TEMPLATE_INVALID\""
+    );
+    assert_eq!(
+        serde_json::to_string(&docli::contract::ErrorCode::TemplateNotFound).unwrap(),
+        "\"DOCLI.TEMPLATE_NOT_FOUND\""
     );
     assert_eq!(
         serde_json::to_string(&docli::contract::ErrorCode::Internal).unwrap(),

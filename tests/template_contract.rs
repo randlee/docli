@@ -1,9 +1,14 @@
-//! `docli templates` success envelopes and `cargo docli` list parity (`REQ-DOCLI-CLI-011`).
+//! `docli templates` success envelopes and `generate` preview (`REQ-DOCLI-CLI-011`, `REQ-DOCLI-CLI-012`).
 
 mod common;
 
+use std::fs;
+use std::path::Path;
+
 use common::envelope::{assert_json_mode_stdout_only_envelope, assert_success, parse_envelope};
-use common::harness::{cargo_docli_bin, docli_bin, run, workspace_fixture};
+use common::harness::{
+    cargo_docli_bin, docli_bin, run, unique_dir, workspace_fixture, write_demo_model,
+};
 
 #[test]
 fn templates_list_json_includes_default() {
@@ -58,8 +63,11 @@ fn templates_show_default_json_includes_theme_schema_and_example_argv() {
             "generate",
             "--input",
             "model.json",
-            "--html",
-            "site/cli"
+            "--preview",
+            "--template",
+            "default",
+            "--theme",
+            r##"{"accent":"#007acc"}"##
         ])
     );
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
@@ -86,6 +94,122 @@ fn templates_validate_default_pack_json_succeeds() {
     assert_eq!(data["valid"], true);
     assert_eq!(data["path"], pack.to_string_lossy().as_ref());
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[test]
+fn generate_preview_default_template_three_distinct_themes() {
+    let dir = unique_dir();
+    let model = write_demo_model(&dir);
+    let themes = [
+        r##"{"accent":"#007acc"}"##,
+        r##"{"accent":"#005a9e"}"##,
+        r##"{"accent":"#059669"}"##,
+    ];
+    let mut preview_dirs = Vec::new();
+    let mut pages = Vec::new();
+    for theme in themes {
+        let mut cmd = docli_bin();
+        cmd.current_dir(&dir);
+        let output = run(
+            &mut cmd,
+            &[
+                "generate",
+                "--input",
+                model.to_str().expect("utf8"),
+                "--preview",
+                "--template",
+                "default",
+                "--theme",
+                theme,
+                "--json",
+            ],
+        );
+        assert_eq!(
+            output.status.code(),
+            Some(0),
+            "stderr={}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let envelope = parse_envelope(&output.stdout);
+        assert_success(&envelope);
+        assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+        let data = &envelope["data"];
+        assert_eq!(data["operation"], "generate");
+        let html_dir = data["html_dir"].as_str().expect("html_dir");
+        let preview_dir = data["preview_dir"].as_str().expect("preview_dir");
+        assert_eq!(html_dir, preview_dir);
+        assert_preview_dir_name(preview_dir);
+        let index = Path::new(preview_dir).join("index.html");
+        assert!(index.is_file(), "missing {}", index.display());
+        pages.push(fs::read_to_string(&index).expect("read preview"));
+        preview_dirs.push(preview_dir.to_owned());
+    }
+    assert_eq!(preview_dirs.len(), 3);
+    assert_ne!(preview_dirs[0], preview_dirs[1]);
+    assert_ne!(preview_dirs[1], preview_dirs[2]);
+    assert_ne!(preview_dirs[0], preview_dirs[2]);
+    assert!(pages[0].contains("--accent:#007acc"));
+    assert!(pages[1].contains("--accent:#005a9e"));
+    assert!(pages[2].contains("--accent:#059669"));
+    assert_ne!(pages[0], pages[1]);
+    assert_ne!(pages[1], pages[2]);
+    assert!(!dir.join("site/cli").exists());
+}
+
+#[test]
+fn generate_default_template_explicit_html_matches_contract_bytes() {
+    let dir = unique_dir();
+    let model = workspace_fixture("fixtures/contract/model.json");
+    let expected = fs::read_to_string(workspace_fixture("fixtures/contract/index.html"))
+        .expect("contract html");
+    for template in [None, Some("default")] {
+        let html_dir = dir.join(template.unwrap_or("omitted"));
+        let mut args = vec![
+            "generate",
+            "--input",
+            model.to_str().expect("utf8"),
+            "--html",
+            html_dir.to_str().expect("utf8"),
+            "--json",
+        ];
+        if let Some(id) = template {
+            args.extend(["--template", id]);
+        }
+        let mut cmd = docli_bin();
+        cmd.current_dir(&dir);
+        let output = run(&mut cmd, &args);
+        assert_eq!(
+            output.status.code(),
+            Some(0),
+            "template={template:?} stderr={}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let envelope = parse_envelope(&output.stdout);
+        assert_success(&envelope);
+        assert_eq!(envelope["data"]["preview_dir"], serde_json::Value::Null);
+        assert_eq!(
+            envelope["data"]["html_dir"],
+            html_dir.to_string_lossy().as_ref()
+        );
+        let written = fs::read_to_string(html_dir.join("index.html")).expect("written html");
+        assert_eq!(written, expected, "template={template:?}");
+    }
+    assert!(!dir.join("site/cli").exists());
+}
+
+fn assert_preview_dir_name(preview_dir: &str) {
+    let name = Path::new(preview_dir)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .expect("preview dir name");
+    let rest = name
+        .strip_prefix("docli-preview-")
+        .unwrap_or_else(|| panic!("preview dir {name}"));
+    let (pid, nanos) = rest
+        .split_once('-')
+        .unwrap_or_else(|| panic!("preview dir {name}"));
+    assert!(pid.chars().all(|ch| ch.is_ascii_digit()) && !pid.is_empty());
+    assert!(nanos.chars().all(|ch| ch.is_ascii_digit()) && !nanos.is_empty());
 }
 
 #[test]

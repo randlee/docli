@@ -6,8 +6,8 @@
 //!
 //! Embedded-default failures are `DOCLI.INTERNAL` (the pack is not read from
 //! disk). A filesystem read failure is `DOCLI.IO`. A filesystem pack whose
-//! manifest or templates do not compile is `DOCLI.TEMPLATE_INVALID`. Unknown
-//! bundled ids stay `DOCLI.INTERNAL` until b.9 adds `DOCLI.TEMPLATE_NOT_FOUND`.
+//! manifest or templates do not compile is `DOCLI.TEMPLATE_INVALID`. An unknown
+//! bundled id is `DOCLI.TEMPLATE_NOT_FOUND`.
 //! [`PackResolveError::suggested_action`] names list/validate recovery.
 //! The embedded-default path stores [`PackResolveError::cause`] and does not
 //! copy [`Display`] into that cause.
@@ -225,10 +225,9 @@ impl Default for ThemeMap {
 /// Failure loading a pack.
 ///
 /// Filesystem reads are `DOCLI.IO`. Invalid filesystem manifests and templates
-/// that do not compile are `DOCLI.TEMPLATE_INVALID`. Unknown bundled ids and a
-/// damaged embedded pack stay `DOCLI.INTERNAL` (unknown ids become
-/// `DOCLI.TEMPLATE_NOT_FOUND` in b.9). [`suggested_action`] names the recovery
-/// step.
+/// that do not compile are `DOCLI.TEMPLATE_INVALID`. Unknown bundled ids are
+/// `DOCLI.TEMPLATE_NOT_FOUND`. A damaged embedded pack stays `DOCLI.INTERNAL`.
+/// [`suggested_action`] names the recovery step.
 #[derive(Debug)]
 pub struct PackResolveError {
     kind: PackResolveKind,
@@ -300,15 +299,24 @@ impl PackResolveError {
     /// Stable `DOCLI.*` code for envelope mapping.
     ///
     /// Invalid filesystem packs are `DOCLI.TEMPLATE_INVALID`. Reads stay
-    /// `DOCLI.IO`. Embedded damage and unknown bundled ids stay
-    /// `DOCLI.INTERNAL`.
+    /// `DOCLI.IO`. Unknown bundled ids are `DOCLI.TEMPLATE_NOT_FOUND`.
+    /// Embedded damage stays `DOCLI.INTERNAL`.
     pub fn machine_code(&self) -> &'static str {
         match self.kind {
             PackResolveKind::Io { .. } => "DOCLI.IO",
             PackResolveKind::Invalid { .. } => "DOCLI.TEMPLATE_INVALID",
-            PackResolveKind::Embedded { .. } | PackResolveKind::NotBundled { .. } => {
-                "DOCLI.INTERNAL"
-            }
+            PackResolveKind::NotBundled { .. } => "DOCLI.TEMPLATE_NOT_FOUND",
+            PackResolveKind::Embedded { .. } => "DOCLI.INTERNAL",
+        }
+    }
+
+    /// Pack id when this failure is an unknown bundled id.
+    pub fn not_bundled_id(&self) -> Option<&str> {
+        match &self.kind {
+            PackResolveKind::NotBundled { id } => Some(id),
+            PackResolveKind::Embedded { .. }
+            | PackResolveKind::Io { .. }
+            | PackResolveKind::Invalid { .. } => None,
         }
     }
 
@@ -482,8 +490,7 @@ impl std::error::Error for EmbeddedDefaultError {}
 /// Returns [`PackResolveError`] when a required file cannot be read,
 /// `template.toml` is not the expected manifest, or a template fails to compile.
 ///
-/// Unknown bundled ids fail in [`TemplateRef::try_bundled`];
-/// [`PackResolveError::machine_code`] stays `DOCLI.INTERNAL` until b.9 adds
+/// Unknown bundled ids fail in [`TemplateRef::try_bundled`] as
 /// `DOCLI.TEMPLATE_NOT_FOUND`. Invalid filesystem packs are
 /// `DOCLI.TEMPLATE_INVALID`.
 pub fn resolve_pack(template: &TemplateRef) -> Result<Pack, PackResolveError> {
@@ -772,10 +779,11 @@ mod tests {
     }
 
     #[test]
-    fn unknown_bundled_id_maps_to_internal_for_b7() {
+    fn unknown_bundled_id_maps_to_template_not_found() {
         let err = TemplateRef::try_bundled("cli-doc").expect_err("missing id");
         assert!(err.is_not_bundled());
-        assert_eq!(err.machine_code(), "DOCLI.INTERNAL");
+        assert_eq!(err.not_bundled_id(), Some("cli-doc"));
+        assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_NOT_FOUND");
         assert!(err.suggested_action().contains("templates list"));
         assert!(err.suggested_action().contains("cli-doc"));
         let cause = err.cause();
