@@ -34,6 +34,12 @@ fn templates_list_json_includes_default() {
     assert_eq!(default["version"], "1");
     assert_eq!(default["path"], "embedded:default");
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+    let templates = data["templates"].as_array().expect("templates");
+    let cli_doc = templates
+        .iter()
+        .find(|template| template["id"] == "cli-doc")
+        .expect("cli-doc pack");
+    assert_eq!(cli_doc["path"], "embedded:cli-doc");
 }
 
 #[test]
@@ -94,6 +100,66 @@ fn templates_validate_default_pack_json_succeeds() {
     assert_eq!(data["valid"], true);
     assert_eq!(data["path"], pack.to_string_lossy().as_ref());
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[test]
+fn templates_validate_skeleton_pack_json_succeeds() {
+    let pack = workspace_fixture("templates/html/_skeleton");
+    let output = run(
+        &mut docli_bin(),
+        &[
+            "templates",
+            "validate",
+            pack.to_str().expect("utf8"),
+            "--json",
+        ],
+    );
+    assert_eq!(output.status.code(), Some(0));
+    let envelope = parse_envelope(&output.stdout);
+    assert_success(&envelope);
+    assert_eq!(envelope["data"]["id"], "_skeleton");
+}
+
+#[test]
+fn templates_list_omits_skeleton_starter() {
+    let output = run(&mut docli_bin(), &["templates", "list", "--json"]);
+    assert_eq!(output.status.code(), Some(0));
+    let envelope = parse_envelope(&output.stdout);
+    let templates = envelope["data"]["templates"]
+        .as_array()
+        .expect("templates");
+    assert!(
+        !templates
+            .iter()
+            .any(|template| template["id"] == "_skeleton"),
+        "skeleton must not appear in list"
+    );
+}
+
+#[test]
+fn generate_cli_doc_template_smoke() {
+    let dir = unique_dir();
+    let model = workspace_fixture("fixtures/repos/docli.json");
+    let html_dir = dir.join("cli-doc-out");
+    let output = run(
+        &mut docli_bin(),
+        &[
+            "generate",
+            "--input",
+            model.to_str().expect("utf8"),
+            "--html",
+            html_dir.to_str().expect("utf8"),
+            "--template",
+            "cli-doc",
+            "--json",
+        ],
+    );
+    assert_eq!(output.status.code(), Some(0));
+    let envelope = parse_envelope(&output.stdout);
+    assert_success(&envelope);
+    let html = fs::read_to_string(html_dir.join("index.html")).expect("html");
+    assert!(html.contains("id=\"docli-cli-doc-pack\""));
+    assert!(html.contains("cli-doc-option-card"));
 }
 
 #[test]

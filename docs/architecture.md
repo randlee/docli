@@ -156,10 +156,11 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
 **Decision**
 
 - Bundled HTML packs are compiled into the `docli` binary with `include_dir`.
-  Phase B ships the `default` pack from `templates/html/default/`
-  (`template.toml`, `page.html.j2`, `style.css.j2`, `script.js`). `cargo install`
-  renders `default` from those embedded bytes. It does not read `default` from
-  disk.
+  Phase B ships the `default` and `cli-doc` packs from `templates/html/default/`
+  and `templates/html/cli-doc/` (`template.toml`, `page.html.j2`,
+  `style.css.j2`, `script.js`). `cargo install` renders those embedded bytes.
+  It does not read bundled ids from disk. Author starter `_skeleton` lives on
+  disk only and is not embedded.
 - `share/docli/templates` holds **optional extra** packs only. It is not the
   source of `default`.
 - `html::render(&CliModel) -> String` renders the embedded `default` pack with

@@ -37,6 +37,10 @@ Every `DOCLI.*` error code is integration-tested in `tests/error_contract.rs`
 cargo install docli
 ```
 
+HTML template packs (authoring, agent preview, bundled `default` and `cli-doc`):
+[`docs/templates/AUTHOR.md`](docs/templates/AUTHOR.md),
+[`docs/templates/AGENT-PREVIEW.md`](docs/templates/AGENT-PREVIEW.md).
+
 ## Usage
 
 ```sh

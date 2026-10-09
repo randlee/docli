@@ -306,16 +306,19 @@ pub fn show(req: ShowRequest) -> Envelope<ShowResponse> {
 /// (`DOCLI.INTERNAL`) or the install root exists but cannot be read (`DOCLI.IO`).
 pub fn templates_list() -> Envelope<TemplatesListResponse> {
     let install_root = install_root();
-    let pack = match resolve_pack(&TemplateRef::bundled_default()) {
-        Ok(pack) => pack,
-        Err(err) => return Envelope::failure(pack_failure(err)),
-    };
-    let mut templates = vec![TemplateSummary {
-        path: format!("embedded:{}", pack.manifest.id),
-        id: pack.manifest.id.clone(),
-        name: pack.manifest.name,
-        version: pack.manifest.version,
-    }];
+    let mut templates = Vec::with_capacity(crate::templates::BundledPackId::ALL.len());
+    for bundled in crate::templates::BundledPackId::ALL {
+        let pack = match resolve_pack(&TemplateRef::Bundled(bundled)) {
+            Ok(pack) => pack,
+            Err(err) => return Envelope::failure(pack_failure(err)),
+        };
+        templates.push(TemplateSummary {
+            path: format!("embedded:{}", pack.manifest.id),
+            id: pack.manifest.id.clone(),
+            name: pack.manifest.name,
+            version: pack.manifest.version,
+        });
+    }
     match installed_summaries(&install_root) {
         Ok(extras) => templates.extend(extras),
         Err(error) => return Envelope::failure(error),

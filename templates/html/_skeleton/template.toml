@@ -1,0 +1,13 @@
+# Author starter pack (REQ-DOCLI-HTML-009). Not embedded; copy and customize.
+id = "_skeleton"
+name = "docli pack skeleton"
+version = "1"
+description = "Minimal valid pack for authors; omitted from templates list."
+min_docli = "0.1.0"
+
+[theme_schema]
+accent = { type = "color", default = "#007acc", description = "Primary accent" }
+font_body = { type = "string", default = "system-ui, sans-serif", description = "Body font stack" }
+font_mono = { type = "string", default = "ui-monospace, monospace", description = "Monospace stack" }
+bg = { type = "color", default = "#ffffff", description = "Page background" }
+fg = { type = "color", default = "#1a1a2e", description = "Primary text" }

@@ -1,0 +1,22 @@
+# Bundled cli-doc pack (REQ-DOCLI-HTML-008): spirali/cli_doc-style option cards.
+id = "cli-doc"
+name = "docli cli-doc"
+version = "1"
+description = "Two-column layout with per-option cards; still one self-contained HTML file."
+min_docli = "0.1.0"
+
+[theme_schema]
+bg = { type = "color", default = "#fff", description = "Page background" }
+fg = { type = "color", default = "#1a1a2e", description = "Primary text" }
+border = { type = "color", default = "#ddd", description = "Hairline borders" }
+hover = { type = "color", default = "#f0f0f0", description = "Hover fill" }
+accent = { type = "color", default = "#d73a49", description = "Primary accent" }
+muted = { type = "color", default = "#666", description = "Secondary text" }
+font_body = { type = "string", default = "16px/1.5 Monaco, ui-monospace, monospace", description = "Body font shorthand" }
+font_mono = { type = "string", default = "ui-monospace, monospace", description = "Monospace stack for usage blocks" }
+bg_dark = { type = "color", default = "#16181d", description = "Dark-scheme background" }
+fg_dark = { type = "color", default = "#e6e6e6", description = "Dark-scheme text" }
+border_dark = { type = "color", default = "#333", description = "Dark-scheme borders" }
+hover_dark = { type = "color", default = "#23262e", description = "Dark-scheme hover fill" }
+accent_dark = { type = "color", default = "#ff7b72", description = "Dark-scheme accent" }
+muted_dark = { type = "color", default = "#999", description = "Dark-scheme secondary text" }

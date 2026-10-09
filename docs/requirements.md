@@ -161,6 +161,22 @@ These rules apply to every language implementation.
   default pack MUST surface from `ops::generate` as `DOCLI.INTERNAL`.
   `resolve_pack` MUST classify a filesystem read failure as `DOCLI.IO`. This
   requirement MUST NOT introduce a `DOCLI.TEMPLATE_*` code.
+- `REQ-DOCLI-HTML-008`: the bundled **`cli-doc`** pack ships from
+  `templates/html/cli-doc/` and is embedded beside `default`. Rendering with
+  `--template cli-doc` produces one self-contained HTML file that still embeds
+  `#docli-data` and `#docli-search`. The page root element carries
+  `id="docli-cli-doc-pack"`, the main layout uses class `cli-doc-columns`, and
+  command options render as elements with class `cli-doc-option-card`. Those
+  markers MUST NOT appear in output from the `default` pack.
+- `REQ-DOCLI-HTML-009`: `templates/html/_skeleton/` is a valid author starter
+  on disk only. `docli templates validate` on that directory succeeds.
+  `templates list` MUST NOT include `_skeleton` (it is not embedded and MUST
+  not be registered as an install-root extra unless copied elsewhere).
+- `REQ-DOCLI-HTML-010`: [`docs/templates/AUTHOR.md`](templates/AUTHOR.md) and
+  [`docs/templates/AGENT-PREVIEW.md`](templates/AGENT-PREVIEW.md) describe Phase B
+  bundled ids (`default`, `cli-doc`), install layout, and `theme_schema` keys
+  aligned with ADR-004 / the default pack manifest. They MUST NOT document
+  legacy `c.*` man-page ids or a `compact` layout mode.
 
 ## 7. Markdown Output
 
@@ -396,9 +412,9 @@ sprint’s PR. An index row is not a substitute for the body.
 | `REQ-DOCLI-HTML-005` | Search keeps matching nested commands and ancestors | section 6 | ADR-002 |
 | `REQ-DOCLI-HTML-006` | Default HTML directory is `site/cli` | section 6 | ADR-002 |
 | `REQ-DOCLI-HTML-007` | Embedded `default` template pack; byte match without `--template` | section 6 | ADR-004 |
-| `REQ-DOCLI-HTML-008` | `cli-doc` pack layout markers, still self-contained | text lands in sprint b.10 | — |
-| `REQ-DOCLI-HTML-009` | `_skeleton` validates and is omitted from `templates list` | text lands in sprint b.10 | — |
-| `REQ-DOCLI-HTML-010` | Author docs match the template pack schema | text lands in sprint b.10 | ADR-004 (b.7) |
+| `REQ-DOCLI-HTML-008` | `cli-doc` pack layout markers, still self-contained | section 6 | ADR-004 |
+| `REQ-DOCLI-HTML-009` | `_skeleton` validates and is omitted from `templates list` | section 6 | ADR-004 |
+| `REQ-DOCLI-HTML-010` | AUTHOR / AGENT-PREVIEW aligned with Phase B packs | section 6 | ADR-004 |
 | `REQ-DOCLI-MD-001` | Flat Markdown reference, one section per command | section 7 | — |
 | `REQ-DOCLI-MD-002` | Markdown shipped with each language installer (later) | section 7 | — |
 | `REQ-DOCLI-GEN-001` | Same input bytes produce the same HTML and Markdown bytes | section 8 | ADR-002 |
