@@ -683,6 +683,10 @@ fn error_kind_and_code_serialize_to_contract_strings() {
         "\"DOCLI.IO\""
     );
     assert_eq!(
+        serde_json::to_string(&docli::contract::ErrorCode::TemplateInvalid).unwrap(),
+        "\"DOCLI.TEMPLATE_INVALID\""
+    );
+    assert_eq!(
         serde_json::to_string(&docli::contract::ErrorCode::Internal).unwrap(),
         "\"DOCLI.INTERNAL\""
     );

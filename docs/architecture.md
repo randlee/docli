@@ -24,9 +24,9 @@ version `"1"` envelope defined in [`requirements.md`](requirements.md) section 9
         │
    caller / fixture
 
-  argv ──► cli (hidden) ──► ops::generate | ops::show ──► Envelope<T>
+  argv ──► cli (hidden) ──► ops (generate | show | templates_*) ──► Envelope<T>
                 │                    │
-                │                    └──► render + filesystem I/O
+                │                    └──► render + filesystem I/O (+ pack resolve)
                 └──► stdout envelope (--json) or human lines
 ```
 
@@ -40,8 +40,9 @@ version `"1"` envelope defined in [`requirements.md`](requirements.md) section 9
 | Input model | `src/schema.rs` | `CliModel`, `OptionSpec`, `ArgumentSpec` |
 | clap adapter | `src/clap_model.rs` | `from_clap` |
 
-A later MCP wrapper calls `ops::generate` and `ops::show` directly (no argv
-re-parse, no JSON reshaping).
+A later MCP wrapper calls `ops` directly — `generate`, `show`, and
+`templates_list` / `templates_show` / `templates_validate` (no argv re-parse,
+no JSON reshaping).
 
 ## Architecture Decision Records (ADRs)
 
@@ -58,11 +59,12 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
 ### ADR-001 — Operations are the library boundary
 
 **Status**: Accepted  
-**Requirements**: `REQ-DOCLI-PRODUCT-003`, `REQ-DOCLI-CLI-001`–`007`
+**Requirements**: `REQ-DOCLI-PRODUCT-003`, `REQ-DOCLI-CLI-001`–`007`, `REQ-DOCLI-CLI-011`
 
 **Decision**
 
-- `ops::generate` and `ops::show` are the **stable Rust API**. Request and
+- `ops::generate`, `ops::show`, `ops::templates_list`, `ops::templates_show`,
+  and `ops::templates_validate` are the **stable Rust API**. Request and
   response structs live in `src/ops.rs`.
 - `docli` and `cargo-docli` binaries convert argv through `docli::cli`
   (`#[doc(hidden)]`): that module prints the envelope and calls `ops`. **`cli`
@@ -164,12 +166,14 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
   the theme defaults in that pack's `theme_schema`. It does not take a template
   id or a theme override.
 - Only `ops::generate` applies a caller-selected template or theme, and only
-  `ops::generate` returns the version `"1"` envelope for that choice. This
-  sprint does not add `--template`. Caller-selected pack codes
-  (`DOCLI.TEMPLATE_*`) arrive in later sprints.
+  `ops::generate` returns the version `"1"` envelope for that choice.
+  `--template` arrives in b.9. `docli templates` lists, shows, and validates
+  packs (`REQ-DOCLI-CLI-011`).
 - Failures while rendering the embedded `default` pack are `DOCLI.INTERNAL`.
   A filesystem read of a pack directory is `DOCLI.IO`. The embedded pack does
-  not perform that read.
+  not perform that read. A filesystem pack whose manifest or templates do not
+  compile is `DOCLI.TEMPLATE_INVALID`. Unknown bundled ids stay
+  `DOCLI.INTERNAL` until `DOCLI.TEMPLATE_NOT_FOUND` in b.9.
 - The default page root element carries `id="docli-default-pack"`. That marker
   is written only in `templates/html/default/page.html.j2`.
 - ADR-002 is unchanged: the pack embeds `#docli-data` and `#docli-search`, and
@@ -190,7 +194,7 @@ These rules implement the ADRs above. **Severity: BLOCKING** unless noted.
 |------|-----|--------|
 | **ARCH-RULE-001** | ADR-001 | No crate may document or export `docli::cli` as integration API; external callers use `ops` or `render`. |
 | **ARCH-RULE-002** | ADR-001 | `src/render/**` must not write files, compute sha256 for artifacts, or construct `Envelope`. |
-| **ARCH-RULE-003** | ADR-001 | `src/cli.rs` must delegate to `ops`; no duplicated generate/show write logic in binaries. |
+| **ARCH-RULE-003** | ADR-001 | `src/cli.rs` must delegate to `ops`; no duplicated generate/show/templates logic in binaries. |
 | **ARCH-RULE-004** | ADR-001 | `Envelope`, `ErrorBody`, and exit codes live in `src/contract.rs`; ops returns envelopes CLI serializes verbatim. |
 | **ARCH-RULE-005** | ADR-002 | `SearchEntry`, `search_index`, `matching_anchors` are defined only in `src/search.rs`. |
 | **ARCH-RULE-006** | ADR-002 | The rendered HTML embeds `docli-data` and `docli-search`; search JSON comes from `search_index(model)` in the default pack pipeline (`src/templates/mod.rs` / `render_pack`). `html.rs` must not redefine search types. |
@@ -216,5 +220,5 @@ CLI error shape is part of the architecture boundary (ADR-001, ADR-003).
 `tests/error_contract.rs` is the merge gate for every `DOCLI.*` code listed in
 `requirements.md` §9. `req-qa` treats a new or changed error code without a
 matching test as **Blocking**. Embedded default-pack failures reuse
-`DOCLI.INTERNAL`. Filesystem pack reads reuse `DOCLI.IO`. This boundary does
-not add a `DOCLI.*` code.
+`DOCLI.INTERNAL`. Filesystem pack reads reuse `DOCLI.IO`. Invalid filesystem
+pack content is `DOCLI.TEMPLATE_INVALID` (`REQ-DOCLI-CLI-011`).
