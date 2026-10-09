@@ -479,13 +479,23 @@ fn render_generate_html(
     let pack = resolve_pack(&template_ref).map_err(pack_failure)?;
     let theme = theme.cloned().unwrap_or_else(ThemeMap::new);
     render_pack(&pack, model, &theme).map_err(|err| {
-        ErrorBody::template_invalid(
-            err.cause(),
-            format!(
-                "Run `docli templates validate` on the `{}` template pack and fix the reported issue",
-                pack.manifest.id
-            ),
-        )
+        if matches!(template_ref, TemplateRef::Bundled(_)) {
+            ErrorBody::internal_with_action(
+                err.cause(),
+                format!(
+                    "Retry or report a bug — the embedded {} pack failed to render",
+                    pack.manifest.id
+                ),
+            )
+        } else {
+            ErrorBody::template_invalid(
+                err.cause(),
+                format!(
+                    "Run `docli templates validate` on the `{}` template pack and fix the reported issue",
+                    pack.manifest.id
+                ),
+            )
+        }
     })
 }
 
