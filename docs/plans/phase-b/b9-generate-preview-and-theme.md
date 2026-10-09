@@ -1,7 +1,7 @@
 ---
 id: b.9
 title: generate preview, template, and theme
-status: planned
+status: in-review
 branch: feature/phase-b-b9-preview
 worktree: ../docli-worktrees/feature/phase-b-b9-preview
 target: integrate/phase-b
