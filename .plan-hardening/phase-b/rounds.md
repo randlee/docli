@@ -1,0 +1,11 @@
+| Round | Step | Reviewer | reviewed_commit | status | blocking | important | minor | findings_hash | Note |
+|-------|------|----------|-----------------|--------|----------|-----------|-------|---------------|------|
+| 1 | 2 | plan-scope-reviewer (composer) | 3e19ed8 | FAIL | 2 | 12 | 1 | PLAN-SCOPE-001…014 | scope cycle 1 |
+| 2 | 2 | plan-scope-reviewer (composer) | 546ea61 | FAIL | 0 | 6 | 0 | PLAN-SCOPE-015… | scope cycle 2; fixes in 546ea61 |
+| 3 | 3 | arch-ctm (inline) | 546ea61 | PASS | | | | | sprint-scope hardening |
+| 4 | 4 | critical-plan-reviewer (grok) | 546ea61 | FAIL | 6 | 2 | 0 | PLAN-CRIT-001…008 | critical cycle 1 |
+| 5 | 4 | remediation | 715ee18 | PASS | | | | | critical fixes committed |
+| 6 | 5 | arch-ctm (inline) | 715ee18 | PASS | | | | | consistency hardening |
+| 7 | 6 | quality-mgr | 2cb48b1 | FAIL | 1 | 2 | 2 | PHB-QA-001…005 | IN-FLIGHT timeout; req-qa completed separately |
+| 8 | 6 | remediation | 1079910 | PASS | 0 | 0 | 0 | | PHB-QA-001 README + plan clarifications |
+| 9 | 6 | quality-mgr (plan QA-2) | 1079910 | PASS | 0 | 0 | 0 | | req-qa + arch-qa PASS; RBP/RSH SKIPPED docs-only |

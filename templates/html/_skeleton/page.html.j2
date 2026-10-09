@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title|docli_escape }} CLI Reference</title>
+<style>{{ style }}</style>
+</head>
+<body>
+<header><h1>{{ title|docli_escape }} CLI Reference</h1>{% if version %}<span class="meta">Version {{ version|docli_escape }}</span>{% endif %}</header>
+<main>
+<nav id="tree">{{ tree }}</nav>
+<article id="detail"></article>
+</main>
+<script id="docli-data" type="application/json">{{ model_json }}</script>
+<script id="docli-search" type="application/json">{{ search_json }}</script>
+<script>
+{{ script }}
+</script>
+</body>
+</html>
