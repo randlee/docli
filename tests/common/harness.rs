@@ -42,6 +42,7 @@ pub fn workspace_fixture(rel: &str) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join(rel)
 }
 
+#[allow(dead_code)] // model body is used by error_contract, not every binary
 pub const DEMO_MODEL_JSON: &str = r#"{
   "name": "demo",
   "version": "1.0.0",
@@ -54,6 +55,7 @@ pub const DEMO_MODEL_JSON: &str = r#"{
   "subcommands": []
 }"#;
 
+#[allow(dead_code)] // helper is used by error_contract, not every binary
 pub fn write_demo_model(dir: &Path) -> PathBuf {
     let path = dir.join("model.json");
     fs::write(&path, DEMO_MODEL_JSON).expect("write model");

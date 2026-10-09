@@ -1,4 +1,4 @@
-//! In-process `generate` and `show` operations shared by the CLI.
+//! In-process `generate`, `show`, and `templates` operations shared by the CLI.
 //!
 //! These functions return the same [`Envelope`] the CLI serializes. They write
 //! or read files, hash artifacts, and never print.
@@ -12,6 +12,10 @@ use sha2::{Digest, Sha256};
 use crate::contract::{Envelope, ErrorBody};
 use crate::render;
 use crate::schema::CliModel;
+use crate::templates::{
+    resolve_pack, Pack, PackResolveError, TemplateManifest, TemplateRef, ThemeKeySpec,
+    EMBEDDED_PATH_PREFIX,
+};
 
 /// Where `generate` reads the model JSON.
 #[derive(Debug, Clone)]
@@ -191,6 +195,172 @@ pub fn show(req: ShowRequest) -> Envelope<ShowResponse> {
     })
 }
 
+/// One pack returned by [`templates_list`].
+#[derive(Debug, Clone, Serialize)]
+pub struct TemplateSummary {
+    /// Pack id from `template.toml`.
+    pub id: String,
+    /// Display name from `template.toml`.
+    pub name: String,
+    /// Pack version string.
+    pub version: String,
+    /// `embedded:<id>` for a bundled pack, or the pack directory.
+    pub path: String,
+}
+
+/// Request for [`templates_list`].
+#[derive(Debug, Clone)]
+pub struct TemplatesListRequest {
+    /// Directory of optional extra packs (`{prefix}/share/docli/templates`).
+    pub install_root: PathBuf,
+}
+
+/// Successful `templates list` response.
+#[derive(Debug, Clone, Serialize)]
+pub struct TemplatesListResponse {
+    /// Always `"templates_list"`.
+    pub operation: &'static str,
+    /// Optional-pack directory from the request.
+    pub install_root: PathBuf,
+    /// Bundled packs, then install-root packs sorted by id.
+    pub templates: Vec<TemplateSummary>,
+}
+
+/// Request for [`templates_show`].
+#[derive(Debug, Clone)]
+pub struct TemplatesShowRequest {
+    /// Bundled id, `embedded:<id>`, or a pack directory.
+    pub id_or_path: String,
+}
+
+/// Successful `templates show` response.
+#[derive(Debug, Clone, Serialize)]
+pub struct TemplatesShowResponse {
+    /// Always `"templates_show"`.
+    pub operation: &'static str,
+    /// Pack id.
+    pub id: String,
+    /// Parsed `template.toml`.
+    pub manifest: TemplateManifest,
+    /// Theme keys from the manifest, in the same object form.
+    pub theme_schema: std::collections::BTreeMap<String, ThemeKeySpec>,
+    /// Argv that renders this pack once `generate` flags exist.
+    ///
+    /// Sprint b.8 omits `--template`, `--theme`, and `--preview`. Sprint b.9
+    /// extends this argv when those flags exist.
+    pub example_generate_argv: &'static [&'static str],
+}
+
+/// Request for [`templates_validate`].
+#[derive(Debug, Clone)]
+pub struct TemplatesValidateRequest {
+    /// Pack directory or `embedded:<id>`.
+    pub path: String,
+}
+
+/// Successful `templates validate` response.
+#[derive(Debug, Clone, Serialize)]
+pub struct TemplatesValidateResponse {
+    /// Always `"templates_validate"`.
+    pub operation: &'static str,
+    /// The path argument, unchanged.
+    pub path: String,
+    /// Pack id from the manifest.
+    pub id: String,
+    /// Pack version from the manifest.
+    pub version: String,
+    /// Always `true` on success. Invalid packs are a failure envelope.
+    pub valid: bool,
+}
+
+/// Argv returned by [`templates_show`] until b.9 adds template flags.
+pub const EXAMPLE_GENERATE_ARGV: &[&str] = &[
+    "docli",
+    "generate",
+    "--input",
+    "model.json",
+    "--html",
+    "site/cli",
+];
+
+/// `{prefix}/share/docli/templates`, where `{prefix}` is the parent of the
+/// executable's directory.
+///
+/// `/usr/local/bin/docli` resolves to `/usr/local/share/docli/templates`. When
+/// the executable path is unavailable, `{prefix}` is `/usr/local`.
+pub fn default_template_install_root() -> PathBuf {
+    std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().and_then(Path::parent).map(Path::to_path_buf))
+        .unwrap_or_else(|| PathBuf::from("/usr/local"))
+        .join("share/docli/templates")
+}
+
+/// List the embedded `default` pack and optional packs under `install_root`.
+///
+/// A missing install root is an empty extra list, not an error. A directory
+/// without `template.toml` is skipped. A pack whose id matches a bundled pack
+/// is omitted. An invalid extra pack fails the list with
+/// `DOCLI.TEMPLATE_INVALID`.
+///
+/// # Errors
+///
+/// Returns a failure envelope when the embedded pack cannot load
+/// (`DOCLI.INTERNAL`), the install root cannot be read (`DOCLI.IO`), or an
+/// extra pack is invalid (`DOCLI.TEMPLATE_INVALID`).
+pub fn templates_list(req: TemplatesListRequest) -> Envelope<TemplatesListResponse> {
+    let mut templates = match bundled_summaries() {
+        Ok(templates) => templates,
+        Err(err) => return Envelope::failure(pack_failure(err)),
+    };
+    match scan_install_root(&req.install_root, &templates) {
+        Ok(extras) => templates.extend(extras),
+        Err(error) => return Envelope::failure(error),
+    }
+    Envelope::success(TemplatesListResponse {
+        operation: "templates_list",
+        install_root: req.install_root,
+        templates,
+    })
+}
+
+/// Show one pack's manifest, theme schema, and example generate argv.
+///
+/// # Errors
+///
+/// Returns `DOCLI.TEMPLATE_INVALID` when the pack does not compile or the id
+/// is not bundled. Returns `DOCLI.IO` when a pack directory cannot be read.
+/// Returns `DOCLI.INTERNAL` when the embedded pack itself is damaged.
+pub fn templates_show(req: TemplatesShowRequest) -> Envelope<TemplatesShowResponse> {
+    match resolve_selector(&req.id_or_path) {
+        Ok(pack) => Envelope::success(show_response(pack)),
+        Err(err) => Envelope::failure(pack_failure(err)),
+    }
+}
+
+/// Validate a pack directory or `embedded:<id>` by resolving it.
+///
+/// Success means `template.toml` parsed and the pack templates compiled.
+///
+/// # Errors
+///
+/// Returns `DOCLI.TEMPLATE_INVALID` for an invalid manifest, a template that
+/// does not compile, or an unknown `embedded:<id>`. Returns `DOCLI.IO` when
+/// a required file cannot be read. Returns `DOCLI.INTERNAL` for a damaged
+/// embedded pack.
+pub fn templates_validate(req: TemplatesValidateRequest) -> Envelope<TemplatesValidateResponse> {
+    match resolve_selector(&req.path) {
+        Ok(pack) => Envelope::success(TemplatesValidateResponse {
+            operation: "templates_validate",
+            path: req.path,
+            id: pack.manifest.id,
+            version: pack.manifest.version,
+            valid: true,
+        }),
+        Err(err) => Envelope::failure(pack_failure(err)),
+    }
+}
+
 fn read_input(input: &InputSource) -> Result<(String, String), ErrorBody> {
     match input {
         InputSource::Stdin => {
@@ -226,6 +396,110 @@ fn artifact(kind: &'static str, path: PathBuf, bytes: &[u8]) -> ArtifactReport {
         path,
         bytes: bytes.len() as u64,
         sha256: sha256_hex(bytes),
+    }
+}
+
+fn bundled_summaries() -> Result<Vec<TemplateSummary>, PackResolveError> {
+    let pack = resolve_pack(&TemplateRef::bundled_default())?;
+    Ok(vec![summary_from_pack(
+        &pack,
+        format!("{EMBEDDED_PATH_PREFIX}{}", pack.manifest.id),
+    )])
+}
+
+fn scan_install_root(
+    root: &Path,
+    bundled: &[TemplateSummary],
+) -> Result<Vec<TemplateSummary>, ErrorBody> {
+    if !root.exists() {
+        return Ok(Vec::new());
+    }
+    let entries =
+        std::fs::read_dir(root).map_err(|err| ErrorBody::io(err.to_string(), root, None))?;
+    let mut dirs = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(|err| ErrorBody::io(err.to_string(), root, None))?;
+        let path = entry.path();
+        if path.is_dir() && path.join("template.toml").is_file() {
+            dirs.push(path);
+        }
+    }
+    dirs.sort();
+
+    let mut extras: Vec<TemplateSummary> = Vec::new();
+    for dir in dirs {
+        let pack = match resolve_pack(&TemplateRef::dir(&dir)) {
+            Ok(pack) => pack,
+            Err(err) => return Err(pack_failure(err)),
+        };
+        if bundled.iter().any(|item| item.id == pack.manifest.id) {
+            continue;
+        }
+        if extras.iter().any(|item| item.id == pack.manifest.id) {
+            return Err(ErrorBody::template_invalid(
+                format!(
+                    "install root {} contains more than one pack with id {}",
+                    root.display(),
+                    pack.manifest.id
+                ),
+                format!(
+                    "Keep one directory for id {} under {} and run `docli templates list --json`",
+                    pack.manifest.id,
+                    root.display()
+                ),
+            ));
+        }
+        extras.push(summary_from_pack(&pack, dir.display().to_string()));
+    }
+    extras.sort_by(|left, right| left.id.cmp(&right.id));
+    Ok(extras)
+}
+
+fn summary_from_pack(pack: &Pack, path: String) -> TemplateSummary {
+    TemplateSummary {
+        id: pack.manifest.id.clone(),
+        name: pack.manifest.name.clone(),
+        version: pack.manifest.version.clone(),
+        path,
+    }
+}
+
+fn show_response(pack: Pack) -> TemplatesShowResponse {
+    TemplatesShowResponse {
+        operation: "templates_show",
+        id: pack.manifest.id.clone(),
+        theme_schema: pack.manifest.theme_schema.clone(),
+        example_generate_argv: EXAMPLE_GENERATE_ARGV,
+        manifest: pack.manifest,
+    }
+}
+
+fn resolve_selector(selector: &str) -> Result<Pack, PackResolveError> {
+    if let Some(id) = selector.strip_prefix(EMBEDDED_PATH_PREFIX) {
+        if !id.is_empty() && !id.contains(['/', '\\']) {
+            return resolve_pack(&TemplateRef::try_bundled(id)?);
+        }
+    }
+    let path = Path::new(selector);
+    if path.exists() || path.is_absolute() || selector.contains(['/', '\\']) {
+        return resolve_pack(&TemplateRef::dir(path));
+    }
+    resolve_pack(&TemplateRef::try_bundled(selector)?)
+}
+
+fn pack_failure(err: PackResolveError) -> ErrorBody {
+    if err.is_invalid() || err.is_not_bundled() {
+        let suggested_action = err.suggested_action();
+        ErrorBody::template_invalid(err.cause(), suggested_action)
+    } else if err.is_io() {
+        let path = err
+            .path()
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| PathBuf::from("template"));
+        ErrorBody::io(err.cause(), path, None)
+    } else {
+        debug_assert_eq!(err.machine_code(), "DOCLI.INTERNAL");
+        ErrorBody::internal(err.cause())
     }
 }
 

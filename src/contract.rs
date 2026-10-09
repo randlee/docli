@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 /// Process exit code for a successful command.
 pub const EXIT_SUCCESS: i32 = 0;
-/// Process exit code for validation failures (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`).
+/// Process exit code for validation failures (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`, `DOCLI.TEMPLATE_INVALID`).
 pub const EXIT_VALIDATION: i32 = 2;
 /// Process exit code for missing paths (`DOCLI.INPUT_NOT_FOUND`, `DOCLI.OUTPUT_NOT_FOUND`).
 pub const EXIT_NOT_FOUND: i32 = 3;
@@ -17,6 +17,10 @@ pub const EXIT_NOT_FOUND: i32 = 3;
 pub const EXIT_DEPENDENCY: i32 = 4;
 /// Process exit code for unexpected failures (`DOCLI.INTERNAL`).
 pub const EXIT_INTERNAL: i32 = 1;
+
+/// Requirements page cited by template-pack validation errors.
+const REQUIREMENTS_DOCS: &str =
+    "https://github.com/randlee/docli/blob/develop/docs/requirements.md";
 
 /// Version `"1"` success or failure wrapper.
 #[derive(Debug, Serialize)]
@@ -96,13 +100,16 @@ pub enum ErrorCode {
     /// An unexpected failure.
     #[serde(rename = "DOCLI.INTERNAL")]
     Internal,
+    /// A template pack manifest or template failed validation.
+    #[serde(rename = "DOCLI.TEMPLATE_INVALID")]
+    TemplateInvalid,
 }
 
 impl ErrorCode {
     /// Process exit code for this error code.
     pub fn exit_code(self) -> i32 {
         match self {
-            Self::Usage | Self::InputInvalid => EXIT_VALIDATION,
+            Self::Usage | Self::InputInvalid | Self::TemplateInvalid => EXIT_VALIDATION,
             Self::InputNotFound | Self::OutputNotFound => EXIT_NOT_FOUND,
             Self::Io => EXIT_DEPENDENCY,
             Self::Internal => EXIT_INTERNAL,
@@ -154,6 +161,7 @@ impl ErrorBody {
             ErrorCode::OutputNotFound => "DOCLI.OUTPUT_NOT_FOUND",
             ErrorCode::Io => "DOCLI.IO",
             ErrorCode::Internal => "DOCLI.INTERNAL",
+            ErrorCode::TemplateInvalid => "DOCLI.TEMPLATE_INVALID",
         }
     }
 
@@ -238,6 +246,21 @@ impl ErrorBody {
         }
     }
 
+    /// Invalid template pack. `cause` is `details.cause`.
+    ///
+    /// `suggested_action` must name the pack and the next command to run.
+    pub fn template_invalid(cause: impl Into<String>, suggested_action: impl Into<String>) -> Self {
+        let cause = cause.into();
+        Self {
+            kind: ErrorKind::Validation,
+            code: ErrorCode::TemplateInvalid,
+            message: "template pack is invalid".to_owned(),
+            details: serde_json::json!({ "cause": cause }),
+            suggested_action: suggested_action.into(),
+            docs: Some(REQUIREMENTS_DOCS.to_owned()),
+        }
+    }
+
     /// Unexpected failure.
     pub fn internal(cause: impl Into<String>) -> Self {
         let cause = cause.into();
@@ -272,6 +295,28 @@ mod tests {
         assert!(text.contains("Fix the model JSON"));
         assert!(text.contains("expected string"));
         assert!(text.contains("https://example.test/errors"));
+    }
+
+    #[test]
+    fn template_invalid_is_validation_with_cause_and_docs() {
+        let error = ErrorBody::template_invalid(
+            "template.toml: invalid type",
+            "Run `docli templates validate pack --json` and fix template.toml",
+        );
+        assert_eq!(error.code, ErrorCode::TemplateInvalid);
+        assert_eq!(error.kind, ErrorKind::Validation);
+        assert_eq!(error.code.exit_code(), EXIT_VALIDATION);
+        assert_eq!(error.details["cause"], "template.toml: invalid type");
+        assert_eq!(
+            error.docs.as_deref(),
+            Some("https://github.com/randlee/docli/blob/develop/docs/requirements.md")
+        );
+        let text = error.to_string();
+        assert!(text.contains("DOCLI.TEMPLATE_INVALID"));
+        assert!(text.contains("template pack is invalid"));
+        assert!(text.contains("template.toml: invalid type"));
+        assert!(text.contains("templates validate"));
+        assert!(text.contains("requirements.md"));
     }
 
     #[test]

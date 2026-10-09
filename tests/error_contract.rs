@@ -465,3 +465,63 @@ fn docli_stdin_empty_is_input_invalid() {
     assert_eq!(error["details"], serde_json::json!({}));
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
 }
+
+fn write_broken_pack(dir: &std::path::Path) -> std::path::PathBuf {
+    let pack = dir.join("broken-pack");
+    fs::create_dir_all(&pack).unwrap();
+    fs::write(pack.join("template.toml"), "id = [\n").unwrap();
+    pack
+}
+
+#[test]
+fn docli_template_invalid_validate_json() {
+    let dir = unique_dir();
+    let pack = write_broken_pack(&dir);
+    let output = run(
+        &mut docli_bin(),
+        &["templates", "validate", pack.to_str().unwrap(), "--json"],
+    );
+    assert_exit(&output, 2);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        2,
+        "validation",
+        "DOCLI.TEMPLATE_INVALID",
+    );
+    let cause = error["details"]["cause"].as_str().expect("cause");
+    assert!(cause.contains("template.toml"), "{cause}");
+    assert_eq!(error["details"].as_object().unwrap().len(), 1);
+    assert!(error["message"]
+        .as_str()
+        .unwrap()
+        .contains("template pack is invalid"));
+    let action = error["suggested_action"].as_str().unwrap();
+    assert!(action.contains(pack.to_str().unwrap()), "{action}");
+    assert!(action.contains("templates validate"), "{action}");
+    assert_eq!(
+        error["docs"],
+        "https://github.com/randlee/docli/blob/develop/docs/requirements.md"
+    );
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[test]
+fn docli_template_invalid_validate_human() {
+    let dir = unique_dir();
+    let pack = write_broken_pack(&dir);
+    let output = run(
+        &mut docli_bin(),
+        &["templates", "validate", pack.to_str().unwrap()],
+    );
+    assert_exit(&output, 2);
+    assert_human_actionable(
+        &output.stderr,
+        "DOCLI.TEMPLATE_INVALID",
+        &[
+            "template.toml",
+            "templates validate",
+            pack.to_str().unwrap(),
+        ],
+    );
+}
