@@ -265,12 +265,20 @@ impl ErrorBody {
     /// Unexpected failure.
     pub fn internal(cause: impl Into<String>) -> Self {
         let cause = cause.into();
+        Self::internal_with_action(cause.clone(), format!("Report this cause: {cause}"))
+    }
+
+    /// Unexpected failure with an operator-facing recovery sentence.
+    pub fn internal_with_action(
+        cause: impl Into<String>,
+        suggested_action: impl Into<String>,
+    ) -> Self {
         Self {
             kind: ErrorKind::Internal,
             code: ErrorCode::Internal,
             message: "an unexpected failure occurred".to_owned(),
-            details: serde_json::json!({ "cause": cause }),
-            suggested_action: format!("Report this cause: {cause}"),
+            details: serde_json::json!({ "cause": cause.into() }),
+            suggested_action: suggested_action.into(),
             docs: None,
         }
     }

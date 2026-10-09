@@ -403,7 +403,7 @@ fn pack_failure(err: PackResolveError) -> ErrorBody {
             let cause = err.io_message().unwrap_or_else(|| err.cause());
             ErrorBody::io(cause, path, None)
         }
-        _ => ErrorBody::internal(err.cause()),
+        _ => ErrorBody::internal_with_action(err.cause(), err.suggested_action()),
     }
 }
 

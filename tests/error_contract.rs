@@ -435,6 +435,33 @@ fn docli_template_invalid_validate_json() {
 }
 
 #[test]
+fn docli_templates_show_unknown_bundled_id_json() {
+    let output = run(
+        &mut docli_bin(),
+        &["templates", "show", "not-a-bundled-pack", "--json"],
+    );
+    assert_exit(&output, 1);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        1,
+        "internal",
+        "DOCLI.INTERNAL",
+    );
+    let cause = error["details"]["cause"].as_str().expect("cause");
+    assert!(
+        cause.contains("not-a-bundled-pack"),
+        "cause was {cause}"
+    );
+    let action = error["suggested_action"].as_str().unwrap();
+    assert!(
+        action.contains("templates list"),
+        "action was {action}"
+    );
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[test]
 fn docli_template_invalid_validate_human() {
     let dir = unique_dir();
     fs::write(dir.join("template.toml"), "id = [\n").unwrap();
