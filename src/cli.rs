@@ -102,15 +102,6 @@ pub fn run_with_name(app_name: &'static str) {
             theme,
             markdown,
         } => {
-            if preview && html.is_some() {
-                finish(
-                    cli.json,
-                    Envelope::<()>::failure(ErrorBody::usage(
-                        "Pass either --preview or --html DIR, not both",
-                    )),
-                    |_| {},
-                );
-            }
             let template = match template.as_deref() {
                 Some(selector) => match parse_template_selector(selector) {
                     Ok(template) => Some(template),
