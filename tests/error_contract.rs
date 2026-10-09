@@ -449,15 +449,9 @@ fn docli_templates_show_unknown_bundled_id_json() {
         "DOCLI.INTERNAL",
     );
     let cause = error["details"]["cause"].as_str().expect("cause");
-    assert!(
-        cause.contains("not-a-bundled-pack"),
-        "cause was {cause}"
-    );
+    assert!(cause.contains("not-a-bundled-pack"), "cause was {cause}");
     let action = error["suggested_action"].as_str().unwrap();
-    assert!(
-        action.contains("templates list"),
-        "action was {action}"
-    );
+    assert!(action.contains("templates list"), "action was {action}");
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
 }
 
