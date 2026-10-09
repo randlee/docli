@@ -182,7 +182,6 @@ pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
             "Pass either --preview or --html DIR, not both",
         ));
     }
-    let theme = req.theme.clone();
     let (html_dir, preview_dir) = if req.preview {
         let dir = preview_output_dir();
         (dir.clone(), Some(dir))
@@ -212,7 +211,7 @@ pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
         }
     };
 
-    let html = match render_generate_html(&model, req.template.as_ref(), theme.as_ref()) {
+    let html = match render_generate_html(&model, req.template.as_ref(), req.theme.as_ref()) {
         Ok(html) => html,
         Err(error) => return Envelope::failure(error),
     };
@@ -478,8 +477,9 @@ fn render_generate_html(
         .cloned()
         .unwrap_or_else(TemplateRef::bundled_default);
     let pack = resolve_pack(&template_ref).map_err(pack_failure)?;
-    let theme = theme.cloned().unwrap_or_else(ThemeMap::new);
-    render_pack(&pack, model, &theme)
+    let empty_theme = ThemeMap::new();
+    let theme = theme.unwrap_or(&empty_theme);
+    render_pack(&pack, model, theme)
         .map_err(|err| map_render_failure(&template_ref, &pack.manifest.id, err.cause()))
 }
 

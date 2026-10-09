@@ -5,10 +5,11 @@
 **Consumers**: `req-qa` (compliance), implementers, sprint plans.
 
 **Hard requirements**: every `REQ-DOCLI-*` id with a requirement sentence in
-this document is normative for Phase A unless marked **(later)**. Use **MUST** /
-**MUST NOT** semantics when implementing or reviewing. Section 11 rows whose
-text lands in a later sprint are traceability entries only; the normative
-sentence arrives with that sprint.
+this document is normative for **Phase A and Phase B** unless marked **(later)**.
+Use **MUST** / **MUST NOT** semantics when implementing or reviewing. Section 11
+rows whose body is not yet written are traceability-only until the owning sprint
+lands the normative sentence in this file (Phase B bodies for **b.7–b.11** are
+in sections 6, 8, and 9).
 
 **Source of truth (product)**
 
