@@ -148,9 +148,9 @@ These rules apply to every language implementation.
   writes `site/cli/index.html`. The page's up-link (`../`) resolves to
   `site/index.html`. Callers pass `--html` explicitly in scripts, CI, and the
   test repos (atm-core, sc-compose, sc-observability all use `--html site/cli`).
-  The default applies only when `--html` is omitted, and the resolved path is
-  still reported in the `generate` envelope. The generator creates the
-  directory when it is missing.
+  The default applies only when `--html` is omitted and `--preview` is not set
+  (`REQ-DOCLI-CLI-012`). The resolved path is still reported in the `generate`
+  envelope. The generator creates the directory when it is missing.
 - `REQ-DOCLI-HTML-007`: the `default` HTML template pack is embedded in the
   binary from `templates/html/default/`. `html::render` MUST render that pack
   with its `theme_schema` defaults and MUST match `fixtures/contract/index.html`
@@ -248,6 +248,7 @@ prompts.
   | `DOCLI.OUTPUT_NOT_FOUND` | `not_found` | `show` was asked for an artifact that is not on disk |
   | `DOCLI.IO` | `dependency` | reading or writing a file failed |
   | `DOCLI.TEMPLATE_INVALID` | `validation` | a template pack manifest or template does not compile |
+  | `DOCLI.TEMPLATE_NOT_FOUND` | `not_found` | `--template` names a pack id that is not bundled or installed |
   | `DOCLI.INTERNAL` | `internal` | an unexpected failure |
 
 - `REQ-DOCLI-CLI-004`: exit codes are `0` success, `2` validation, `3` not
@@ -255,14 +256,17 @@ prompts.
   stay human-readable.
 - `REQ-DOCLI-CLI-005`: `generate` is the mutating build operation.
   - Request: `--input` (path or `-`, default `-`), `--html DIR` (default
-    `site/cli`), optional `--markdown FILE` (no default; omitted means no
-    Markdown file).
+    `site/cli` when `--preview` is omitted), optional `--markdown FILE` (no
+    default; omitted means no Markdown file). `--template`, `--theme`, and
+    `--preview` are `REQ-DOCLI-CLI-012`.
   - It renders HTML from the model and writes `DIR/index.html`. It renders
     Markdown only when `--markdown` is set, and writes that file. Parent
     directories are created as needed.
   - Response `data` includes `operation` (`"generate"`), `input` (`"stdin"`
-    or the path), `model_name`, `html_dir` (the resolved directory), and
-    `outputs` (each written artifact's `kind`, `path`, `bytes`, and `sha256`).
+    or the path), `model_name`, `html_dir` (the resolved directory),
+    `preview_dir` (that directory when `--preview` is set, otherwise null),
+    and `outputs` (each written artifact's `kind`, `path`, `bytes`, and
+    `sha256`).
   - `--json` writes the files and prints the envelope. It does not print the
     page on stdout.
   - A failed write after another output was already written is `ok: false`
@@ -304,8 +308,8 @@ prompts.
     A missing install root is an empty extra list.
   - `show` data includes `operation` (`"templates_show"`), `id`, `manifest`
     (including `id` and `version`), `theme_schema`, and `example_generate_argv`
-    (`docli generate --input model.json --html site/cli`). A selector with a
-    path separator, an absolute path, or an existing path is a pack directory.
+    (`docli generate --input model.json --preview --template default --theme {"accent":"#007acc"}`).
+    A selector with a path separator, an absolute path, or an existing path is a pack directory.
     Any other selector is a pack id (embedded, then `<install_root>/<id>`).
   - `validate` success data includes `operation` (`"templates_validate"`),
     `id`, `path`, and `valid` (`true`).
@@ -315,17 +319,42 @@ prompts.
     A filesystem read failure stays `DOCLI.IO` (`REQ-DOCLI-HTML-007`).
   - `cargo docli templates list --json` matches `docli templates list --json`
     stdout bytes (`cargo_docli_templates_list_matches_docli`).
+  - An unknown pack id is `DOCLI.TEMPLATE_NOT_FOUND` (`REQ-DOCLI-CLI-012`).
+- `REQ-DOCLI-CLI-012`: `generate` accepts `--template ID|PATH`, `--theme JSON`,
+  and `--preview`.
+  - `--template` selects a bundled pack id, an installed extra id under
+    `share/docli/templates`, or a pack directory. Omitted means the embedded
+    `default` pack. A selector with a path separator, an absolute path, or an
+    existing path is a directory. Any other selector is a pack id.
+  - `--theme` is a JSON object whose values are strings. Those keys override
+    the pack's `theme_schema` defaults. Invalid JSON, a non-object, or a
+    non-string value is `DOCLI.INPUT_INVALID`. `details` is `{ "cause" }`.
+  - `--preview` writes `index.html` under a temporary directory named
+    `docli-preview-{pid}-{nanos}` (the process id and a nanosecond timestamp,
+    inside the system temp directory). Success `data.html_dir` and
+    `data.preview_dir` are both that directory. This mode does not write
+    `site/cli`.
+  - `--preview` and `--html` together are `DOCLI.USAGE`.
+  - Neither `--preview` nor `--html` resolves HTML output to `site/cli`
+    (`REQ-DOCLI-HTML-006`). `data.preview_dir` is null.
+  - An unknown template id is `DOCLI.TEMPLATE_NOT_FOUND` (kind `not_found`,
+    exit `3`). `details` is `{ "template": "<id>" }`. A missing pack directory
+    stays `DOCLI.IO` (`REQ-DOCLI-HTML-007`).
+  - The embedded `default` pack with no `--theme`, written with explicit
+    `--html`, matches `fixtures/contract/index.html`. Passing `--template
+    default` without `--theme` matches those same bytes.
 
 ### Error code inventory (normative)
 
 | Code | Exit | `kind` | `details` (required keys) | Covered by |
 |------|------|--------|---------------------------|------------|
-| `DOCLI.USAGE` | 2 | `validation` | `{}` | `docli_usage_unknown_command_json`, `docli_usage_invalid_flag_json`, `docli_usage_show_without_paths_json`, `docli_usage_show_without_paths_human` |
-| `DOCLI.INPUT_INVALID` | 2 | `validation` | `{}` or `{ "cause" }` | `docli_input_invalid_parse_error_json`, `docli_input_invalid_empty_file_json`, `docli_stdin_empty_is_input_invalid`, `docli_input_invalid_human` |
+| `DOCLI.USAGE` | 2 | `validation` | `{}` | `docli_usage_unknown_command_json`, `docli_usage_invalid_flag_json`, `docli_usage_show_without_paths_json`, `docli_usage_show_without_paths_human`, `docli_usage_preview_with_html_json` |
+| `DOCLI.INPUT_INVALID` | 2 | `validation` | `{}` or `{ "cause" }` | `docli_input_invalid_parse_error_json`, `docli_input_invalid_empty_file_json`, `docli_stdin_empty_is_input_invalid`, `docli_input_invalid_human`, `docli_input_invalid_theme_json` |
 | `DOCLI.INPUT_NOT_FOUND` | 3 | `not_found` | `{ "path" }` | `docli_input_not_found_json`, `docli_input_not_found_human` |
 | `DOCLI.OUTPUT_NOT_FOUND` | 3 | `not_found` | `{ "artifacts": [{ "path", "exists" }] }` | `docli_output_not_found_single_html_json`, `docli_output_not_found_html_and_markdown_json`, `docli_output_not_found_human` |
 | `DOCLI.IO` | 4 | `dependency` | `{ "cause" }`; optional `{ "outputs_written" }` after partial write | `docli_io_generate_html_dir_not_writable_json`, `docli_io_generate_partial_write_lists_outputs_written_json`, `docli_io_show_unreadable_index_json`, `docli_io_show_unreadable_index_human` |
 | `DOCLI.TEMPLATE_INVALID` | 2 | `validation` | `{ "cause" }` | `docli_template_invalid_validate_json`, `docli_template_invalid_validate_human` |
+| `DOCLI.TEMPLATE_NOT_FOUND` | 3 | `not_found` | `{ "template" }` | `docli_template_not_found_unknown_id_json`, `docli_template_not_found_unknown_id_human`, `docli_templates_show_unknown_bundled_id_json` |
 | `DOCLI.INTERNAL` | 1 | `internal` | `{ "cause" }` | `docli_internal_error_body_contract` |
 
 Adding a new `DOCLI.*` code requires updating this table, `src/contract.rs`,
@@ -386,5 +415,5 @@ sprint’s PR. An index row is not a substitute for the body.
 | `REQ-DOCLI-CLI-009` | `--json` failures are one stdout envelope; human mode uses stderr | text lands in sprint b.1 (section 9); test closure is sprint b.2 (also cited by b.3) | ADR-003 |
 | `REQ-DOCLI-CLI-010` | `cargo docli` matches `docli` exit and stdout on error scenarios | text lands in sprint b.1 (section 9); test closure is sprint b.2 | ADR-003 |
 | `REQ-DOCLI-CLI-011` | `docli templates` list, show, and validate | section 9 | ADR-001 |
-| `REQ-DOCLI-CLI-012` | `generate --template`, `--theme`, and `--preview` | text lands in sprint b.9 | ADR-001 |
+| `REQ-DOCLI-CLI-012` | `generate --template`, `--theme`, and `--preview` | section 9 | ADR-001 |
 | `REQ-DOCLI-DIST-001` | MIT license | section 10 | — |

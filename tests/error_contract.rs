@@ -440,18 +440,143 @@ fn docli_templates_show_unknown_bundled_id_json() {
         &mut docli_bin(),
         &["templates", "show", "not-a-bundled-pack", "--json"],
     );
-    assert_exit(&output, 1);
+    assert_template_not_found(&output, "not-a-bundled-pack");
+}
+
+#[test]
+fn docli_template_not_found_unknown_id_json() {
+    let dir = unique_dir();
+    let model = write_demo_model(&dir);
+    let mut cmd = docli_bin();
+    cmd.current_dir(&dir);
+    let output = run(
+        &mut cmd,
+        &[
+            "generate",
+            "--input",
+            model.to_str().unwrap(),
+            "--template",
+            "not-a-bundled-pack",
+            "--json",
+        ],
+    );
+    assert_template_not_found(&output, "not-a-bundled-pack");
+    assert!(!dir.join("site/cli").exists());
+}
+
+#[test]
+fn docli_template_not_found_unknown_id_human() {
+    let dir = unique_dir();
+    let model = write_demo_model(&dir);
+    let output = run(
+        &mut docli_bin(),
+        &[
+            "generate",
+            "--input",
+            model.to_str().unwrap(),
+            "--template",
+            "not-a-bundled-pack",
+        ],
+    );
+    assert_exit(&output, 3);
+    assert_human_actionable(
+        &output.stderr,
+        "DOCLI.TEMPLATE_NOT_FOUND",
+        &["not-a-bundled-pack", "templates list"],
+    );
+}
+
+#[test]
+fn docli_usage_preview_with_html_json() {
+    let dir = unique_dir();
+    let model = write_demo_model(&dir);
+    let html = dir.join("out");
+    let mut cmd = docli_bin();
+    cmd.current_dir(&dir);
+    let output = run(
+        &mut cmd,
+        &[
+            "generate",
+            "--input",
+            model.to_str().unwrap(),
+            "--preview",
+            "--html",
+            html.to_str().unwrap(),
+            "--json",
+        ],
+    );
+    assert_exit(&output, 2);
     let error = assert_failure(
         output.status.code(),
         &parse_envelope(&output.stdout),
-        1,
-        "internal",
-        "DOCLI.INTERNAL",
+        2,
+        "validation",
+        "DOCLI.USAGE",
+    );
+    assert_eq!(error["details"], serde_json::json!({}));
+    let action = error["suggested_action"].as_str().unwrap();
+    assert!(action.contains("--preview"), "action was {action}");
+    assert!(action.contains("--html"), "action was {action}");
+    assert!(!html.join("index.html").exists());
+    assert!(!dir.join("site/cli").exists());
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[test]
+fn docli_input_invalid_theme_json() {
+    let dir = unique_dir();
+    let model = write_demo_model(&dir);
+    let output = run(
+        &mut docli_bin(),
+        &[
+            "generate",
+            "--input",
+            model.to_str().unwrap(),
+            "--html",
+            dir.join("out").to_str().unwrap(),
+            "--theme",
+            "not-json",
+            "--json",
+        ],
+    );
+    assert_exit(&output, 2);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        2,
+        "validation",
+        "DOCLI.INPUT_INVALID",
     );
     let cause = error["details"]["cause"].as_str().expect("cause");
-    assert!(cause.contains("not-a-bundled-pack"), "cause was {cause}");
+    assert!(!cause.is_empty());
+    assert_eq!(error["details"].as_object().expect("object").len(), 1);
+    let action = error["suggested_action"].as_str().unwrap();
+    assert!(action.contains("--theme"), "action was {action}");
+    assert!(action.contains(cause), "action was {action}");
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+fn assert_template_not_found(output: &std::process::Output, template: &str) {
+    assert_exit(output, 3);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        3,
+        "not_found",
+        "DOCLI.TEMPLATE_NOT_FOUND",
+    );
+    assert_eq!(
+        error["details"],
+        serde_json::json!({ "template": template })
+    );
     let action = error["suggested_action"].as_str().unwrap();
     assert!(action.contains("templates list"), "action was {action}");
+    assert!(action.contains(template), "action was {action}");
+    assert!(!error["message"].as_str().unwrap().is_empty());
+    assert_eq!(
+        error["docs"],
+        "https://github.com/randlee/docli/blob/develop/docs/requirements.md"
+    );
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
 }
 

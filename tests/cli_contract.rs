@@ -212,6 +212,7 @@ fn generate_json_defaults_html_dir_to_site_cli() {
     assert_eq!(envelope["ok"], true);
     assert_eq!(envelope["error"], Value::Null);
     assert_eq!(envelope["data"]["html_dir"], "site/cli");
+    assert_eq!(envelope["data"]["preview_dir"], Value::Null);
     assert!(dir.join("site/cli/index.html").is_file());
 }
 
@@ -438,6 +439,9 @@ fn ops_generate_writes_index_html_in_tmp() {
     let envelope = generate(GenerateRequest {
         input: InputSource::File(model),
         html_dir: Some(tmp.clone()),
+        preview: false,
+        template: None,
+        theme_json: None,
         markdown: None,
     });
 
@@ -445,6 +449,7 @@ fn ops_generate_writes_index_html_in_tmp() {
     assert!(envelope.error.is_none());
     let data = envelope.data.expect("success data");
     assert_eq!(data.html_dir, tmp);
+    assert!(data.preview_dir.is_none());
     assert!(tmp.join("index.html").is_file());
 }
 
@@ -685,6 +690,10 @@ fn error_kind_and_code_serialize_to_contract_strings() {
     assert_eq!(
         serde_json::to_string(&docli::contract::ErrorCode::TemplateInvalid).unwrap(),
         "\"DOCLI.TEMPLATE_INVALID\""
+    );
+    assert_eq!(
+        serde_json::to_string(&docli::contract::ErrorCode::TemplateNotFound).unwrap(),
+        "\"DOCLI.TEMPLATE_NOT_FOUND\""
     );
     assert_eq!(
         serde_json::to_string(&docli::contract::ErrorCode::Internal).unwrap(),

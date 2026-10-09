@@ -14,17 +14,21 @@ use crate::contract::{Envelope, ErrorBody};
 use crate::render;
 use crate::schema::CliModel;
 use crate::templates::{
-    install_root, resolve_pack, Pack, PackResolveError, TemplateManifest, TemplateRef, ThemeKeySpec,
+    install_root, render_pack, resolve_pack, PackResolveError, TemplateManifest, TemplateRef,
+    ThemeKeySpec, ThemeMap,
 };
 
-/// Example `generate` argv included in `templates show` until b.9 adds preview flags.
+/// Example `generate` argv included in `templates show`.
 pub const EXAMPLE_GENERATE_ARGV: &[&str] = &[
     "docli",
     "generate",
     "--input",
     "model.json",
-    "--html",
-    "site/cli",
+    "--preview",
+    "--template",
+    "default",
+    "--theme",
+    r##"{"accent":"#007acc"}"##,
 ];
 
 /// Where `generate` reads the model JSON.
@@ -54,8 +58,16 @@ pub struct ArtifactReport {
 pub struct GenerateRequest {
     /// Model JSON source.
     pub input: InputSource,
-    /// HTML output directory. `None` resolves to `site/cli`.
+    /// HTML output directory. `None` resolves to `site/cli` unless [`Self::preview`].
     pub html_dir: Option<PathBuf>,
+    /// Write HTML under a temporary `docli-preview-{pid}-{nanos}` directory.
+    ///
+    /// Mutually exclusive with [`Self::html_dir`].
+    pub preview: bool,
+    /// Bundled pack or pack directory. `None` uses the embedded `default` pack.
+    pub template: Option<TemplateRef>,
+    /// Theme overrides as a JSON object of strings. `None` uses pack defaults.
+    pub theme_json: Option<String>,
     /// Optional Markdown output path. Omitted means no Markdown file.
     pub markdown: Option<PathBuf>,
 }
@@ -69,8 +81,10 @@ pub struct GenerateResponse {
     pub input: String,
     /// `CliModel.name` of the rendered model.
     pub model_name: String,
-    /// Resolved HTML directory.
+    /// Resolved HTML directory. In preview mode this is the temp directory.
     pub html_dir: PathBuf,
+    /// Preview directory when [`GenerateRequest::preview`] is set; JSON `null` otherwise.
+    pub preview_dir: Option<PathBuf>,
     /// Artifacts that were written.
     pub outputs: Vec<ArtifactReport>,
 }
@@ -147,15 +161,44 @@ pub struct TemplatesValidateResponse {
 
 /// Render the model and write HTML (and optional Markdown).
 ///
-/// `html_dir: None` resolves to `site/cli` before writing. A write failure
-/// after another file landed returns `DOCLI.IO` with `details.outputs_written`.
+/// `--preview` and `html_dir` together are `DOCLI.USAGE`. Preview writes
+/// `docli-preview-{pid}-{nanos}/index.html` under the system temp directory
+/// and sets both `html_dir` and `preview_dir` to that directory. Otherwise
+/// `html_dir: None` resolves to `site/cli` and `preview_dir` is null.
+///
+/// Omitting `template` and `theme_json` renders the embedded `default` pack
+/// with its default theme, the same bytes as [`crate::render::html::render`].
+/// Invalid `theme_json` is `DOCLI.INPUT_INVALID`. A write failure after
+/// another file landed returns `DOCLI.IO` with `details.outputs_written`.
 ///
 /// # Errors
 ///
-/// Returns a failure envelope for missing input, invalid JSON, I/O errors,
-/// or an embedded default-pack failure (`DOCLI.INTERNAL`).
+/// Returns a failure envelope for usage, missing input, invalid JSON, I/O
+/// errors, an unknown template directory, or an embedded default-pack failure
+/// (`DOCLI.INTERNAL`).
 pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
-    let html_dir = req.html_dir.unwrap_or_else(|| PathBuf::from("site/cli"));
+    if req.preview && req.html_dir.is_some() {
+        return Envelope::failure(ErrorBody::usage(
+            "Pass either --preview or --html DIR, not both",
+        ));
+    }
+    let theme = match req.theme_json.as_deref().map(parse_theme_json) {
+        None => None,
+        Some(Ok(theme)) => Some(theme),
+        Some(Err(error)) => return Envelope::failure(error),
+    };
+    let (html_dir, preview_dir) = if req.preview {
+        let dir = preview_output_dir();
+        (dir.clone(), Some(dir))
+    } else {
+        (
+            req.html_dir
+                .clone()
+                .unwrap_or_else(|| PathBuf::from("site/cli")),
+            None,
+        )
+    };
+
     let (input_label, json) = match read_input(&req.input) {
         Ok(value) => value,
         Err(error) => return Envelope::failure(error),
@@ -173,12 +216,9 @@ pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
         }
     };
 
-    let html = match render::html::try_render(&model) {
+    let html = match render_generate_html(&model, req.template.as_ref(), theme.as_ref()) {
         Ok(html) => html,
-        Err(error) => {
-            debug_assert_eq!(error.code(), "DOCLI.INTERNAL");
-            return Envelope::failure(ErrorBody::internal(error.cause()));
-        }
+        Err(error) => return Envelope::failure(error),
     };
     let html_path = html_dir.join("index.html");
     let mut outputs = Vec::new();
@@ -202,6 +242,7 @@ pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
         input: input_label,
         model_name: model.name,
         html_dir,
+        preview_dir,
         outputs,
     })
 }
@@ -300,11 +341,14 @@ pub fn templates_list() -> Envelope<TemplatesListResponse> {
 /// # Errors
 ///
 /// Returns `DOCLI.TEMPLATE_INVALID` when the pack content does not compile,
-/// `DOCLI.IO` when a directory cannot be read, and `DOCLI.INTERNAL` for a
-/// damaged embedded pack or an unknown id (unknown ids become
-/// `DOCLI.TEMPLATE_NOT_FOUND` in b.9).
+/// `DOCLI.IO` when a directory cannot be read, `DOCLI.TEMPLATE_NOT_FOUND` for
+/// an unknown pack id, and `DOCLI.INTERNAL` for a damaged embedded pack.
 pub fn templates_show(selector: &str) -> Envelope<TemplatesShowResponse> {
-    let pack = match resolve_show_target(selector) {
+    let template = match parse_template_selector(selector) {
+        Ok(template) => template,
+        Err(error) => return Envelope::failure(error),
+    };
+    let pack = match resolve_pack(&template) {
         Ok(pack) => pack,
         Err(err) => return Envelope::failure(pack_failure(err)),
     };
@@ -367,18 +411,28 @@ fn installed_summaries(root: &Path) -> Result<Vec<TemplateSummary>, ErrorBody> {
     Ok(extras.into_values().collect())
 }
 
-fn resolve_show_target(selector: &str) -> Result<Pack, PackResolveError> {
+/// Resolve a `--template` selector to a bundled id, an installed extra id, or a directory.
+///
+/// A selector that contains a path separator, is absolute, or names an existing
+/// path is a directory. Any other selector is a pack id: embedded first, then
+/// `<install_root>/<id>`. An id that matches neither is `DOCLI.TEMPLATE_NOT_FOUND`.
+///
+/// # Errors
+///
+/// Returns [`ErrorBody`] with `DOCLI.TEMPLATE_NOT_FOUND` when `selector` is an
+/// unknown pack id.
+pub(crate) fn parse_template_selector(selector: &str) -> Result<TemplateRef, ErrorBody> {
     if selector_is_path(selector) {
-        return resolve_pack(&TemplateRef::dir(Path::new(selector)));
+        return Ok(TemplateRef::dir(selector));
     }
     match TemplateRef::try_bundled(selector) {
-        Ok(bundled) => resolve_pack(&bundled),
+        Ok(bundled) => Ok(bundled),
         Err(not_bundled) => {
             let installed = install_root().join(selector);
             if installed.is_dir() {
-                resolve_pack(&TemplateRef::dir(installed))
+                Ok(TemplateRef::dir(installed))
             } else {
-                Err(not_bundled)
+                Err(pack_failure(not_bundled))
             }
         }
     }
@@ -395,6 +449,10 @@ fn pack_failure(err: PackResolveError) -> ErrorBody {
         "DOCLI.TEMPLATE_INVALID" => {
             ErrorBody::template_invalid(err.cause(), err.suggested_action())
         }
+        "DOCLI.TEMPLATE_NOT_FOUND" => {
+            let template = err.not_bundled_id().unwrap_or("unknown");
+            ErrorBody::template_not_found(template, err.suggested_action())
+        }
         "DOCLI.IO" => {
             let path = err
                 .failed_path()
@@ -405,6 +463,55 @@ fn pack_failure(err: PackResolveError) -> ErrorBody {
         }
         _ => ErrorBody::internal_with_action(err.cause(), err.suggested_action()),
     }
+}
+
+fn render_generate_html(
+    model: &CliModel,
+    template: Option<&TemplateRef>,
+    theme: Option<&ThemeMap>,
+) -> Result<String, ErrorBody> {
+    if template.is_none() && theme.is_none() {
+        return render::html::try_render(model).map_err(|error| {
+            debug_assert_eq!(error.code(), "DOCLI.INTERNAL");
+            ErrorBody::internal(error.cause())
+        });
+    }
+    let template_ref = template
+        .cloned()
+        .unwrap_or_else(TemplateRef::bundled_default);
+    let pack = resolve_pack(&template_ref).map_err(pack_failure)?;
+    let theme = theme.cloned().unwrap_or_else(ThemeMap::new);
+    render_pack(&pack, model, &theme).map_err(|err| ErrorBody::internal(err.cause()))
+}
+
+fn parse_theme_json(theme_json: &str) -> Result<ThemeMap, ErrorBody> {
+    let value: serde_json::Value = match serde_json::from_str(theme_json) {
+        Ok(value) => value,
+        Err(err) => return Err(ErrorBody::theme_invalid(err.to_string())),
+    };
+    let Some(object) = value.as_object() else {
+        return Err(ErrorBody::theme_invalid(
+            "theme JSON must be an object of strings",
+        ));
+    };
+    let mut theme = ThemeMap::new();
+    for (key, value) in object {
+        let Some(text) = value.as_str() else {
+            return Err(ErrorBody::theme_invalid(format!(
+                "theme key {key} must be a string"
+            )));
+        };
+        theme.insert(key, text);
+    }
+    Ok(theme)
+}
+
+fn preview_output_dir() -> PathBuf {
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0);
+    std::env::temp_dir().join(format!("docli-preview-{}-{nanos}", std::process::id()))
 }
 
 fn read_input(input: &InputSource) -> Result<(String, String), ErrorBody> {

@@ -8,9 +8,9 @@ use serde::Serialize;
 
 use crate::contract::{Envelope, ErrorBody};
 use crate::ops::{
-    generate, show, templates_list, templates_show, templates_validate, ArtifactReport,
-    GenerateRequest, InputSource, ShowRequest, TemplatesListResponse, TemplatesShowResponse,
-    TemplatesValidateResponse,
+    generate, parse_template_selector, show, templates_list, templates_show, templates_validate,
+    ArtifactReport, GenerateRequest, InputSource, ShowRequest, TemplatesListResponse,
+    TemplatesShowResponse, TemplatesValidateResponse,
 };
 
 #[derive(Parser)]
@@ -33,6 +33,15 @@ pub enum Command {
         /// Output directory for the self-contained HTML reference (writes <dir>/index.html).
         #[arg(long, value_name = "DIR")]
         html: Option<PathBuf>,
+        /// Write index.html under a temporary preview directory instead of --html.
+        #[arg(long)]
+        preview: bool,
+        /// Bundled template id or pack directory.
+        #[arg(long, value_name = "ID|PATH")]
+        template: Option<String>,
+        /// Theme overrides as a JSON object of strings.
+        #[arg(long, value_name = "JSON")]
+        theme: Option<String>,
         /// Output path for the Markdown reference.
         #[arg(long, value_name = "FILE")]
         markdown: Option<PathBuf>,
@@ -88,8 +97,27 @@ pub fn run_with_name(app_name: &'static str) {
         Command::Generate {
             input,
             html,
+            preview,
+            template,
+            theme,
             markdown,
         } => {
+            if preview && html.is_some() {
+                finish(
+                    cli.json,
+                    Envelope::<()>::failure(ErrorBody::usage(
+                        "Pass either --preview or --html DIR, not both",
+                    )),
+                    |_| {},
+                );
+            }
+            let template = match template.as_deref() {
+                Some(selector) => match parse_template_selector(selector) {
+                    Ok(template) => Some(template),
+                    Err(error) => finish(cli.json, Envelope::<()>::failure(error), |_| {}),
+                },
+                None => None,
+            };
             let request = GenerateRequest {
                 input: if input == "-" {
                     InputSource::Stdin
@@ -97,6 +125,9 @@ pub fn run_with_name(app_name: &'static str) {
                     InputSource::File(PathBuf::from(input))
                 },
                 html_dir: html,
+                preview,
+                template,
+                theme_json: theme,
                 markdown,
             };
             let envelope = generate(request);
