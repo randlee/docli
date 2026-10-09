@@ -41,9 +41,9 @@ Every stable `DOCLI.*` code is integration-tested so `docli --json` and `cargo d
 
 | Code | Test | Exit | kind | details | Channel | Parity |
 |------|------|------|------|---------|---------|--------|
-| `DOCLI.USAGE` | `docli_usage_unknown_command_json` | 2 | `validation` | `{}`. `suggested_action` contains `not-a-command` | `--json` argv `not-a-command --json` | yes |
-| `DOCLI.USAGE` | `docli_usage_invalid_flag_json` | 2 | `validation` | `{}`. `suggested_action` contains `--not-a-flag` | `--json` argv `generate --not-a-flag --json` | yes |
-| `DOCLI.USAGE` | `docli_usage_show_without_paths_json` | 2 | `validation` | `{}`. `suggested_action` contains `--html` and `--markdown` | `--json` argv `show --json` | yes |
+| `DOCLI.USAGE` | `docli_usage_unknown_command_json` | 2 | `validation` | `{ "cause" }` equals `suggested_action`; contains `not-a-command` | `--json` argv `not-a-command --json` | yes |
+| `DOCLI.USAGE` | `docli_usage_invalid_flag_json` | 2 | `validation` | `{ "cause" }` equals `suggested_action`; contains `--not-a-flag` | `--json` argv `generate --not-a-flag --json` | yes |
+| `DOCLI.USAGE` | `docli_usage_show_without_paths_json` | 2 | `validation` | `{ "cause" }` equals `suggested_action`; contains `--html` and `--markdown` | `--json` argv `show --json` | yes |
 | `DOCLI.USAGE` | `docli_usage_show_without_paths_human` | 2 | `validation` | human stderr | argv `show` | no |
 | `DOCLI.INPUT_INVALID` | `docli_input_invalid_parse_error_json` | 2 | `validation` | `{ "cause": <non-empty> }`. `suggested_action` contains the input path and that cause. File bytes: `{"name": 1}` | `--json` | yes |
 | `DOCLI.INPUT_INVALID` | `docli_input_invalid_empty_file_json` | 2 | `validation` | `{}` | `--json`, empty file | yes |
@@ -90,10 +90,11 @@ Fix the model JSON at /path/to/file: <cause>
 <cause>
 ```
 
-`DOCLI.USAGE` with empty details omits the cause line:
+`DOCLI.USAGE` mirrors recovery text in `details.cause` and `suggested_action`:
 
 ```text
 DOCLI.USAGE: unknown command or invalid flags
+Pass --html DIR and/or --markdown FILE
 Pass --html DIR and/or --markdown FILE
 ```
 

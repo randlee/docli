@@ -44,7 +44,7 @@ pub struct GenerateRequest {
     pub html_dir: Option<PathBuf>,
     pub preview: bool,
     pub template: Option<TemplateRef>,
-    pub theme_json: Option<String>,
+    pub theme: Option<ThemeMap>, // CLI parses --theme JSON before ops
     // … existing markdown/json fields
 }
 ```
