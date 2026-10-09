@@ -27,7 +27,7 @@ Extend **`docli generate`** with template selection, theme JSON, and temp previe
 - CLI flags: `--template ID|PATH`, `--theme JSON`, `--preview`
 - **`--preview` and `--html` are mutually exclusive** — both set → `DOCLI.USAGE`
 - Neither `--preview` nor `--html` → Phase A default `site/cli`
-- **`--preview`**: temp dir `docli-preview-{pid}-{nanos}/index.html`; envelope includes `preview_dir`
+- **`--preview`**: temp dir `docli-preview-{pid}-{nanos}-{seq}/index.html`; envelope includes `preview_dir`
 - Invalid theme JSON → `DOCLI.INPUT_INVALID`
 - `REQ-DOCLI-CLI-012` + section 11 index update
 - Section 9: **`DOCLI.TEMPLATE_NOT_FOUND`** — kind **`not_found`**, exit **3**, details `{ "template": "<id|path>" }`; **Covered by** named test(s)

@@ -8,9 +8,11 @@
 //!
 //! Embedded-default failures are `DOCLI.INTERNAL` (the pack is not read from
 //! disk). A filesystem read failure is `DOCLI.IO`. A filesystem pack whose
-//! manifest or templates do not compile is `DOCLI.TEMPLATE_INVALID`. An unknown
-//! bundled id is `DOCLI.TEMPLATE_NOT_FOUND`.
-//! [`PackResolveError::suggested_action`] names list/validate recovery.
+//! manifest or templates do not compile, or that fails while rendering, is
+//! `DOCLI.TEMPLATE_INVALID`. An unknown bundled id is `DOCLI.TEMPLATE_NOT_FOUND`.
+//! [`PackResolveError::suggested_action`] and [`RenderError::suggested_action`]
+//! name list/validate recovery. An embedded pack that fails while rendering
+//! stays `DOCLI.INTERNAL`.
 //! The embedded-default path stores [`PackResolveError::cause`] and does not
 //! copy [`Display`] into that cause.
 //!
@@ -31,6 +33,7 @@
 mod page;
 
 use std::backtrace::Backtrace;
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::path::{Path, PathBuf};
@@ -295,10 +298,22 @@ pub struct TemplateManifest {
     pub theme_schema: BTreeMap<String, ThemeKeySpec>,
 }
 
+/// Where a pack's templates were loaded.
+///
+/// Render failures use this so a directory pack is `DOCLI.TEMPLATE_INVALID`
+/// and an embedded pack stays `DOCLI.INTERNAL`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PackOrigin {
+    Embedded,
+    Directory,
+}
+
 /// A loaded pack ready to render.
 ///
 /// `page.html.j2` and `style.css.j2` are compiled into a MiniJinja environment
 /// once, when the pack is loaded. [`render_pack`] reuses that environment.
+/// Theme defaults are captured at the same time so an empty override map can
+/// borrow them.
 #[derive(Clone)]
 pub struct Pack {
     /// Parsed manifest.
@@ -310,6 +325,9 @@ pub struct Pack {
     /// `script.js` source, inserted verbatim.
     pub script: String,
     env: Environment<'static>,
+    /// `theme_schema` defaults, fixed when the pack was loaded.
+    defaults: ThemeMap,
+    origin: PackOrigin,
 }
 
 impl std::fmt::Debug for Pack {
@@ -319,6 +337,7 @@ impl std::fmt::Debug for Pack {
             .field("page_template", &self.page_template)
             .field("style_template", &self.style_template)
             .field("script", &self.script)
+            .field("origin", &self.origin)
             .finish_non_exhaustive()
     }
 }
@@ -329,6 +348,7 @@ impl PartialEq for Pack {
             && self.page_template == other.page_template
             && self.style_template == other.style_template
             && self.script == other.script
+            && self.origin == other.origin
     }
 }
 
@@ -348,11 +368,14 @@ impl ThemeMap {
         Self(BTreeMap::new())
     }
 
-    /// Defaults declared by `pack`'s `theme_schema`.
+    /// Defaults captured from `pack`'s `theme_schema` when the pack was loaded.
     pub fn defaults(pack: &Pack) -> Self {
+        pack.defaults.clone()
+    }
+
+    fn from_schema(schema: &BTreeMap<String, ThemeKeySpec>) -> Self {
         Self(
-            pack.manifest
-                .theme_schema
+            schema
                 .iter()
                 .map(|(key, spec)| (key.clone(), spec.default.clone()))
                 .collect(),
@@ -556,29 +579,67 @@ impl std::error::Error for PackResolveError {
 }
 
 /// Failure rendering a pack that already resolved.
+///
+/// Directory packs are `DOCLI.TEMPLATE_INVALID` and name `templates validate`.
+/// Embedded packs stay `DOCLI.INTERNAL`. The recovery sentence stays on
+/// [`Self::suggested_action`] so [`Self::cause`] can be copied into
+/// `details.cause`.
 #[derive(Debug)]
 pub struct RenderError {
     cause: String,
+    kind: RenderFailureKind,
     backtrace: Backtrace,
 }
 
+#[derive(Debug)]
+enum RenderFailureKind {
+    Embedded,
+    Directory { pack_id: PackId },
+}
+
 impl RenderError {
-    fn new(cause: impl Into<String>) -> Self {
+    /// Classify `cause` from the pack that was loaded.
+    pub(crate) fn from_pack(pack: &Pack, cause: impl Into<String>) -> Self {
+        let kind = match pack.origin {
+            PackOrigin::Embedded => RenderFailureKind::Embedded,
+            PackOrigin::Directory => RenderFailureKind::Directory {
+                pack_id: pack.manifest.id.clone(),
+            },
+        };
         Self {
             cause: cause.into(),
+            kind,
             backtrace: Backtrace::capture(),
         }
     }
 
-    /// Render failures of a resolved pack are `DOCLI.INTERNAL` on the
-    /// embedded-default path.
+    /// Stable `DOCLI.*` code for envelope mapping.
+    ///
+    /// Directory packs are `DOCLI.TEMPLATE_INVALID`. Embedded packs are
+    /// `DOCLI.INTERNAL`.
     pub fn machine_code(&self) -> &'static str {
-        "DOCLI.INTERNAL"
+        match self.kind {
+            RenderFailureKind::Embedded => "DOCLI.INTERNAL",
+            RenderFailureKind::Directory { .. } => "DOCLI.TEMPLATE_INVALID",
+        }
     }
 
     /// Template engine message.
     pub fn cause(&self) -> &str {
         &self.cause
+    }
+
+    /// One recovery sentence for operators and automation.
+    ///
+    /// Directory packs name `docli templates validate` for this pack id.
+    /// Embedded packs use the same sentence as a damaged embedded pack.
+    pub fn suggested_action(&self) -> String {
+        match &self.kind {
+            RenderFailureKind::Embedded => EMBEDDED_PACK_RECOVERY.to_owned(),
+            RenderFailureKind::Directory { pack_id } => format!(
+                "Run `docli templates validate` on the `{pack_id}` template pack and fix the reported issue"
+            ),
+        }
     }
 
     /// Captured backtrace from the point of failure.
@@ -673,29 +734,31 @@ pub fn resolve_pack(template: &TemplateRef) -> Result<Pack, PackResolveError> {
 /// # Errors
 ///
 /// Returns [`RenderError`] when rendering fails, for example a theme key that
-/// is still missing after defaults are applied. Parse failures are reported by
-/// [`resolve_pack`].
+/// is still missing after defaults are applied. A directory pack reports
+/// `DOCLI.TEMPLATE_INVALID` and [`RenderError::suggested_action`] names
+/// `templates validate`. An embedded pack reports `DOCLI.INTERNAL`. Parse
+/// failures are reported by [`resolve_pack`].
 pub fn render_pack(pack: &Pack, model: &CliModel, theme: &ThemeMap) -> Result<String, RenderError> {
     let theme = merge_theme(pack, theme);
     let env = &pack.env;
 
     let style = env
         .get_template("style.css.j2")
-        .map_err(|err| RenderError::new(err.to_string()))?
-        .render(context! { theme => Serde(&theme) })
-        .map_err(|err| RenderError::new(err.to_string()))?;
+        .map_err(|err| RenderError::from_pack(pack, err.to_string()))?
+        .render(context! { theme => Serde(theme.as_ref()) })
+        .map_err(|err| RenderError::from_pack(pack, err.to_string()))?;
 
     let version = model.version.clone().unwrap_or_default();
     let generator = format!("docli {}", env!("CARGO_PKG_VERSION"));
     // page.html.j2 is HTML-escaped. Prebuilt markup, CSS, JS, and JSON are
     // already in their final form.
     env.get_template("page.html.j2")
-        .map_err(|err| RenderError::new(err.to_string()))?
+        .map_err(|err| RenderError::from_pack(pack, err.to_string()))?
         .render(context! {
             model => Serde(model),
             model_json => Value::from_safe_string(page::embed_json(model)),
             search_json => Value::from_safe_string(page::embed_json(&search_index(model))),
-            theme => Serde(&theme),
+            theme => Serde(theme.as_ref()),
             title => model.name.as_str(),
             generator => generator,
             version => version,
@@ -703,7 +766,7 @@ pub fn render_pack(pack: &Pack, model: &CliModel, theme: &ThemeMap) -> Result<St
             style => Value::from_safe_string(style),
             script => Value::from_safe_string(pack.script.clone()),
         })
-        .map_err(|err| RenderError::new(err.to_string()))
+        .map_err(|err| RenderError::from_pack(pack, err.to_string()))
 }
 
 /// Render the embedded `default` pack with its default theme.
@@ -715,8 +778,9 @@ pub fn render_pack(pack: &Pack, model: &CliModel, theme: &ThemeMap) -> Result<St
 pub(crate) fn render_embedded_default(model: &CliModel) -> Result<String, EmbeddedDefaultError> {
     let pack = resolve_pack(&TemplateRef::bundled_default())
         .map_err(EmbeddedDefaultError::from_resolve)?;
-    let theme = ThemeMap::defaults(&pack);
-    render_pack(&pack, model, &theme).map_err(|err| EmbeddedDefaultError::internal(err.cause()))
+    // No overrides: [`render_pack`] borrows the defaults captured at load.
+    render_pack(&pack, model, &ThemeMap::new())
+        .map_err(|err| EmbeddedDefaultError::internal(err.cause()))
 }
 
 /// Directory for optional extra packs: `<prefix>/share/docli/templates`.
@@ -733,12 +797,19 @@ pub fn install_root() -> PathBuf {
     std::path::absolute(&relative).unwrap_or(relative)
 }
 
-fn merge_theme(pack: &Pack, theme: &ThemeMap) -> ThemeMap {
-    let mut merged = ThemeMap::defaults(pack);
+/// Schema defaults, with `theme` overrides applied.
+///
+/// An empty override map borrows the defaults captured at load. A non-empty
+/// map clones those defaults and replaces the keys the caller set.
+fn merge_theme<'a>(pack: &'a Pack, theme: &'a ThemeMap) -> Cow<'a, ThemeMap> {
+    if theme.0.is_empty() {
+        return Cow::Borrowed(&pack.defaults);
+    }
+    let mut merged = pack.defaults.clone();
     for (key, value) in &theme.0 {
         merged.0.insert(key.clone(), value.clone());
     }
-    merged
+    Cow::Owned(merged)
 }
 
 fn load_embedded(id: BundledPackId) -> Result<Pack, PackResolveError> {
@@ -786,41 +857,45 @@ fn pack_from_sources(
     script: String,
     site: CompileSite<'_>,
 ) -> Result<Pack, PackResolveError> {
-    let env = compile_environment(&page_template, &style_template).map_err(|err| {
-        let cause = err.cause().to_owned();
-        match site {
-            CompileSite::Embedded => PackResolveError::embedded(cause),
-            CompileSite::Dir(dir) => PackResolveError::invalid(dir.to_path_buf(), cause),
-        }
+    let env = compile_environment(&page_template, &style_template).map_err(|cause| match site {
+        CompileSite::Embedded => PackResolveError::embedded(cause),
+        CompileSite::Dir(dir) => PackResolveError::invalid(dir.to_path_buf(), cause),
     })?;
+    let origin = match site {
+        CompileSite::Embedded => PackOrigin::Embedded,
+        CompileSite::Dir(_) => PackOrigin::Directory,
+    };
+    let defaults = ThemeMap::from_schema(&manifest.theme_schema);
     Ok(Pack {
         manifest,
         page_template,
         style_template,
         script,
         env,
+        defaults,
+        origin,
     })
 }
 
 fn compile_environment(
     page_template: &str,
     style_template: &str,
-) -> Result<Environment<'static>, RenderError> {
+) -> Result<Environment<'static>, String> {
     let mut env = Environment::new();
     env.set_undefined_behavior(UndefinedBehavior::Strict);
     env.set_syntax(
         SyntaxConfig::builder()
             .keep_trailing_newline(true)
             .build()
-            .map_err(|err| RenderError::new(err.to_string()))?,
+            .map_err(|err| err.to_string())?,
     );
     env.add_filter("docli_escape", page::docli_escape);
     // Owned copies live in the environment for its `'static` lifetime. This
     // happens once per load, not on each [`render_pack`] call.
     env.add_template_owned("style.css.j2", style_template.to_owned())
-        .map_err(|err| RenderError::new(err.to_string()))?;
+        .map_err(|err| err.to_string())?;
     env.add_template_owned("page.html.j2", page_template.to_owned())
-        .map_err(|err| RenderError::new(err.to_string()))?;
+        .map_err(|err| err.to_string())?;
     Ok(env)
 }
 
@@ -854,6 +929,8 @@ fn parse_manifest(
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use super::*;
 
     fn demo_model() -> CliModel {
@@ -889,6 +966,55 @@ mod tests {
     }
 
     #[test]
+    fn empty_theme_borrows_pack_defaults() {
+        let pack = resolve_pack(&TemplateRef::bundled_default()).expect("embedded");
+        let model = demo_model();
+        let empty = ThemeMap::new();
+        let merged = merge_theme(&pack, &empty);
+        assert!(matches!(merged, Cow::Borrowed(_)));
+        assert_eq!(
+            render_pack(&pack, &model, &empty).expect("empty"),
+            render_pack(&pack, &model, &ThemeMap::defaults(&pack)).expect("defaults")
+        );
+        let mut overrides = ThemeMap::new();
+        overrides.insert("accent", "#ff00aa");
+        let merged = merge_theme(&pack, &overrides);
+        assert!(matches!(merged, Cow::Owned(_)));
+        assert_eq!(merged.get("accent"), Some("#ff00aa"));
+        assert_eq!(merged.get("accent_dark"), Some("#4da3ff"));
+    }
+
+    #[test]
+    fn directory_render_failure_is_template_invalid() {
+        let scratch = tempfile::tempdir().expect("temp dir");
+        let dir = scratch.path();
+        std::fs::write(
+            dir.join("template.toml"),
+            "id = \"custom\"\nname = \"custom\"\nversion = \"1\"\ndescription = \"custom\"\ntheme_schema = {}\n",
+        )
+        .expect("manifest");
+        std::fs::write(dir.join("page.html.j2"), "{{ missing_render_value }}").expect("page");
+        std::fs::write(dir.join("style.css.j2"), "body{}\n").expect("style");
+        std::fs::write(dir.join("script.js"), "").expect("script");
+        let pack = resolve_pack(&TemplateRef::dir(dir)).expect("load");
+        let err = render_pack(&pack, &demo_model(), &ThemeMap::new()).expect_err("render");
+        assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_INVALID");
+        assert!(err.suggested_action().contains("templates validate"));
+        assert!(err.suggested_action().contains("custom"));
+        assert!(!err.cause().contains("templates validate"));
+        assert!(!err.to_string().contains("templates validate"));
+        let embedded = resolve_pack(&TemplateRef::bundled_default()).expect("embedded");
+        let embedded_err = RenderError::from_pack(&embedded, "missing value");
+        assert_eq!(embedded_err.machine_code(), "DOCLI.INTERNAL");
+        assert_eq!(embedded_err.suggested_action(), EMBEDDED_PACK_RECOVERY);
+        let cli_doc = resolve_pack(&TemplateRef::bundled(BundledPackId::CliDoc)).expect("cli-doc");
+        assert_eq!(
+            RenderError::from_pack(&cli_doc, "missing value").machine_code(),
+            "DOCLI.INTERNAL"
+        );
+    }
+
+    #[test]
     fn missing_directory_is_io_not_template_code() {
         let missing = Path::new(env!("CARGO_MANIFEST_DIR")).join("templates/html/missing-pack");
         let err = resolve_pack(&TemplateRef::dir(missing)).expect_err("missing");
@@ -899,36 +1025,21 @@ mod tests {
 
     #[test]
     fn invalid_manifest_maps_to_template_invalid() {
-        let dir = std::env::temp_dir().join(format!(
-            "docli-b7-invalid-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .expect("clock")
-                .as_nanos()
-        ));
-        std::fs::create_dir_all(&dir).expect("mkdir");
+        let scratch = tempfile::tempdir().expect("temp dir");
+        let dir = scratch.path();
         std::fs::write(dir.join("template.toml"), "id = [\n").expect("write");
-        let err = resolve_pack(&TemplateRef::dir(&dir)).expect_err("invalid");
+        let err = resolve_pack(&TemplateRef::dir(dir)).expect_err("invalid");
         assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_INVALID");
         assert!(err.suggested_action().contains("templates validate"));
         assert!(err.cause().contains("template.toml"));
         assert!(!err.cause().contains("templates validate"));
         assert!(err.failed_path().is_some());
-        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
     fn uncompilable_directory_template_maps_to_template_invalid() {
-        let dir = std::env::temp_dir().join(format!(
-            "docli-b7-compile-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .expect("clock")
-                .as_nanos()
-        ));
-        std::fs::create_dir_all(&dir).expect("mkdir");
+        let scratch = tempfile::tempdir().expect("temp dir");
+        let dir = scratch.path();
         std::fs::write(
             dir.join("template.toml"),
             "id = \"broken\"\nname = \"broken\"\nversion = \"1\"\ndescription = \"broken\"\ntheme_schema = {}\n",
@@ -937,10 +1048,9 @@ mod tests {
         std::fs::write(dir.join("page.html.j2"), "{{ unclosed").expect("page");
         std::fs::write(dir.join("style.css.j2"), "body{}\n").expect("style");
         std::fs::write(dir.join("script.js"), "").expect("script");
-        let err = resolve_pack(&TemplateRef::dir(&dir)).expect_err("compile");
+        let err = resolve_pack(&TemplateRef::dir(dir)).expect_err("compile");
         assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_INVALID");
         assert!(err.suggested_action().contains("templates validate"));
-        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
@@ -1026,15 +1136,8 @@ mod tests {
 
     #[test]
     fn empty_manifest_id_is_template_invalid() {
-        let dir = std::env::temp_dir().join(format!(
-            "docli-b10-empty-id-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .expect("clock")
-                .as_nanos()
-        ));
-        std::fs::create_dir_all(&dir).expect("mkdir");
+        let scratch = tempfile::tempdir().expect("temp dir");
+        let dir = scratch.path();
         std::fs::write(
             dir.join("template.toml"),
             "id = \"\"\nname = \"x\"\nversion = \"1\"\ndescription = \"x\"\ntheme_schema = {}\n",
@@ -1043,9 +1146,8 @@ mod tests {
         std::fs::write(dir.join("page.html.j2"), "ok").expect("page");
         std::fs::write(dir.join("style.css.j2"), "body{}\n").expect("style");
         std::fs::write(dir.join("script.js"), "").expect("script");
-        let err = resolve_pack(&TemplateRef::dir(&dir)).expect_err("empty id");
+        let err = resolve_pack(&TemplateRef::dir(dir)).expect_err("empty id");
         assert_eq!(err.machine_code(), "DOCLI.TEMPLATE_INVALID");
         assert!(err.cause().contains("pack id must not be empty"));
-        let _ = std::fs::remove_dir_all(&dir);
     }
 }

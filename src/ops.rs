@@ -6,6 +6,7 @@
 use std::collections::BTreeMap;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -15,8 +16,7 @@ use crate::render;
 use crate::schema::CliModel;
 use crate::templates::{
     install_root, render_pack, resolve_pack, BundledPackId, EmbeddedDefaultError, PackId,
-    PackResolveError, TemplateManifest, TemplateRef, ThemeKeySpec, ThemeMap,
-    EMBEDDED_PACK_RECOVERY,
+    PackResolveError, RenderError, TemplateManifest, TemplateRef, ThemeKeySpec, ThemeMap,
 };
 
 /// Example `generate` argv included in `templates show`.
@@ -61,7 +61,7 @@ pub struct GenerateRequest {
     pub input: InputSource,
     /// HTML output directory. `None` resolves to `site/cli` unless [`Self::preview`].
     pub html_dir: Option<PathBuf>,
-    /// Write HTML under a temporary `docli-preview-{pid}-{nanos}` directory.
+    /// Write HTML under a temporary `docli-preview-{pid}-{nanos}-{seq}` directory.
     ///
     /// Mutually exclusive with [`Self::html_dir`].
     pub preview: bool,
@@ -163,9 +163,10 @@ pub struct TemplatesValidateResponse {
 /// Render the model and write HTML (and optional Markdown).
 ///
 /// `--preview` and `html_dir` together are `DOCLI.USAGE`. Preview writes
-/// `docli-preview-{pid}-{nanos}/index.html` under the system temp directory
-/// and sets both `html_dir` and `preview_dir` to that directory. Otherwise
-/// `html_dir: None` resolves to `site/cli` and `preview_dir` is null.
+/// `docli-preview-{pid}-{nanos}-{seq}/index.html` under the system temp
+/// directory and sets both `html_dir` and `preview_dir` to that directory.
+/// `{seq}` is a per-process counter so parallel calls do not share a path.
+/// Otherwise `html_dir: None` resolves to `site/cli` and `preview_dir` is null.
 ///
 /// Omitting `template` and `theme` renders the embedded `default` pack with its
 /// default theme, the same bytes as [`crate::render::html::render`]. A write failure after
@@ -182,7 +183,6 @@ pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
             "Pass either --preview or --html DIR, not both",
         ));
     }
-    let theme = req.theme.clone();
     let (html_dir, preview_dir) = if req.preview {
         let dir = preview_output_dir();
         (dir.clone(), Some(dir))
@@ -212,7 +212,7 @@ pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
         }
     };
 
-    let html = match render_generate_html(&model, req.template.as_ref(), theme.as_ref()) {
+    let html = match render_generate_html(&model, req.template.as_ref(), req.theme.as_ref()) {
         Ok(html) => html,
         Err(error) => return Envelope::failure(error),
     };
@@ -478,9 +478,9 @@ fn render_generate_html(
         .cloned()
         .unwrap_or_else(TemplateRef::bundled_default);
     let pack = resolve_pack(&template_ref).map_err(pack_failure)?;
-    let theme = theme.cloned().unwrap_or_else(ThemeMap::new);
-    render_pack(&pack, model, &theme)
-        .map_err(|err| map_render_failure(&template_ref, &pack.manifest.id, err.cause()))
+    let empty_theme = ThemeMap::new();
+    let theme = theme.unwrap_or(&empty_theme);
+    render_pack(&pack, model, theme).map_err(map_render_failure)
 }
 
 fn embedded_default_failure(error: EmbeddedDefaultError) -> ErrorBody {
@@ -488,16 +488,15 @@ fn embedded_default_failure(error: EmbeddedDefaultError) -> ErrorBody {
     ErrorBody::internal_with_action(error.cause(), error.suggested_action())
 }
 
-/// Embedded packs stay `DOCLI.INTERNAL`. Directory packs use `templates validate`.
-fn map_render_failure(template: &TemplateRef, pack_id: &PackId, cause: &str) -> ErrorBody {
-    match template {
-        TemplateRef::Bundled(_) => ErrorBody::internal_with_action(cause, EMBEDDED_PACK_RECOVERY),
-        TemplateRef::Dir(_) => ErrorBody::template_invalid(
-            cause,
-            format!(
-                "Run `docli templates validate` on the `{pack_id}` template pack and fix the reported issue"
-            ),
-        ),
+/// Uses the pack origin recorded on [`RenderError`].
+///
+/// Directory packs are `DOCLI.TEMPLATE_INVALID`. Embedded packs stay
+/// `DOCLI.INTERNAL`. Recovery text comes from [`RenderError::suggested_action`].
+fn map_render_failure(err: RenderError) -> ErrorBody {
+    if err.machine_code() == "DOCLI.TEMPLATE_INVALID" {
+        ErrorBody::template_invalid(err.cause(), err.suggested_action())
+    } else {
+        ErrorBody::internal_with_action(err.cause(), err.suggested_action())
     }
 }
 
@@ -535,11 +534,16 @@ pub fn parse_theme_json(theme_json: &str) -> Result<ThemeMap, ErrorBody> {
 }
 
 fn preview_output_dir() -> PathBuf {
+    static NEXT_PREVIEW: AtomicU64 = AtomicU64::new(0);
+    let seq = NEXT_PREVIEW.fetch_add(1, Ordering::Relaxed);
     let nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|duration| duration.as_nanos())
         .unwrap_or(0);
-    std::env::temp_dir().join(format!("docli-preview-{}-{nanos}", std::process::id()))
+    std::env::temp_dir().join(format!(
+        "docli-preview-{}-{nanos}-{seq}",
+        std::process::id()
+    ))
 }
 
 fn read_input(input: &InputSource) -> Result<(String, String), ErrorBody> {
@@ -595,6 +599,7 @@ mod tests {
     use super::*;
     use crate::contract::ErrorCode;
     use crate::schema::CliModel;
+    use crate::templates::EMBEDDED_PACK_RECOVERY;
 
     fn demo_model() -> CliModel {
         serde_json::from_str(r#"{"name":"demo"}"#).expect("model")
@@ -617,34 +622,21 @@ mod tests {
 
     #[test]
     fn bundled_render_failure_is_internal() {
-        let body = map_render_failure(
-            &TemplateRef::bundled_default(),
-            &PackId::new("default").expect("id"),
-            "missing value",
-        );
+        let pack = resolve_pack(&TemplateRef::bundled_default()).expect("default");
+        let body = map_render_failure(RenderError::from_pack(&pack, "missing value"));
         assert_eq!(body.code, ErrorCode::Internal);
         assert_eq!(body.suggested_action, EMBEDDED_PACK_RECOVERY);
         assert!(!body.suggested_action.contains("templates validate"));
-        let cli_doc = map_render_failure(
-            &TemplateRef::bundled(BundledPackId::CliDoc),
-            &PackId::new("cli-doc").expect("id"),
-            "missing value",
-        );
-        assert_eq!(cli_doc.code, ErrorCode::Internal);
-        assert_eq!(cli_doc.suggested_action, EMBEDDED_PACK_RECOVERY);
+        let cli_doc = resolve_pack(&TemplateRef::bundled(BundledPackId::CliDoc)).expect("cli-doc");
+        let body = map_render_failure(RenderError::from_pack(&cli_doc, "missing value"));
+        assert_eq!(body.code, ErrorCode::Internal);
+        assert_eq!(body.suggested_action, EMBEDDED_PACK_RECOVERY);
     }
 
     #[test]
     fn directory_render_failure_is_template_invalid() {
-        let dir = std::env::temp_dir().join(format!(
-            "docli-b10-render-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .expect("clock")
-                .as_nanos()
-        ));
-        std::fs::create_dir_all(&dir).expect("mkdir");
+        let scratch = tempfile::tempdir().expect("temp dir");
+        let dir = scratch.path();
         std::fs::write(
             dir.join("template.toml"),
             "id = \"custom\"\nname = \"custom\"\nversion = \"1\"\ndescription = \"custom\"\ntheme_schema = {}\n",
@@ -653,13 +645,12 @@ mod tests {
         std::fs::write(dir.join("page.html.j2"), "{{ missing_render_value }}").expect("page");
         std::fs::write(dir.join("style.css.j2"), "body{}\n").expect("style");
         std::fs::write(dir.join("script.js"), "").expect("script");
-        let template = TemplateRef::dir(&dir);
+        let template = TemplateRef::dir(dir);
         let err = render_generate_html(&demo_model(), Some(&template), None).expect_err("render");
         assert_eq!(err.code, ErrorCode::TemplateInvalid);
         assert!(err.suggested_action.contains("templates validate"));
         assert!(err.suggested_action.contains("custom"));
         assert!(!err.suggested_action.contains("embedded template pack"));
-        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
@@ -668,6 +659,38 @@ mod tests {
         assert!(!listed_extra(&PackId::new("default").expect("default")));
         assert!(!listed_extra(&PackId::new("cli-doc").expect("cli-doc")));
         assert!(listed_extra(&PackId::new("brand").expect("brand")));
+    }
+
+    #[test]
+    fn preview_output_dirs_are_unique_per_call() {
+        let mut handles = Vec::new();
+        for _ in 0..8 {
+            handles.push(std::thread::spawn(|| {
+                (0..32).map(|_| preview_output_dir()).collect::<Vec<_>>()
+            }));
+        }
+        let mut dirs = Vec::new();
+        for handle in handles {
+            dirs.extend(handle.join().expect("preview thread"));
+        }
+        let unique: std::collections::HashSet<_> = dirs.iter().cloned().collect();
+        assert_eq!(unique.len(), dirs.len());
+        let prefix = format!("docli-preview-{}-", std::process::id());
+        for dir in &dirs {
+            assert_eq!(dir.parent(), Some(std::env::temp_dir().as_path()));
+            let name = dir
+                .file_name()
+                .and_then(|name| name.to_str())
+                .expect("name");
+            let rest = name
+                .strip_prefix(&prefix)
+                .unwrap_or_else(|| panic!("preview dir {name}"));
+            let (nanos, seq) = rest
+                .split_once('-')
+                .unwrap_or_else(|| panic!("preview dir {name}"));
+            assert!(nanos.chars().all(|ch| ch.is_ascii_digit()) && !nanos.is_empty());
+            assert!(seq.chars().all(|ch| ch.is_ascii_digit()) && !seq.is_empty());
+        }
     }
 
     #[test]

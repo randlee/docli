@@ -645,7 +645,8 @@ fn license_is_mit() {
         .expect("license string");
     assert_eq!(license, "MIT");
 
-    let license_text = fs::read_to_string("LICENSE").expect("LICENSE");
+    let license_text =
+        fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("LICENSE")).expect("LICENSE");
     assert!(license_text.starts_with("MIT License"));
 }
 

@@ -5,10 +5,11 @@
 **Consumers**: `req-qa` (compliance), implementers, sprint plans.
 
 **Hard requirements**: every `REQ-DOCLI-*` id with a requirement sentence in
-this document is normative for Phase A unless marked **(later)**. Use **MUST** /
-**MUST NOT** semantics when implementing or reviewing. Section 11 rows whose
-text lands in a later sprint are traceability entries only; the normative
-sentence arrives with that sprint.
+this document is normative for **Phase A and Phase B** unless marked **(later)**.
+Use **MUST** / **MUST NOT** semantics when implementing or reviewing. Section 11
+rows whose body is not yet written are traceability-only until the owning sprint
+lands the normative sentence in this file (Phase B bodies for **b.7–b.11** are
+in sections 6, 8, and 9).
 
 **Source of truth (product)**
 
@@ -366,10 +367,10 @@ prompts.
     the pack's `theme_schema` defaults. Invalid JSON, a non-object, or a
     non-string value is `DOCLI.INPUT_INVALID`. `details` is `{ "cause" }`.
   - `--preview` writes `index.html` under a temporary directory named
-    `docli-preview-{pid}-{nanos}` (the process id and a nanosecond timestamp,
-    inside the system temp directory). Success `data.html_dir` and
-    `data.preview_dir` are both that directory. This mode does not write
-    `site/cli`.
+    `docli-preview-{pid}-{nanos}-{seq}` (the process id, a nanosecond timestamp,
+    and a per-process call counter, inside the system temp directory). Success
+    `data.html_dir` and `data.preview_dir` are both that directory. This mode
+    does not write `site/cli`.
   - `--preview` and `--html` together are `DOCLI.USAGE`.
   - Neither `--preview` nor `--html` resolves HTML output to `site/cli`
     (`REQ-DOCLI-HTML-006`). `data.preview_dir` is null.
@@ -403,10 +404,11 @@ and a matching test in `tests/error_contract.rs` before merge.
 ## 11. Requirement index
 
 Use this table for traceability in QA findings (`source_refs` must cite ids).
-Every `REQ-DOCLI-*` id in this repository is one row. Ids named in a Phase B
-sprint **Closes** section include a “text lands in sprint …” note. Sprints
-**b.7–b.11** add the requirement body and confirm the same index row in that
-sprint’s PR. An index row is not a substitute for the body.
+Every `REQ-DOCLI-*` id in this repository is one row. The **Text** column points
+to the normative section in this file (or notes **(later)** when no body exists
+yet). Phase B execution sprints **b.7–b.11** landed template, CLI, and publish
+bodies in sections 6, 8, and 9; the index row records ownership but is not a
+substitute for those sections.
 
 | ID | Summary | Text | ADR |
 |----|---------|------|-----|
@@ -438,7 +440,7 @@ sprint’s PR. An index row is not a substitute for the body.
 | `REQ-DOCLI-MD-001` | Flat Markdown reference, one section per command | section 7 | — |
 | `REQ-DOCLI-MD-002` | Markdown shipped with each language installer (later) | section 7 | — |
 | `REQ-DOCLI-GEN-001` | Same input bytes produce the same HTML and Markdown bytes | section 8 | ADR-002 |
-| `REQ-DOCLI-GEN-002` | Consumers regenerate on release; CI rejects stale output | generation text is in section 8; fixture-policy text lands in sprint b.5 | ADR-002 |
+| `REQ-DOCLI-GEN-002` | Consumers regenerate on release; CI rejects stale output | section 8 (includes b.5 fixture-policy acceptance) | ADR-002 |
 | `REQ-DOCLI-GEN-003` | Later languages match the Phase A fixture corpus (later) | section 8 | — |
 | `REQ-DOCLI-CLI-001` | Global `--json`; stdout is only the envelope | section 9 | ADR-001, ADR-003 |
 | `REQ-DOCLI-CLI-002` | Envelope version `"1"` with `ok`, `data`, and `error` | section 9 | ADR-003 |
