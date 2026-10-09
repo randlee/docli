@@ -71,6 +71,7 @@ fn contract_fixtures_match_renderer_bytes() {
         commands,
         "caret and command buttons must be siblings"
     );
+    assert!(html.contains("id=\"docli-default-pack\""));
     assert!(html.contains("id=\"docli-data\""));
     assert!(html.contains("id=\"docli-search\""));
     assert!(html.contains("<style"));

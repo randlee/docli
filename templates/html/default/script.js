@@ -1,57 +1,3 @@
-<!doctype html>
-<html lang="en" id="docli-default-pack">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>demo CLI Reference</title>
-<style>
-:root{color-scheme:light dark;--bg:#fff;--fg:#1a1a2e;--border:#ddd;--hover:#f0f0f0;--accent:#007acc;--muted:#666}
-@media (prefers-color-scheme:dark){:root{--bg:#16181d;--fg:#e6e6e6;--border:#333;--hover:#23262e;--accent:#4da3ff;--muted:#999}}
-*{box-sizing:border-box}
-body{margin:0;font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--fg)}
-header{display:flex;flex-wrap:wrap;align-items:baseline;gap:.75rem;padding:.75rem 1.25rem;border-bottom:1px solid var(--border)}
-header h1{font-size:1.2rem;margin:0}
-.meta{color:var(--muted);font-size:.85rem}
-.crumb{color:var(--accent);text-decoration:none;font-size:.9rem}
-.search{margin-left:auto}
-.search input{padding:.35rem .6rem;border:1px solid var(--border);border-radius:6px;font:inherit;background:var(--bg);color:var(--fg);min-width:16rem}
-main{display:grid;grid-template-columns:minmax(16rem,28%) 1fr;min-height:calc(100vh - 3.2rem)}
-.pane{min-width:0}
-aside.pane{padding:1rem;border-right:1px solid var(--border);overflow:auto}
-aside.pane h2{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 .5rem}
-article.pane{padding:1.25rem 1.5rem;max-width:72rem}
-#tree ul{list-style:none;margin:0;padding:0}
-#tree .docli-caret,#tree .docli-cmd{border:0;background:none;color:inherit;font:inherit;cursor:pointer}
-#tree .docli-caret{width:1.1rem;height:1.4rem;padding:0;color:var(--muted);vertical-align:middle}
-#tree .docli-caret::before{content:"\25B6";display:inline-block;font-size:.65rem;transition:transform .15s}
-#tree .node.open>.docli-caret::before{transform:rotate(90deg)}
-#tree .node.leaf>.docli-caret{visibility:hidden}
-#tree .docli-cmd{display:inline-flex;align-items:center;padding:.28rem .5rem;border-radius:6px;text-align:left}
-#tree .docli-cmd:hover{background:var(--hover)}
-#tree .docli-cmd[aria-current=true]{background:var(--accent);color:#fff;font-weight:600}
-#tree .children{margin-left:.9em;border-left:1px solid var(--border);padding-left:.35em}
-#tree .children[hidden]{display:none}
-#tree .hidden{display:none}
-.card{border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1rem}
-.card h2{margin-top:0}
-.card h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:.25rem 0 .5rem}
-pre.usage{background:#164e63;color:#fff;padding:1rem;border-radius:8px;overflow-x:auto;margin:0}
-table{border-collapse:collapse;width:100%}
-th,td{border:1px solid var(--border);padding:.4rem .55rem;text-align:left;vertical-align:top}
-th{background:var(--hover);font-size:.85rem}
-code{overflow-wrap:anywhere}
-@media (max-width:760px){main{display:block}aside.pane{border-right:0;border-bottom:1px solid var(--border)}.search input{min-width:0;width:100%}}
-</style>
-</head>
-<body>
-<header><a class="crumb" href="../">Documentation</a><h1>demo CLI Reference</h1><span class="meta">Version 1.0.0</span><label class="search">Search <input id="search" type="search" autocomplete="off" placeholder="commands and options"></label></header>
-<main>
-<aside class="pane"><h2>Commands</h2><nav id="tree"><ul><li class="node open" data-anchor="demo"><button type="button" class="docli-caret" aria-expanded="true"></button><button type="button" class="docli-cmd" data-anchor="demo">demo</button><ul class="children"><li class="node open" data-anchor="demo-run"><button type="button" class="docli-caret" aria-expanded="true"></button><button type="button" class="docli-cmd" data-anchor="demo-run">run</button><ul class="children"><li class="node leaf" data-anchor="demo-run-once"><button type="button" class="docli-caret" aria-expanded="false"></button><button type="button" class="docli-cmd" data-anchor="demo-run-once">once</button></li></ul></li><li class="node leaf" data-anchor="demo-check"><button type="button" class="docli-caret" aria-expanded="false"></button><button type="button" class="docli-cmd" data-anchor="demo-check">check</button></li></ul></li></ul></nav></aside>
-<article class="pane" id="detail" aria-live="polite"></article>
-</main>
-<script id="docli-data" type="application/json">{"name":"demo","version":"1.0.0","description":"A tiny example CLI","long_description":"A slightly longer description of the demo tool that spans a sentence.","epilogue":"See the full docs for more detail.","usage":"demo [OPTIONS] <COMMAND>","options":[{"name":"verbose","long":"--verbose","short":"-v","help":"Increase verbosity","long_help":"","value_name":null,"required":false,"default_value":null,"choices":[],"min_values":null,"max_values":null},{"name":"output","long":"--output","short":"-o","help":"Write output to PATH","long_help":"","value_name":"PATH","required":false,"default_value":null,"choices":["json","yaml"],"min_values":null,"max_values":null}],"arguments":[{"name":"config","help":"Path to the config file","required":false,"default_value":null,"choices":[]}],"subcommands":[{"name":"run","version":null,"description":"Run the thing","long_description":"","epilogue":"","usage":"demo run [OPTIONS]","options":[{"name":"dry-run","long":"--dry-run","short":null,"help":"Do not execute","long_help":"","value_name":null,"required":false,"default_value":"false","choices":[],"min_values":null,"max_values":null}],"arguments":[],"subcommands":[{"name":"once","version":null,"description":"Run exactly once","long_description":"","epilogue":"","usage":"demo run once","options":[],"arguments":[],"subcommands":[]}]},{"name":"check","version":null,"description":"Check the config","long_description":"","epilogue":"","usage":"demo check <CONFIG>","options":[],"arguments":[{"name":"config","help":"Config to check","required":true,"default_value":null,"choices":[]}],"subcommands":[]}]}</script>
-<script id="docli-search" type="application/json">[{"anchor":"demo","ancestors":[],"terms":["demo","verbose","--verbose","-v","output","--output","-o","config"]},{"anchor":"demo-run","ancestors":["demo"],"terms":["run","dry-run","--dry-run"]},{"anchor":"demo-run-once","ancestors":["demo","demo-run"],"terms":["once"]},{"anchor":"demo-check","ancestors":["demo"],"terms":["check","config"]}]</script>
-<script>
 
 (() => {
   "use strict";
@@ -327,7 +273,3 @@ code{overflow-wrap:anywhere}
   window.addEventListener("hashchange", routeFromHash);
   routeFromHash();
 })();
-
-</script>
-</body>
-</html>

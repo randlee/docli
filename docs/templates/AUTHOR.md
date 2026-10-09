@@ -6,19 +6,22 @@ root and can be added locally for custom branding.
 
 ## Install layout
 
-After `cargo install docli` (Phase B **b.11** publish; packs land in **b.7–b.10**), bundled packs live at:
+Bundled packs are compiled into the `docli` binary with `include_dir`
+(ADR-004). `default` is embedded from `templates/html/default/` and is the
+pack `html::render` uses when the caller does not pass `--template`.
+`share/docli/templates/` holds **optional extra** packs only. It is not
+required to render `default`, including after `cargo install`.
 
 ```text
-<install-root>/share/docli/templates/<id>/
-  template.toml          # manifest (required)
-  page.html.j2           # shell (required)
-  style.css.j2           # inlined into <style> (required)
-  script.js              # inlined into <script> (required)
-  partials/              # optional includes
-```
+templates/html/<id>/          # source of a bundled pack (embedded at build)
+  template.toml               # manifest (required)
+  page.html.j2                # shell (required)
+  style.css.j2                # inlined into <style> (required)
+  script.js                   # inlined into <script> (required)
+  partials/                   # optional includes
 
-Development builds resolve templates from `<repo>/templates/html/<id>/` via
-`CARGO_MANIFEST_DIR`.
+<install-root>/share/docli/templates/<id>/   # optional extra packs only
+```
 
 ## Manifest (`template.toml`)
 
@@ -100,5 +103,6 @@ search navigation). docli still consumes **CliModel JSON**, not `--help` scrapin
 3. Run `docli templates validate` before committing.
 4. Point `docli generate --template /path/to/pack` at CI or local preview.
 
-Custom packs are **not** registered in `templates list` unless installed under
-`<install-root>/share/docli/templates/` (packaging decision for Phase B **b.7** / **b.11**).
+Custom packs are **not** part of the embedded `default` render. Optional extras
+live under `<install-root>/share/docli/templates/` (ADR-004). `templates list`
+registration is Phase B **b.8**.

@@ -151,6 +151,16 @@ These rules apply to every language implementation.
   The default applies only when `--html` is omitted, and the resolved path is
   still reported in the `generate` envelope. The generator creates the
   directory when it is missing.
+- `REQ-DOCLI-HTML-007`: the `default` HTML template pack is embedded in the
+  binary from `templates/html/default/`. `html::render` MUST render that pack
+  with its `theme_schema` defaults and MUST match `fixtures/contract/index.html`
+  when the caller does not pass `--template`. The page MUST include
+  `id="docli-default-pack"`, and that marker MUST be defined only in the
+  default pack. Optional extra packs MAY live under `share/docli/templates`;
+  they are not the source of `default`. A failure rendering the embedded
+  default pack MUST surface from `ops::generate` as `DOCLI.INTERNAL`.
+  `resolve_pack` MUST classify a filesystem read failure as `DOCLI.IO`. This
+  requirement MUST NOT introduce a `DOCLI.TEMPLATE_*` code.
 
 ## 7. Markdown Output
 
@@ -332,7 +342,7 @@ sprint’s PR. An index row is not a substitute for the body.
 | `REQ-DOCLI-HTML-004` | Detail panel fields for arguments and options | section 6 | ADR-002 |
 | `REQ-DOCLI-HTML-005` | Search keeps matching nested commands and ancestors | section 6 | ADR-002 |
 | `REQ-DOCLI-HTML-006` | Default HTML directory is `site/cli` | section 6 | ADR-002 |
-| `REQ-DOCLI-HTML-007` | Embedded `default` template pack; byte match without `--template` | text lands in sprint b.7 | ADR-004 (b.7) |
+| `REQ-DOCLI-HTML-007` | Embedded `default` template pack; byte match without `--template` | section 6 | ADR-004 |
 | `REQ-DOCLI-HTML-008` | `cli-doc` pack layout markers, still self-contained | text lands in sprint b.10 | — |
 | `REQ-DOCLI-HTML-009` | `_skeleton` validates and is omitted from `templates list` | text lands in sprint b.10 | — |
 | `REQ-DOCLI-HTML-010` | Author docs match the template pack schema | text lands in sprint b.10 | ADR-004 (b.7) |
