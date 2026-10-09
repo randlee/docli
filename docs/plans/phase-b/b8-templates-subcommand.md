@@ -1,7 +1,7 @@
 ---
 id: b.8
 title: templates subcommand
-status: planned
+status: in-review
 branch: feature/phase-b-b8-templates-cmd
 worktree: ../docli-worktrees/feature/phase-b-b8-templates-cmd
 target: integrate/phase-b
@@ -73,7 +73,7 @@ docli templates validate <PATH> [--json]
     "code": "DOCLI.TEMPLATE_INVALID",
     "kind": "validation",
     "message": "…",
-    "details": {},
+    "details": { "cause": "…" },
     "suggested_action": "…",
     "docs": "https://github.com/randlee/docli/blob/develop/docs/requirements.md"
   }
