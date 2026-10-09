@@ -18,8 +18,8 @@ tests pass.
 
 Always read **`docs/architecture.md`** first:
 
-- **ADRs** (`ADR-001`–`ADR-003`) — canonical architectural decisions
-- **Architectural rules** (`ARCH-RULE-001`–`ARCH-RULE-008`) — blocking checks
+- **ADRs** (`ADR-001`–`ADR-004`) — canonical architectural decisions
+- **Architectural rules** (`ARCH-RULE-001`–`ARCH-RULE-009`) — blocking checks
 
 Cross-check **`docs/requirements.md`** when an ADR lists `REQ-DOCLI-*` ties.
 Cite findings as `rule`: `ARCH-RULE-00N`, `adr`: `ADR-00N`, with

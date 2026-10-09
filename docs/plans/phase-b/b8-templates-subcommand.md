@@ -1,7 +1,7 @@
 ---
 id: b.8
 title: templates subcommand
-status: in-review
+status: complete
 branch: feature/phase-b-b8-templates-cmd
 worktree: ../docli-worktrees/feature/phase-b-b8-templates-cmd
 target: integrate/phase-b
