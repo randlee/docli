@@ -292,10 +292,7 @@ fn cargo_docli_matches_docli_error_envelopes() {
         &["templates", "validate", broken.to_str().unwrap(), "--json"],
         None,
     );
-    assert_error_parity(
-        &["templates", "show", "not-a-pack", "--json"],
-        None,
-    );
+    assert_error_parity(&["templates", "show", "not-a-pack", "--json"], None);
     assert_error_parity(
         &["templates", "validate", "not-a-real-pack", "--json"],
         None,
