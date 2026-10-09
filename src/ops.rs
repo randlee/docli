@@ -14,8 +14,9 @@ use crate::contract::{Envelope, ErrorBody};
 use crate::render;
 use crate::schema::CliModel;
 use crate::templates::{
-    install_root, render_pack, resolve_pack, PackResolveError, TemplateManifest, TemplateRef,
-    ThemeKeySpec, ThemeMap,
+    install_root, render_pack, resolve_pack, BundledPackId, EmbeddedDefaultError, PackId,
+    PackResolveError, TemplateManifest, TemplateRef, ThemeKeySpec, ThemeMap,
+    EMBEDDED_PACK_RECOVERY,
 };
 
 /// Example `generate` argv included in `templates show`.
@@ -111,7 +112,7 @@ pub struct ShowResponse {
 #[derive(Debug, Clone, Serialize)]
 pub struct TemplateSummary {
     /// Pack id from `template.toml`.
-    pub id: String,
+    pub id: PackId,
     /// Display name.
     pub name: String,
     /// Pack version string.
@@ -137,7 +138,7 @@ pub struct TemplatesShowResponse {
     /// Always `"templates_show"`.
     pub operation: &'static str,
     /// Pack id.
-    pub id: String,
+    pub id: PackId,
     /// Parsed `template.toml`.
     pub manifest: TemplateManifest,
     /// Theme keys from the manifest, in AUTHOR.md object form.
@@ -152,7 +153,7 @@ pub struct TemplatesValidateResponse {
     /// Always `"templates_validate"`.
     pub operation: &'static str,
     /// Pack id from the manifest.
-    pub id: String,
+    pub id: PackId,
     /// Directory that was validated.
     pub path: PathBuf,
     /// Always `true` on success. Failures use the error envelope.
@@ -173,8 +174,8 @@ pub struct TemplatesValidateResponse {
 /// # Errors
 ///
 /// Returns a failure envelope for usage, missing input, invalid JSON, I/O
-/// errors, an unknown template directory, or an embedded default-pack failure
-/// (`DOCLI.INTERNAL`).
+/// errors, an unknown template, a filesystem pack that fails to render
+/// (`DOCLI.TEMPLATE_INVALID`), or an embedded pack failure (`DOCLI.INTERNAL`).
 pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
     if req.preview && req.html_dir.is_some() {
         return Envelope::failure(ErrorBody::usage(
@@ -293,29 +294,34 @@ pub fn show(req: ShowRequest) -> Envelope<ShowResponse> {
     })
 }
 
-/// List the embedded `default` pack and any valid extra packs under [`install_root`].
+/// List embedded packs and any valid extra packs under [`install_root`].
 ///
+/// Embedded order is [`BundledPackId::all`]: `default`, then `cli-doc`.
 /// A missing install root is an empty extra list, not an error. Unreadable
 /// install roots are `DOCLI.IO`. Extra directories that do not load are omitted
 /// so one broken pack does not hide the others; [`templates_validate`] reports
-/// that failure.
+/// that failure. An extra whose id is already bundled, or whose id
+/// [`PackId::excluded_from_list`] reports (the `_skeleton` starter), is omitted.
 ///
 /// # Errors
 ///
-/// Returns a failure envelope when the embedded pack cannot load
+/// Returns a failure envelope when an embedded pack cannot load
 /// (`DOCLI.INTERNAL`) or the install root exists but cannot be read (`DOCLI.IO`).
 pub fn templates_list() -> Envelope<TemplatesListResponse> {
     let install_root = install_root();
-    let pack = match resolve_pack(&TemplateRef::bundled_default()) {
-        Ok(pack) => pack,
-        Err(err) => return Envelope::failure(pack_failure(err)),
-    };
-    let mut templates = vec![TemplateSummary {
-        path: format!("embedded:{}", pack.manifest.id),
-        id: pack.manifest.id.clone(),
-        name: pack.manifest.name,
-        version: pack.manifest.version,
-    }];
+    let mut templates = Vec::new();
+    for id in BundledPackId::all() {
+        let pack = match resolve_pack(&TemplateRef::bundled(id)) {
+            Ok(pack) => pack,
+            Err(err) => return Envelope::failure(pack_failure(err)),
+        };
+        templates.push(TemplateSummary {
+            path: format!("embedded:{}", pack.manifest.id),
+            id: pack.manifest.id,
+            name: pack.manifest.name,
+            version: pack.manifest.version,
+        });
+    }
     match installed_summaries(&install_root) {
         Ok(extras) => templates.extend(extras),
         Err(error) => return Envelope::failure(error),
@@ -387,7 +393,7 @@ fn installed_summaries(root: &Path) -> Result<Vec<TemplateSummary>, ErrorBody> {
         let Ok(pack) = resolve_pack(&TemplateRef::dir(&path)) else {
             continue;
         };
-        if pack.manifest.id == "default" {
+        if !listed_extra(&pack.manifest.id) {
             continue;
         }
         extras
@@ -416,10 +422,14 @@ pub(crate) fn parse_template_selector(selector: &str) -> Result<TemplateRef, Err
     if selector_is_path(selector) {
         return Ok(TemplateRef::dir(selector));
     }
-    match TemplateRef::try_bundled(selector) {
+    let id = match PackId::new(selector) {
+        Ok(id) => id,
+        Err(_) => return Err(pack_failure(PackResolveError::unknown_id(selector))),
+    };
+    match TemplateRef::from_pack_id(&id) {
         Ok(bundled) => Ok(bundled),
         Err(not_bundled) => {
-            let installed = install_root().join(selector);
+            let installed = install_root().join(id.as_str());
             if installed.is_dir() {
                 Ok(TemplateRef::dir(installed))
             } else {
@@ -462,25 +472,38 @@ fn render_generate_html(
     theme: Option<&ThemeMap>,
 ) -> Result<String, ErrorBody> {
     if template.is_none() && theme.is_none() {
-        return render::html::try_render(model).map_err(|error| {
-            debug_assert_eq!(error.code(), "DOCLI.INTERNAL");
-            ErrorBody::internal(error.cause())
-        });
+        return render::html::try_render(model).map_err(embedded_default_failure);
     }
     let template_ref = template
         .cloned()
         .unwrap_or_else(TemplateRef::bundled_default);
     let pack = resolve_pack(&template_ref).map_err(pack_failure)?;
     let theme = theme.cloned().unwrap_or_else(ThemeMap::new);
-    render_pack(&pack, model, &theme).map_err(|err| {
-        ErrorBody::template_invalid(
-            err.cause(),
+    render_pack(&pack, model, &theme)
+        .map_err(|err| map_render_failure(&template_ref, &pack.manifest.id, err.cause()))
+}
+
+fn embedded_default_failure(error: EmbeddedDefaultError) -> ErrorBody {
+    debug_assert_eq!(error.code(), "DOCLI.INTERNAL");
+    ErrorBody::internal_with_action(error.cause(), error.suggested_action())
+}
+
+/// Embedded packs stay `DOCLI.INTERNAL`. Directory packs use `templates validate`.
+fn map_render_failure(template: &TemplateRef, pack_id: &PackId, cause: &str) -> ErrorBody {
+    match template {
+        TemplateRef::Bundled(_) => ErrorBody::internal_with_action(cause, EMBEDDED_PACK_RECOVERY),
+        TemplateRef::Dir(_) => ErrorBody::template_invalid(
+            cause,
             format!(
-                "Run `docli templates validate` on the `{}` template pack and fix the reported issue",
-                pack.manifest.id
+                "Run `docli templates validate` on the `{pack_id}` template pack and fix the reported issue"
             ),
-        )
-    })
+        ),
+    }
+}
+
+/// Installed extras omit bundled ids and `_`-prefixed starters.
+fn listed_extra(id: &PackId) -> bool {
+    !id.excluded_from_list() && id.to_bundled().is_none()
 }
 
 /// Parse `--theme` JSON into a [`ThemeMap`].
@@ -565,4 +588,95 @@ fn sha256_hex(bytes: &[u8]) -> String {
             let _ = write!(acc, "{byte:02x}");
             acc
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::contract::ErrorCode;
+    use crate::schema::CliModel;
+
+    fn demo_model() -> CliModel {
+        serde_json::from_str(r#"{"name":"demo"}"#).expect("model")
+    }
+
+    #[test]
+    fn omitted_template_and_theme_renders_embedded_default() {
+        let html = render_generate_html(&demo_model(), None, None).expect("render");
+        assert!(html.contains("id=\"docli-default-pack\""));
+    }
+
+    #[test]
+    fn omitted_template_failure_uses_embedded_recovery() {
+        let body = embedded_default_failure(EmbeddedDefaultError::internal("broken pack"));
+        assert_eq!(body.code, ErrorCode::Internal);
+        assert_eq!(body.details["cause"], "broken pack");
+        assert_eq!(body.suggested_action, EMBEDDED_PACK_RECOVERY);
+        assert!(!body.suggested_action.contains("Report this cause"));
+    }
+
+    #[test]
+    fn bundled_render_failure_is_internal() {
+        let body = map_render_failure(
+            &TemplateRef::bundled_default(),
+            &PackId::new("default").expect("id"),
+            "missing value",
+        );
+        assert_eq!(body.code, ErrorCode::Internal);
+        assert_eq!(body.suggested_action, EMBEDDED_PACK_RECOVERY);
+        assert!(!body.suggested_action.contains("templates validate"));
+        let cli_doc = map_render_failure(
+            &TemplateRef::bundled(BundledPackId::CliDoc),
+            &PackId::new("cli-doc").expect("id"),
+            "missing value",
+        );
+        assert_eq!(cli_doc.code, ErrorCode::Internal);
+        assert_eq!(cli_doc.suggested_action, EMBEDDED_PACK_RECOVERY);
+    }
+
+    #[test]
+    fn directory_render_failure_is_template_invalid() {
+        let dir = std::env::temp_dir().join(format!(
+            "docli-b10-render-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).expect("mkdir");
+        std::fs::write(
+            dir.join("template.toml"),
+            "id = \"custom\"\nname = \"custom\"\nversion = \"1\"\ndescription = \"custom\"\ntheme_schema = {}\n",
+        )
+        .expect("manifest");
+        std::fs::write(dir.join("page.html.j2"), "{{ missing_render_value }}").expect("page");
+        std::fs::write(dir.join("style.css.j2"), "body{}\n").expect("style");
+        std::fs::write(dir.join("script.js"), "").expect("script");
+        let template = TemplateRef::dir(&dir);
+        let err = render_generate_html(&demo_model(), Some(&template), None).expect_err("render");
+        assert_eq!(err.code, ErrorCode::TemplateInvalid);
+        assert!(err.suggested_action.contains("templates validate"));
+        assert!(err.suggested_action.contains("custom"));
+        assert!(!err.suggested_action.contains("embedded template pack"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn listed_extra_skips_starters_and_bundled_ids() {
+        assert!(!listed_extra(&PackId::new("_skeleton").expect("starter")));
+        assert!(!listed_extra(&PackId::new("default").expect("default")));
+        assert!(!listed_extra(&PackId::new("cli-doc").expect("cli-doc")));
+        assert!(listed_extra(&PackId::new("brand").expect("brand")));
+    }
+
+    #[test]
+    fn selector_parses_pack_id_once() {
+        let bundled = parse_template_selector("cli-doc").expect("cli-doc");
+        assert_eq!(bundled, TemplateRef::bundled(BundledPackId::CliDoc));
+        let missing = parse_template_selector("not-a-bundled-pack").expect_err("missing");
+        assert_eq!(missing.code, ErrorCode::TemplateNotFound);
+        let empty = parse_template_selector("").expect_err("empty");
+        assert_eq!(empty.code, ErrorCode::TemplateNotFound);
+    }
 }

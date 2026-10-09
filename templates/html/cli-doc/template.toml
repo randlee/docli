@@ -1,0 +1,18 @@
+# Embedded cli-doc pack (ADR-004, REQ-DOCLI-HTML-008).
+# Layout markers in page.html.j2 are absent from the default pack:
+# data-layout="two-column" and class="option-card".
+id = "cli-doc"
+name = "docli cli-doc"
+version = "1"
+description = "Two-column reference with option cards. Embedded alongside default."
+min_docli = "0.1.0"
+
+# Each key is an object: type, default, and description (AUTHOR.md).
+[theme_schema]
+bg = { type = "color", default = "#f6f8fa", description = "Page background" }
+fg = { type = "color", default = "#24292e", description = "Primary text" }
+border = { type = "color", default = "#e1e4e8", description = "Hairline borders" }
+accent = { type = "color", default = "#d73a49", description = "Primary accent" }
+muted = { type = "color", default = "#6a737d", description = "Secondary text" }
+card = { type = "color", default = "#ffffff", description = "Option card background" }
+font_body = { type = "string", default = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace", description = "Body font family" }

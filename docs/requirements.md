@@ -161,6 +161,28 @@ These rules apply to every language implementation.
   default pack MUST surface from `ops::generate` as `DOCLI.INTERNAL`.
   `resolve_pack` MUST classify a filesystem read failure as `DOCLI.IO`. This
   requirement MUST NOT introduce a `DOCLI.TEMPLATE_*` code.
+- `REQ-DOCLI-HTML-008`: the `cli-doc` HTML template pack is embedded in the
+  binary from `templates/html/cli-doc/`. `docli templates list` MUST include
+  it with `path` `embedded:cli-doc`. Rendering that pack MUST include layout
+  markers that the `default` pack does not emit: two-column layout markup
+  (`data-layout="two-column"`) and card option markup (`class="option-card"`).
+  The page MUST stay one self-contained file (inline CSS and JS, no external
+  stylesheet or script URL) and MUST embed `#docli-data` and `#docli-search`.
+  `html::render` without `--template` MUST still use `default`
+  (`REQ-DOCLI-HTML-007`).
+- `REQ-DOCLI-HTML-009`: `templates/html/_skeleton/` is an author starter, not
+  a bundled pack id. `docli templates validate` on that directory MUST succeed
+  and report id `_skeleton`. `docli templates list` MUST NOT include a pack
+  whose id is `_skeleton` or any other id that starts with `_`, including an
+  extra pack installed under `share/docli/templates`. Copy the starter and
+  change `id` before treating it as an installable extra.
+- `REQ-DOCLI-HTML-010`: `docs/templates/AUTHOR.md` documents the ADR-004
+  install layout (bundled packs embedded with `include_dir`;
+  `share/docli/templates` holds optional extra packs only) and the b.7
+  `theme_schema` object form (`type`, `default`, and `description` on every
+  key). `docs/templates/AGENT-PREVIEW.md` discovers `default` and `cli-doc`
+  and previews them with `--template` and `--theme`. Those docs use Phase B
+  requirement and sprint ids only.
 
 ## 7. Markdown Output
 
@@ -303,7 +325,10 @@ prompts.
   - `list` data includes `operation` (`"templates_list"`), `install_root`
     (optional extra packs at `<prefix>/share/docli/templates`), and `templates`.
     Each template has `id`, `name`, `version`, and `path`. The embedded
-    `default` pack is always listed. Its `path` is `embedded:default`. Extra
+    `default` pack is always listed. Its `path` is `embedded:default`. The
+    embedded `cli-doc` pack is listed as `embedded:cli-doc`
+    (`REQ-DOCLI-HTML-008`). A pack id that starts with `_`, including
+    `_skeleton`, is omitted (`REQ-DOCLI-HTML-009`). Extra
     directories that fail to load are omitted; `validate` reports that failure.
     A missing install root is an empty extra list.
   - `show` data includes `operation` (`"templates_show"`), `id`, `manifest`
@@ -396,9 +421,9 @@ sprint’s PR. An index row is not a substitute for the body.
 | `REQ-DOCLI-HTML-005` | Search keeps matching nested commands and ancestors | section 6 | ADR-002 |
 | `REQ-DOCLI-HTML-006` | Default HTML directory is `site/cli` | section 6 | ADR-002 |
 | `REQ-DOCLI-HTML-007` | Embedded `default` template pack; byte match without `--template` | section 6 | ADR-004 |
-| `REQ-DOCLI-HTML-008` | `cli-doc` pack layout markers, still self-contained | text lands in sprint b.10 | — |
-| `REQ-DOCLI-HTML-009` | `_skeleton` validates and is omitted from `templates list` | text lands in sprint b.10 | — |
-| `REQ-DOCLI-HTML-010` | Author docs match the template pack schema | text lands in sprint b.10 | ADR-004 (b.7) |
+| `REQ-DOCLI-HTML-008` | `cli-doc` pack layout markers, still self-contained | section 6 | ADR-004 |
+| `REQ-DOCLI-HTML-009` | `_skeleton` validates and is omitted from `templates list` | section 6 | ADR-004 |
+| `REQ-DOCLI-HTML-010` | Author docs match the template pack schema | section 6 | ADR-004 |
 | `REQ-DOCLI-MD-001` | Flat Markdown reference, one section per command | section 7 | — |
 | `REQ-DOCLI-MD-002` | Markdown shipped with each language installer (later) | section 7 | — |
 | `REQ-DOCLI-GEN-001` | Same input bytes produce the same HTML and Markdown bytes | section 8 | ADR-002 |

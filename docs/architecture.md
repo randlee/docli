@@ -149,19 +149,22 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
 
 **Status**: Accepted
 
-**Requirements**: `REQ-DOCLI-HTML-007`
+**Requirements**: `REQ-DOCLI-HTML-007`, `REQ-DOCLI-HTML-008`, `REQ-DOCLI-HTML-009`, `REQ-DOCLI-HTML-010`
 
 **Amends**: ADR-001
 
 **Decision**
 
 - Bundled HTML packs are compiled into the `docli` binary with `include_dir`.
-  Phase B ships the `default` pack from `templates/html/default/`
-  (`template.toml`, `page.html.j2`, `style.css.j2`, `script.js`). `cargo install`
-  renders `default` from those embedded bytes. It does not read `default` from
-  disk.
+  Phase B embeds `default` from `templates/html/default/` and `cli-doc` from
+  `templates/html/cli-doc/`. Each pack is `template.toml`, `page.html.j2`,
+  `style.css.j2`, and `script.js`. `cargo install` renders those packs from
+  the embedded bytes. It does not read `default` or `cli-doc` from disk.
+- `templates/html/_skeleton/` is an author starter. It is not a bundled id.
+  `templates validate` accepts that directory. `templates list` omits pack ids
+  that start with `_` (`REQ-DOCLI-HTML-009`).
 - `share/docli/templates` holds **optional extra** packs only. It is not the
-  source of `default`.
+  source of `default` or `cli-doc`.
 - `html::render(&CliModel) -> String` renders the embedded `default` pack with
   the theme defaults in that pack's `theme_schema`. It does not take a template
   id or a theme override.
@@ -169,7 +172,8 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
   directory, and only `ops::generate` returns the version `"1"` envelope for
   that choice (`REQ-DOCLI-CLI-012`). `html::render` still takes only `&CliModel`.
   `docli templates` lists, shows, and validates packs (`REQ-DOCLI-CLI-011`).
-- Failures while rendering the embedded `default` pack are `DOCLI.INTERNAL`.
+- Failures while rendering an embedded pack (`default` or `cli-doc`) are
+  `DOCLI.INTERNAL`.
   A filesystem read of a pack directory is `DOCLI.IO`. The embedded pack does
   not perform that read. A filesystem pack whose manifest or templates do not
   compile is `DOCLI.TEMPLATE_INVALID`. An unknown bundled id, and a pack id
@@ -177,6 +181,9 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
   `DOCLI.TEMPLATE_NOT_FOUND`.
 - The default page root element carries `id="docli-default-pack"`. That marker
   is written only in `templates/html/default/page.html.j2`.
+- The `cli-doc` page includes `data-layout="two-column"` and
+  `class="option-card"`. Those markers are not in the `default` pack. The page
+  still embeds `#docli-data` and `#docli-search` (`REQ-DOCLI-HTML-008`).
 - ADR-002 is unchanged: the pack embeds `#docli-data` and `#docli-search`, and
   the search JSON still comes from `search_index`.
 
