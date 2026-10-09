@@ -74,7 +74,7 @@ From **b.8** onward also: `cargo test --test template_contract`.
 
 ## Requirement index rule
 
-Section 11 lists every Phase B `REQ-DOCLI-*` at **b.1** with sprint ownership notes. Sprints **b.7–b.11** add requirement bodies and touch the index row in the same PR.
+Section 11 lists every Phase B `REQ-DOCLI-*` at **b.1** with sprint ownership notes. Sprints **b.7–b.11** landed requirement bodies in `docs/requirements.md` (sections 6, 8, and 9) and updated the matching index rows in the same PRs.
 
 ## Phase-end QA
 
