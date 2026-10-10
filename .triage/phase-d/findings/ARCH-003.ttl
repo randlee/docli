@@ -1,0 +1,41 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/ARCH-003>
+  a triage:Finding ;
+  triage:findingId "ARCH-003" ;
+  triage:title "ADR pin requires a package reference later sprints forbid" ;
+  triage:description "The ADR-005 bullet that d.1 will paste says project files must repeat the System.CommandLine version and the TFM. d.3 allows the package reference only on dotnet/src/Docli/Docli.csproj and forbids it on Docli.Tests. d.4 and d.5 forbid a direct System.CommandLine package reference on Docli.Tool and Docli.Sample. Those project files cannot both repeat the package version and omit the package reference." ;
+  triage:triageMode "initial_pass" ;
+  triage:category "architecture" ;
+  triage:phaseId "phase-d" ;
+  triage:severity "blocking" ;
+  triage:repeatable true ;
+  triage:sweepScope "workspace" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ARCH-003/plan-phase-d/1> ;
+  triage:openOn <urn:atm:triage:worktree/plan-phase-d/93316b0b> ;
+  triage:promoteTo <urn:atm:triage:worktree/plan-phase-d/93316b0b> ;
+  triage:triagedAt "2026-10-10T08:05:00Z"^^xsd:dateTime .
+
+<urn:atm:triage:occurrence/ARCH-003/plan-phase-d/1>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 54 ;
+  triage:snippet "This ADR is the only normative pin. Project files must repeat the same System.CommandLine version and TFM. A pin change edits the ADR first." ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "93316b0b00dcf5e751a1d24c0274aa653be7fc62" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/93316b0b> .
+
+<urn:atm:triage:worktree/plan-phase-d/93316b0b>
+  a triage:WorktreeSnapshot ;
+  triage:branch "plan/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/plan/phase-d" ;
+  triage:headSha "93316b0b00dcf5e751a1d24c0274aa653be7fc62" ;
+  triage:orderIndex 0 .
