@@ -1,0 +1,78 @@
+# Phase D — System.CommandLine JSON, Rust HTML (`integrate/phase-d`)
+
+Sprint docs here are the **authority** for deliverables, acceptance, and validation.
+[`docs/requirements.md`](../../requirements.md) and [`docs/architecture.md`](../../architecture.md)
+are product baselines. Git workflow: [`docs/plans/project-plan.md`](../project-plan.md).
+
+Planning branch: `plan/phase-d` (PR target `develop`). Execution trunk after the plan merges: `integrate/phase-d`.
+
+## Pipeline
+
+1. A library under `dotnet/` walks a `System.CommandLine` tree and writes the same neutral JSON that `docli::clap_model::from_clap` writes (`CliModel`, `OptionSpec`, `ArgumentSpec` in `src/schema.rs`, snake_case, unknown fields preserved).
+2. The Rust command `docli generate --input <that-json>` writes the HTML. `--markdown` stays on that same Rust command.
+3. A console app under `dotnet/`, packed as a dotnet tool with command name `docli`, emits that JSON. It does not render HTML or Markdown.
+
+## Layout
+
+| Path | Sprint | Role |
+|------|--------|------|
+| `dotnet/Docli.sln` | d.2 (tool and sample projects added later) | Solution |
+| `dotnet/src/Docli/` | d.2 model and JSON; d.3 walker | Class library |
+| `dotnet/src/Docli.Tool/` | d.4 | Console app, `PackAsTool`, command name `docli` |
+| `dotnet/tests/Docli.Tests/` | d.2–d.5 | JSON parity, adapter, tool, HTML proof |
+| `dotnet/samples/Docli.Sample/` | d.5 | Sample command tree for the proof |
+
+## What Phase D closes
+
+- The .NET adapter JSON for a `System.CommandLine` tree (d.2–d.4)
+- A proof that the Rust `docli generate` command writes HTML, and still accepts `--markdown`, from that JSON (d.5)
+- The decision record for that boundary (d.1, `ADR-005`, `ARCH-RULE-010`)
+
+## What Phase D does not close
+
+- A .NET HTML or Markdown renderer
+- Porting the template engine
+- Go or Python adapters
+- An MCP wrapper
+- `REQ-DOCLI-PRODUCT-004`
+- The renderer sentence of `REQ-DOCLI-NET-001` (that id stays later)
+- `REQ-DOCLI-GEN-003`
+
+No sprint Closes section marks those items done. [`phase-c/README.md`](../phase-c/README.md) stays a retired bookmark: there is no Phase C release.
+
+## Sprint index
+
+| Sprint | Doc | Closes |
+|--------|-----|--------|
+| d.0 | [d0-integrate-branch.md](d0-integrate-branch.md) | Sync `develop` → `integrate/phase-d` |
+| d.1 | [d1-normative-baselines.md](d1-normative-baselines.md) | `ADR-005`, `ARCH-RULE-010` |
+| d.2 | [d2-cli-model-json.md](d2-cli-model-json.md) | JSON types for `ADR-005` |
+| d.3 | [d3-commandline-walker.md](d3-commandline-walker.md) | `FromCommand` walker |
+| d.4 | [d4-dotnet-tool-json.md](d4-dotnet-tool-json.md) | Tool command `docli model` |
+| d.5 | [d5-sample-rust-html-proof.md](d5-sample-rust-html-proof.md) | Sample tree + Rust HTML proof |
+
+Execution stacks use **`/sc-gh-stack`** on trunk **`integrate/phase-d`** after operator **go**.
+
+## Host gate (implementation sprints only)
+
+Not **d.0**. **d.1** is docs only: its Required Validation is the gate (the solution does not exist yet).
+
+**d.2** through **d.5**, from repo root:
+
+```text
+dotnet test dotnet/Docli.sln -c Release
+dotnet build dotnet/Docli.sln -c Release
+git diff --check
+```
+
+**d.5** also:
+
+```text
+cargo test
+cargo clippy --all-targets --all-features -- -D warnings
+cargo fmt --check
+```
+
+## Phase-end QA
+
+After **d.5** merges to `integrate/phase-d`, run **quality-mgr** once, then merge **`integrate/phase-d` → `develop`**. d.5 does not depend on QA completing first.
