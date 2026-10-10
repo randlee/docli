@@ -43,11 +43,13 @@ No requirement id.
 
 ## Required Validation
 
+Neither path checks out a branch in the primary worktree. A branch is never checked out in two worktrees.
+
 First time, when `origin/integrate/phase-d` does not exist:
 
 ```text
 git fetch origin develop
-git checkout -b integrate/phase-d origin/develop
+git branch integrate/phase-d origin/develop
 git push -u origin integrate/phase-d
 git worktree add ../docli-worktrees/integrate/phase-d integrate/phase-d
 git merge-base --is-ancestor origin/develop origin/integrate/phase-d
@@ -55,16 +57,13 @@ git ls-tree -r origin/integrate/phase-d --name-only | rg '^docs/plans/phase-d/RE
 git worktree list
 ```
 
-When the branch already exists, merge. Do not recreate or reset without operator approval:
+When the branch already exists, merge inside its worktree. Do not recreate or reset without operator approval. If the worktree row is missing, run `git worktree add ../docli-worktrees/integrate/phase-d integrate/phase-d` first, then:
 
 ```text
 git fetch origin develop integrate/phase-d
-git checkout integrate/phase-d
-git merge origin/develop
-git push origin integrate/phase-d
+git -C ../docli-worktrees/integrate/phase-d merge origin/develop
+git -C ../docli-worktrees/integrate/phase-d push origin integrate/phase-d
 git merge-base --is-ancestor origin/develop origin/integrate/phase-d
 git ls-tree -r origin/integrate/phase-d --name-only | rg '^docs/plans/phase-d/README.md$'
 git worktree list
 ```
-
-If the worktree row already exists, skip `git worktree add`.

@@ -15,7 +15,7 @@ A sample `System.CommandLine` tree becomes JSON through `FromCommand`, and the R
 
 ## Closes
 
-No requirement id. This sprint implements the HTML proof named by `ADR-005`. The Rust generator is already on `develop`.
+`REQ-DOCLI-NET-002` — the sample command tree and the Rust `docli generate` HTML and Markdown proof. The Rust generator is already on `develop`. This sprint does not close `REQ-DOCLI-NET-001`.
 
 ## Hard Dependencies
 
@@ -37,7 +37,7 @@ public static class SampleCommands
 ```
 
 - `Create()` returns command name `sample`, description `Sample command tree`, with option `Option<string>("--output", "-o")` (`Description` `Write output to PATH`, `HelpName` `PATH`, `Required` false) and subcommand `run`, description `Run the thing`. No arguments and no further subcommands.
-- `Sample_json_generates_html_and_markdown` writes `CliModelJson.Serialize(CommandLineAdapter.FromCommand(SampleCommands.Create()))` to a temp file and calls `RustDocli.Generate` from d.4: `RustDocli.Generate(RepoRoot.Find(), json, dir, md, TimeSpan.FromSeconds(180))`. It does not choose between `target/debug/docli` and `cargo run` itself. It does not compare HTML bytes to `fixtures/contract/index.html`.
+- `Sample_json_generates_html_and_markdown` writes `CliModelJson.Serialize(CommandLineAdapter.FromCommand(SampleCommands.Create()))` to a temp file and calls `RustDocli.Generate` from d.4: `RustDocli.Generate(RepoRoot.Find(), json, dir, md, TimeSpan.FromSeconds(180))`. It does not choose between `target/debug/docli` and `cargo run` itself. It does not compare HTML bytes to `fixtures/contract/index.html`. `cargo build --bin docli` in Required Validation runs immediately before this test.
 
 ## Out of Scope
 
@@ -48,13 +48,17 @@ public static class SampleCommands
 
 ## Acceptance Criteria
 
-- `RustDocli.Generate` returns 0
-- `<dir>/index.html` exists and contains `id="docli-data"`, `sample`, `--output`, and `run`
+- `RustDocli.Generate(...).ExitCode` is 0
+- The `id="docli-data"` JSON deserializes to the same `CliModel` the sample produced: name `sample`, an option whose `long` is `--output`, and a subcommand named `run`
+- `<dir>/index.html` contains `<title>sample CLI Reference</title>`
 - `<md>` exists and contains `# sample CLI Reference` and `` `sample run` ``
-- `rg` under `dotnet/` finds no `html::render`, `page.html.j2`, or `MiniJinja`
+- The `ARCH-RULE-010` gate from d.1 passes on `dotnet/src` and `dotnet/samples`
 
 ## Required Validation
 
 - Phase D host gate for d.4 and d.5 — [README.md](README.md)
+- `cargo build --bin docli` immediately before the filtered `dotnet test` below. A filtered test without that build is not a valid proof.
 - `dotnet test dotnet/Docli.sln -c Release --filter Sample_json_generates_html_and_markdown`
-- `rg -n "html::render|page\\.html\\.j2|MiniJinja" dotnet` returns no matches. `rg` skips gitignored paths, including the d.2 `dotnet/**/bin/` and `dotnet/**/obj/` rules
+- `rg -n 'html::render|markdown::render|MiniJinja|\.j2|<!DOCTYPE|<html|CLI Reference|Scriban|Fluid|Razor' dotnet/src dotnet/samples` exits 1
+- `find dotnet -type d -name templates -print` prints nothing
+- `rg -n 'Include=.*\.(html|md)' dotnet/src dotnet/samples -g '*.csproj'` exits 1. These three commands are the `ARCH-RULE-010` gate. They do not scan `dotnet/tests`.

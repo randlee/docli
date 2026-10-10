@@ -11,11 +11,11 @@ target: integrate/phase-d
 
 ## Goal
 
-The `Docli` class library deserializes and serializes the neutral model with the snake_case names in `src/schema.rs`.
+The `Docli` class library deserializes and serializes the neutral model with the snake_case names in `src/schema.rs`. Parity here means the contract-fixture fields and the schema field set, not serde's error behavior.
 
 ## Closes
 
-No requirement id. This sprint implements the JSON types named by `ADR-005`. It does not implement the walker, the tool, or the HTML proof.
+`REQ-DOCLI-NET-002` — the JSON types and the schema field names for `CliModel`, `OptionSpec`, and `ArgumentSpec`. It does not implement the walker, the tool, or the HTML proof.
 
 ## Hard Dependencies
 
@@ -69,7 +69,9 @@ public static class RepoRoot
 
   `Find` starts at the test assembly directory and walks parents until a directory contains `Cargo.toml`. If none does, it throws `DirectoryNotFoundException`.
 - `dotnet/tests/Docli.Tests/CliModelJsonTests.cs` references the library and opens `fixtures/contract/model.json` under `RepoRoot.Find()`.
-- Public types in namespace `Docli`. JSON names are the `[JsonPropertyName]` values. CLR names are the property names. Missing `name` fails deserialize with `JsonException`. Every other field uses the `src/schema.rs` default: null for optional strings and counts, `""` for strings, `false` for `required`, empty lists for collections. Unknown keys (names that are not known properties) round-trip through `Extra`. A second copy of a known property name is a `JsonException` from the serializer, not an `Extra` entry.
+- Public types in namespace `Docli`. JSON names are the `[JsonPropertyName]` values. CLR names are the property names. Missing `name` fails deserialize with `JsonException`. Every other field uses the `src/schema.rs` default: null for optional strings and counts, `""` for strings, `false` for `required`, empty lists for collections. Unknown keys (names that are not known properties) round-trip through `Extra`.
+- `Schema_fields_match_src_schema_rs` and `RoundTrip_all_fields` are `[Fact]` methods in `CliModelJsonTests`. `Schema_fields_match_src_schema_rs` reads `src/schema.rs` through `RepoRoot.Find()`. For `pub struct CliModel`, `pub struct OptionSpec`, and `pub struct ArgumentSpec` it collects the `pub` field names and drops `extra`. It asserts set equality with the `[JsonPropertyName]` values on the matching C# type. Reflection in this test is allowed (`GetProperties` and `JsonPropertyNameAttribute`). The library project does not use reflection.
+- `dotnet/tests/Docli.Tests/Fixtures/all-fields.json` sets every schema field except `extra`: root `name`, `version`, `description`, `long_description`, `epilogue`, `usage`, and one unknown key; one option with `name`, `long`, `short`, `help`, `long_help`, `value_name`, `required` true, `default_value`, a non-empty `choices`, `min_values`, `max_values`, and one unknown key; one argument with `name`, `help`, `required`, `default_value`, `choices`, and one unknown key; one subcommand with `name` and one unknown key. `RoundTrip_all_fields` deserializes that file, serializes, deserializes again, and the two models match, including `Extra`.
 
 ```csharp
 namespace Docli;
@@ -189,6 +191,8 @@ public static class CliModelJson
 - `System.CommandLine`, `CommandLineAdapter`, the dotnet tool, the sample, Rust edits under `src/` or `templates/`
 - A .NET CI job (host gate only)
 - Byte-identical output against `fixtures/contract/model.json` (that file omits defaults; comparison is semantic)
+- Byte-identical output with `from_clap` for an arbitrary tree, and a live clap dump harness
+- Serde error behavior that System.Text.Json does not match by default: explicit JSON `null` on a non-optional string (`name`, `description`, and the other non-nullable strings), duplicate keys in one JSON object, and wrong-typed values. This sprint does not set `RespectNullableAnnotations` or `AllowDuplicateProperties`. It does not claim those inputs throw. It does not claim an `Extra` key that repeats a known property name throws on serialize.
 
 ## Acceptance Criteria
 
@@ -199,6 +203,8 @@ public static class CliModelJson
 - `RoundTrip_preserves_unknown_fields`: keys `vendor_ext` on the root, `vendor_opt` on an option, `vendor_arg` on an argument, and `vendor_sub` on a nested subcommand survive `Deserialize` then `Serialize`
 - `Missing_name_is_rejected`: a command object without `name` throws `JsonException`
 - `Omitted_defaults_match_serde`: omitted `version` is null, omitted `required` is false, omitted `options` is empty, and `Serialize` writes `"version": null` when `Version` is null
+- `Schema_fields_match_src_schema_rs`: the `pub` field names of `CliModel`, `OptionSpec`, and `ArgumentSpec` in `src/schema.rs`, excluding `extra`, equal the `[JsonPropertyName]` sets
+- `RoundTrip_all_fields`: `Fixtures/all-fields.json` round-trips with `long_help`, `min_values`, `max_values`, `default_value`, and `choices` preserved
 
 ## Required Validation
 

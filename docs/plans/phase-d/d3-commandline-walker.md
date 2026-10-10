@@ -15,7 +15,7 @@ target: integrate/phase-d
 
 ## Closes
 
-No requirement id. This sprint implements the walker named by `ADR-005`. It does not add the tool or the HTML proof.
+`REQ-DOCLI-NET-002` — `FromCommand` for a host app's own `System.CommandLine` tree. It does not add the tool or the HTML proof.
 
 ## Hard Dependencies
 
@@ -26,6 +26,7 @@ No requirement id. This sprint implements the walker named by `ADR-005`. It does
 - `dotnet/src/Docli/Docli.csproj` gains `PackageReference` `System.CommandLine` at the ADR-005 package pin only. No 3.0 preview. Do not restate the version number in this sprint.
 - `dotnet/src/Docli/CommandLineAdapter.cs` and `dotnet/tests/Docli.Tests/CommandLineAdapterTests.cs`. Every test below is a `[Fact]` in `CommandLineAdapterTests`. The class is not split.
 - `Docli.Tests` references `Docli.csproj` only. It does not take its own `System.CommandLine` package reference and does not add test packages (d.2 pins those).
+- Public surface of package pin 2.0.12 (tag `v2.0.12`), which this plan checked: `VersionOption` is `public sealed class`; `HelpOption` is `public sealed class`; `Option.GetDefaultValue`, `Option.HasDefaultValue`, `Option.Recursive`, and `Option.ValueType` are public; `Argument.GetDefaultValue` and `Argument.HasDefaultValue` are public; `Command.Options`, `Command.Arguments`, and `Command.Subcommands` are public. The walker reads only those public members plus `Name`, `Aliases`, `Description`, `HelpName`, `Required`, `Arity`, and `Hidden`. `option is VersionOption` stays, because that type is public. If a named member is not public when d.3 compiles against the pin, stop and update `ADR-005`. Reflection is not a fallback.
 - This is the only signature source for the adapter:
 
 ```csharp
@@ -43,7 +44,7 @@ public static class CommandLineAdapter
 - The `command` argument is the walk root. Its parents are not walked. `Hidden` on that root does not drop it. `version` is written only on the returned root. Every nested subcommand model has `version` null. The method does not read the entry assembly.
 - Walk `command.Options`, `command.Arguments`, and `command.Subcommands` only. Do not copy a parent option whose `Option.Recursive` is true onto a child. Do not read `RootCommand.Directives`.
 - Drop an option when `option is System.CommandLine.Help.HelpOption` or `option is VersionOption`. Drop a subcommand when `Command.Hidden` is true, and do not walk its descendants. A hidden option stays. A hidden argument stays.
-- After mapping, sort `options`, `arguments`, and `subcommands` by `name` with `StringComparer.Ordinal`.
+- After mapping, sort `options`, `arguments`, and `subcommands` with a stable sort: `OrderBy` and `StringComparer.Ordinal`. When two derived names compare equal, keep declaration order.
 - `ArgumentSpec` has only `name`, `help`, `required`, `default_value`, and `choices`. Argument `HelpName` is not mapped. Arguments have no `value_name`, `min_values`, or `max_values`. The flag rule applies only to options.
 
 | Kind | JSON field | Public member | Rule |
@@ -74,7 +75,7 @@ public static class CommandLineAdapter
 | argument | `choices` | `Argument.ValueType` | Same enum rule as options |
 
 - Flag rule, options only: `Option.ValueType == typeof(bool)` and both `Option.Arity.MinimumNumberOfValues` and `Option.Arity.MaximumNumberOfValues` are 0. Then `value_name`, `min_values`, and `max_values` are null. Otherwise those counts are the arity ints as JSON numbers. Do not rewrite large maxima. A default-arity `Option<bool>` leaves arity unset, so `min_values` and `max_values` are that option's `Option.Arity` minimum and maximum, and `value_name` is null when `HelpName` is null.
-- Default conversion, for `Option.GetDefaultValue()` or `Argument.GetDefaultValue()`: `HasDefaultValue` false yields null. A null return yields null. `bool` and `bool?` yield `"true"` or `"false"` (not `bool.ToString()`, which is `True`/`False`). `string` yields the raw string, so `x` stays `x` and is not `"\"x\""`. Any other `IFormattable` uses `ToString(null, CultureInfo.InvariantCulture)`. Anything else is the JSON text of the value, stored as one string. An exception from `GetDefaultValue()` or from `DefaultValueFactory` propagates unchanged.
+- Default conversion, for `Option.GetDefaultValue()` or `Argument.GetDefaultValue()`: `HasDefaultValue` false yields null. A null return yields null. `bool` and `bool?` yield `"true"` or `"false"` (not `bool.ToString()`, which is `True`/`False`). `string` yields the raw string, so `x` stays `x` and is not `"\"x\""`. Any other `IFormattable` uses `ToString(null, CultureInfo.InvariantCulture)`. Anything else uses `JsonSerializer.Serialize(value, value.GetType(), CompactDefaultValueOptions)`, where `CompactDefaultValueOptions` is `WriteIndented = false` and otherwise the constructor defaults (`PropertyNamingPolicy` null). That call is the only reflection-based serialization in the adapter. It does not read `System.CommandLine` members. An exception from `GetDefaultValue()` or from `DefaultValueFactory` propagates unchanged. `string[] { "a", "b" }` yields `["a","b"]`. A public type with public property `N` set to 3 yields `{"N":3}`.
 - Choices: if `ValueType.IsEnum`, `Enum.GetNames(ValueType)` in metadata order. If `Nullable.GetUnderlyingType(ValueType)` is an enum, `Enum.GetNames` of that type. Otherwise `[]`. Do not read `CompletionSources`.
 - Usage is the concatenation of `Usage: `, the full path, then the suffixes. The full path is `Command.Name` values from the walk root down to the current command, joined by single spaces. Append ` [OPTIONS]` when any option remains after the help/version drop. Append arguments in `Command.Arguments` order, before the name sort: ` <{name}>` when that argument is required, otherwise ` [{name}]`. Append ` <COMMAND>` when any subcommand remains after the hidden drop. Examples, exact: root `sample` with one option and subcommand `run` and no arguments is `Usage: sample [OPTIONS] <COMMAND>`; that child with nothing of its own is `Usage: sample run`; required argument `config` then optional argument `label`, with no options and no subcommands, is `Usage: sample <config> [label]`.
 
@@ -105,11 +106,13 @@ public static class CommandLineAdapter
 - `Null_description_becomes_empty_string`: null `Description` on a command, option, and argument becomes `""`, and `long_description`, `epilogue`, and `long_help` are `""`
 - `Version_argument_is_only_on_the_root_model`: `FromCommand(cmd, "1.2.3")` sets root `version` `1.2.3` and a child `version` null. Passing a non-root command makes that command the walk root
 - `Sorts_options_arguments_and_subcommands_by_name`: declaration order `b` then `a` serializes as `a` then `b`
+- `Duplicate_names_keep_declaration_order`: options `--v` then `-v` both derive name `v` and stay in that declaration order
+- `Maps_collection_and_custom_defaults`: a `string[]` default `{ "a", "b" }` yields `["a","b"]`, and a public type whose public property `N` is 3 yields `{"N":3}`
 - `Argument_required_follows_arity`: an argument with `Arity` `ArgumentArity.ExactlyOne` has `required` true; `ArgumentArity.ZeroOrOne` has `required` false
-- `CommandLineAdapter.cs` contains no `GetField`, `GetProperty`, `BindingFlags`, or `NonPublic`
+- `CommandLineAdapter.cs` matches none of the banned constructs. Allowed calls that the pattern does not hit: `Nullable.GetUnderlyingType`, `Type.IsEnum`, `Enum.GetNames`, and `JsonSerializer.Serialize` in the default-value fallback.
 
 ## Required Validation
 
 - Phase D host gate for d.2 and d.3 — [README.md](README.md)
 - `dotnet test dotnet/Docli.sln -c Release --filter CommandLineAdapterTests`
-- `rg -n "GetField|GetProperty|BindingFlags|NonPublic" dotnet/src/Docli/CommandLineAdapter.cs` returns no matches
+- `rg -n "System\.Reflection|GetField|GetProperty|GetMethod|GetMember|GetCustomAttribute|BindingFlags|NonPublic|Activator|\bdynamic\b|(is|as) +(System\.CommandLine\.)?(Option|Argument)<|\((System\.CommandLine\.)?(Option|Argument)<" dotnet/src/Docli/CommandLineAdapter.cs` returns no matches. `option is VersionOption` and `option is HelpOption` are type tests on those public classes and are not this pattern.
