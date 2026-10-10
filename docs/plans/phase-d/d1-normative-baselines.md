@@ -13,6 +13,8 @@ target: integrate/phase-d
 
 `docs/requirements.md` and `docs/architecture.md` state that Phase D owns the System.CommandLine adapter JSON and the Rust HTML proof, and that a .NET renderer stays later.
 
+This planning branch (`plan/phase-d`) does not edit `docs/requirements.md` or `docs/architecture.md`. d.1 is the first execution sprint and writes those texts before d.2. A planning review treats the d.1 specification as the deliverable for that baseline. The absence of `REQ-DOCLI-NET-002` in the current baseline is the d.1 execution job, not a missing planning deliverable.
+
 ## Closes
 
 - `ADR-005` (decision record text in `docs/architecture.md`)
@@ -26,9 +28,10 @@ target: integrate/phase-d
 ## Deliverables
 
 - [`docs/requirements.md`](../../requirements.md) header: normative scope is **Phase A, Phase B, and Phase D** unless marked **(later)**. The Phase D adapter paragraph in section 5 is normative for Phase D. `REQ-DOCLI-NET-001` stays **(later)**.
-- Each sentence checked by a Required Validation `rg` is one physical line in the target file. Do not hard-wrap inside it. That includes the header phrase `Phase A, Phase B, and Phase D`, the section 5 sentence `Phase D does not implement this sentence and does not close this id`, the `REQ-DOCLI-NET-002` bullet (including `walks a System.CommandLine.Command`, `schema field set and snake_case names`, `docli generate --input`, `docli model`, and `can shadow the Rust`), the system overview sentence, the section 11 `REQ-DOCLI-NET-001` row, the section 11 `REQ-DOCLI-NET-002` row, and the `ARCH-RULE-010` table row.
+- Each sentence checked by a Required Validation `rg` is one physical line in the target file. Do not hard-wrap inside it. That includes the header phrase `Phase A, Phase B, and Phase D`, the section 5 lead-in `Each language adapter walks its native command definition and emits CliModel JSON. Phase D's .NET adapter does not render. HTML and Markdown bytes for that JSON come from the Rust generator.`, the section 5 sentence `Phase D does not implement this sentence and does not close this id`, the `REQ-DOCLI-NET-002` bullet (including `walks a System.CommandLine.Command`, `schema field set and snake_case names`, `docli generate --input`, `docli model`, and `can shadow the Rust`), the system overview sentence, the section 11 `REQ-DOCLI-NET-001` row, the section 11 `REQ-DOCLI-NET-002` row, and the `ARCH-RULE-010` table row.
 - Section 2 phases table gains a Phase D row. Closes cell text, exact: `REQ-DOCLI-NET-002: host FromCommand JSON, the tool's own docli model JSON, and Rust docli generate --input HTML`. Does-not-close cell text, exact: `a .NET HTML or Markdown renderer, a template-engine port, Go, Python, MCP, NuGet publish, and a tool that walks a third-party app`.
 - Section 2 Later row names these as still later: `REQ-DOCLI-GO-001`, `REQ-DOCLI-PY-001`, the renderer sentence of `REQ-DOCLI-NET-001`, `REQ-DOCLI-PRODUCT-004`, `REQ-DOCLI-GEN-003`, and `REQ-DOCLI-MD-002`. `REQ-DOCLI-NET-002` is not in that Later cell.
+- Section 5 replaces the lead-in `Each language walks its native command definition and emits the neutral model, then renders that model with that language's generator.` with this one physical line: `Each language adapter walks its native command definition and emits CliModel JSON. Phase D's .NET adapter does not render. HTML and Markdown bytes for that JSON come from the Rust generator.` An adapter emits `CliModel` JSON. Phase D's .NET adapter does not render. HTML and Markdown bytes for that JSON come from the Rust generator. Per-language generators stay on the later `REQ-DOCLI-NET-001`, `REQ-DOCLI-GO-001`, and `REQ-DOCLI-PY-001` bullets. Do not edit the `REQ-DOCLI-GO-001` or `REQ-DOCLI-PY-001` bullets. The replacement `REQ-DOCLI-NET-001` bullet keeps `a .NET generator renders the neutral JSON to the shared HTML and Markdown.`
 - Section 5 replaces the single `REQ-DOCLI-NET-001` bullet with these two bullets, each one physical line:
   - `REQ-DOCLI-NET-001` (later): a .NET generator renders the neutral JSON to the shared HTML and Markdown. Phase D does not implement this sentence and does not close this id.
   - `REQ-DOCLI-NET-002`: a library under `dotnet/` walks a `System.CommandLine.Command` and writes the snake_case JSON documented by `REQ-DOCLI-INPUT-001` through `REQ-DOCLI-INPUT-005` and `src/schema.rs` (`CliModel`, `OptionSpec`, `ArgumentSpec`, unknown fields preserved). Same JSON means the schema field set and snake_case names, not byte-identical output with `from_clap` for an arbitrary tree. A host app emits its own tree by calling `Docli.CommandLineAdapter.FromCommand`. The Rust command `docli generate --input <that-json>` writes the HTML. `--markdown` remains a flag on that same Rust command. The dotnet tool whose command name is `docli` emits JSON only for the command tree it owns (`docli model`). It does not walk a third-party app and does not render HTML or Markdown. A global `dotnet tool install` shim named `docli` can shadow the Rust `docli` binary. This phase's tests and proofs invoke the built DLL or a local tool path, not a global install. `REQ-DOCLI-PRODUCT-004` stays later and must reconcile that shim when it is closed.
@@ -48,7 +51,7 @@ target: integrate/phase-d
 
 - Phase D .NET code writes CliModel JSON. It does not render HTML or Markdown and does not port the template engine.
 - The Rust binary remains the HTML and Markdown renderer. `docli generate --input <json>` writes HTML. `--markdown` stays on that command.
-- The dotnet tool command name is `docli`. It emits JSON only for its own tree (`docli model`). It does not implement `generate` or `show`, and it does not walk a third-party app. `FromCommand` is how a host app emits its own tree. Package and TFM pins in this decision are the only copy of those two values.
+- The dotnet tool command name is `docli`. It emits JSON only for its own tree (`docli model`). It does not implement `generate` or `show`, and it does not walk a third-party app. `FromCommand` is how a host app emits its own tree. This ADR is the only normative pin. Project files must repeat the same System.CommandLine version and TFM. A pin change edits the ADR first.
 - JSON object keys are the snake_case field names in `src/schema.rs`. Unknown keys are preserved. Same JSON means that schema field set and those snake_case names. It does not mean byte-identical output with `from_clap` for an arbitrary tree. This phase does not add a live clap dump harness.
 - C# types and the serializer are sprint d.2. `Docli.CommandLineAdapter.FromCommand` and its mapping are sprint d.3 (the only signature source). Tool argv is sprint d.4. The sample proof is sprint d.5.
 - Package System.CommandLine version 2.0.12 (stable 2.0 line, not a 3.0 preview). TFM net10.0.
@@ -63,6 +66,8 @@ target: integrate/phase-d
 - A global `dotnet tool install` shim named `docli` can shadow the Rust `docli` binary. This phase's tests and proofs invoke the built DLL or a local tool path, not a global install. `REQ-DOCLI-PRODUCT-004` stays later and must reconcile that shim when it is closed.
 - A .NET renderer, a template-engine port, Go, Python, and MCP need a later ADR.
 ```
+
+- Version and TFM numbers in that decision (`2.0.12`, `net10.0`) stay in the ADR. d.2 through d.5 name the ADR-005 pin and do not repeat those numbers.
 
 - `ARCH-RULE-010` row, one physical line, exactly three columns, no `|` inside any cell. Copy this line into the rules table:
 
@@ -96,13 +101,14 @@ rg -n 'Include=.*\.(html|md)' dotnet/src dotnet/samples -g '*.csproj'
 - The Phase D row Closes cell is `REQ-DOCLI-NET-002: host FromCommand JSON, the tool's own docli model JSON, and Rust docli generate --input HTML`
 - The Phase D row Does-not-close cell is `a .NET HTML or Markdown renderer, a template-engine port, Go, Python, MCP, NuGet publish, and a tool that walks a third-party app`
 - The Later row contains `REQ-DOCLI-GO-001`, `REQ-DOCLI-PY-001`, `REQ-DOCLI-NET-001`, `REQ-DOCLI-PRODUCT-004`, `REQ-DOCLI-GEN-003`, and `REQ-DOCLI-MD-002`
+- Section 5 lead-in is the one physical line `Each language adapter walks its native command definition and emits CliModel JSON. Phase D's .NET adapter does not render. HTML and Markdown bytes for that JSON come from the Rust generator.` The later `REQ-DOCLI-NET-001`, `REQ-DOCLI-GO-001`, and `REQ-DOCLI-PY-001` bullets still name their generators. The old lead-in `then renders that model with that language's generator` is gone.
 - Section 5 contains the sentence `Phase D does not implement this sentence and does not close this id` on `REQ-DOCLI-NET-001`. The `REQ-DOCLI-NET-002` bullet contains `walks a System.CommandLine.Command`, `schema field set and snake_case names`, `docli generate --input`, the tool command name `docli`, `docli model`, and `can shadow the Rust`
 - `REQ-DOCLI-NET-001` still shows `(later)`. `REQ-DOCLI-NET-002` does not show `(later)`
 - The section 11 summary for `REQ-DOCLI-NET-001` is `.NET renderer stays later. Phase D does not close this id.` and the ADR column stays `—`
 - The section 11 row for `REQ-DOCLI-NET-002` has summary `System.CommandLine tree to CliModel JSON; Rust renders` and ADR column `ADR-005`
 - The system overview contains `does not call html::render or markdown::render`
 - The ADR index contains `[ADR-005](#adr-005` with title `.NET emits CliModel JSON; Rust renders HTML` and status Accepted, and the body sits after ADR-004 and before `## Architectural rules`
-- `ADR-005` names sprint d.3 as the only signature source for `FromCommand`, names `REQ-DOCLI-NET-002`, contains `Package System.CommandLine version 2.0.12` and `TFM net10.0`, contains `schema field set and those snake_case names`, and contains `can shadow the Rust \`docli\` binary`
+- `ADR-005` names sprint d.3 as the only signature source for `FromCommand`, names `REQ-DOCLI-NET-002`, contains `Package System.CommandLine version 2.0.12` and `TFM net10.0`, contains `schema field set and those snake_case names`, and contains `can shadow the Rust \`docli\` binary`. It says this ADR is the only normative pin, that project files must repeat the same System.CommandLine version and TFM, and that a pin change edits the ADR first.
 - The `ARCH-RULE-010` row is one physical line with exactly three columns and no `|` inside a cell. It contains `must not render HTML or Markdown` and `listed directly under this table`. The pipe-containing patterns sit in the `### ARCH-RULE-010 gate` block, not in that row.
 - `REQ-DOCLI-NET-002` has no `(later)` on its section 5 bullet or its section 11 row
 - The arch-qa evaluation step says `ARCH-RULE-001–010`, and `ARCH-RULE-001–009` does not appear
@@ -115,6 +121,11 @@ rg -n "Phase A, Phase B, and Phase D" docs/requirements.md
 rg -n "REQ-DOCLI-NET-002: host FromCommand JSON, the tool's own docli model JSON, and Rust docli generate --input HTML" docs/requirements.md
 rg -n "a .NET HTML or Markdown renderer, a template-engine port, Go, Python, MCP, NuGet publish, and a tool that walks a third-party app" docs/requirements.md
 rg -n "REQ-DOCLI-GO-001.*REQ-DOCLI-PY-001.*REQ-DOCLI-NET-001.*REQ-DOCLI-PRODUCT-004.*REQ-DOCLI-GEN-003.*REQ-DOCLI-MD-002" docs/requirements.md
+rg -n "Each language adapter walks its native command definition and emits CliModel JSON. Phase D's .NET adapter does not render. HTML and Markdown bytes for that JSON come from the Rust generator." docs/requirements.md
+rg -n "then renders that model with that language's generator" docs/requirements.md
+rg -n "the Go generator renders" docs/requirements.md
+rg -n "a \.NET generator renders" docs/requirements.md
+rg -n "the Python generator renders" docs/requirements.md
 rg -n "Phase D does not implement this sentence and does not close this id" docs/requirements.md
 rg -n 'walks a `System.CommandLine.Command`' docs/requirements.md
 rg -n "docli model" docs/requirements.md
@@ -127,6 +138,9 @@ rg -n "does not call html::render or markdown::render" docs/architecture.md
 rg -n "\[ADR-005\]\(#adr-005" docs/architecture.md
 rg -n "Package System.CommandLine version 2.0.12" docs/architecture.md
 rg -n "TFM net10.0" docs/architecture.md
+rg -n "This ADR is the only normative pin" docs/architecture.md
+rg -n "Project files must repeat the same System.CommandLine version and TFM" docs/architecture.md
+rg -n "A pin change edits the ADR first" docs/architecture.md
 rg -n "ARCH-RULE-010" docs/architecture.md
 rg -n "must not render HTML or Markdown" docs/architecture.md
 rg -n "schema field set and those snake_case names" docs/architecture.md
@@ -147,4 +161,4 @@ rg -n '^\| `REQ-DOCLI-NET-001` .*\| — \|$' docs/requirements.md
 rg -n '^\| `REQ-DOCLI-NET-002` .*\| ADR-005 \|$' docs/requirements.md
 ```
 
-`rg -n "ARCH-RULE-001–009" docs/architecture.md` exits 1 (no matches). `rg -n '^\| \[ADR-005\].*Accepted' docs/architecture.md` exits 0. `rg -n '^### ADR-00[45]|^## Architectural rules' docs/architecture.md` exits 0, and the matches are `### ADR-004`, then `### ADR-005`, then `## Architectural rules`. `rg -n '^\| `REQ-DOCLI-NET-001` .*\| — \|$' docs/requirements.md` exits 0. `rg -n '^\| `REQ-DOCLI-NET-002` .*\| ADR-005 \|$' docs/requirements.md` exits 0. `rg -n '^\| \*\*ARCH-RULE-010\*\* \| ADR-005 \| [^|]+ \|$' docs/architecture.md` exits 0. `rg -n -F 'html::render|markdown::render|MiniJinja' docs/architecture.md` exits 0. `rg -n -F 'Include=.*\.(html|md)' docs/architecture.md` exits 0. `rg -n '^\| \*\*ARCH-RULE-010\*\*.*html::render\|' docs/architecture.md` exits 1. `rg -n '^\| \*\*ARCH-RULE-010\*\*.*Include=' docs/architecture.md` exits 1. `rg -n 'REQ-DOCLI-NET-002.*\(later\)' docs/requirements.md` exits 1. Every other `rg` command exits 0.
+`rg -n "ARCH-RULE-001–009" docs/architecture.md` exits 1 (no matches). `rg -n '^\| \[ADR-005\].*Accepted' docs/architecture.md` exits 0. `rg -n '^### ADR-00[45]|^## Architectural rules' docs/architecture.md` exits 0, and the matches are `### ADR-004`, then `### ADR-005`, then `## Architectural rules`. `rg -n '^\| `REQ-DOCLI-NET-001` .*\| — \|$' docs/requirements.md` exits 0. `rg -n '^\| `REQ-DOCLI-NET-002` .*\| ADR-005 \|$' docs/requirements.md` exits 0. `rg -n '^\| \*\*ARCH-RULE-010\*\* \| ADR-005 \| [^|]+ \|$' docs/architecture.md` exits 0. `rg -n -F 'html::render|markdown::render|MiniJinja' docs/architecture.md` exits 0. `rg -n -F 'Include=.*\.(html|md)' docs/architecture.md` exits 0. `rg -n '^\| \*\*ARCH-RULE-010\*\*.*html::render\|' docs/architecture.md` exits 1. `rg -n '^\| \*\*ARCH-RULE-010\*\*.*Include=' docs/architecture.md` exits 1. `rg -n 'REQ-DOCLI-NET-002.*\(later\)' docs/requirements.md` exits 1. `rg -n "then renders that model with that language's generator" docs/requirements.md` exits 1. Every other `rg` command exits 0.

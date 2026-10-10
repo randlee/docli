@@ -6,6 +6,8 @@ are product baselines. Git workflow: [`docs/plans/project-plan.md`](../project-p
 
 Planning branch: `plan/phase-d` (PR target `develop`). Execution trunk after the plan merges: `integrate/phase-d`.
 
+This planning branch does not edit [`docs/requirements.md`](../../requirements.md) or [`docs/architecture.md`](../../architecture.md). d.1 is the first execution sprint and writes those texts before d.2. A planning review treats the d.1 specification as the deliverable for that baseline. The absence of `REQ-DOCLI-NET-002` in the current baseline is the d.1 execution job, not a missing planning deliverable.
+
 ## Pipeline
 
 1. A host .NET app calls `Docli.CommandLineAdapter.FromCommand` on its own `System.CommandLine` tree. That library method writes `CliModel` JSON whose field set and snake_case names match `src/schema.rs` (`CliModel`, `OptionSpec`, `ArgumentSpec`, unknown fields preserved). "Same JSON" means that schema field set and those names. It does not mean byte-identical output with `from_clap` for an arbitrary tree. This phase does not add a live clap dump harness.
@@ -28,7 +30,7 @@ Planning branch: `plan/phase-d` (PR target `develop`). Execution trunk after the
 - `REQ-DOCLI-NET-002`: a `System.CommandLine` tree becomes `CliModel` JSON, and Rust `docli generate` renders it. This is an id split of the adapter half of `REQ-DOCLI-NET-001`, not a new feature. Portions: d.2 JSON types and schema field names; d.3 `FromCommand`; d.4 the tool's own `docli model` JSON; d.5 the sample proof. d.1 writes the requirement and `ADR-005` text and does not implement the adapter.
 - The tool's own `docli model` JSON, proven when Rust `docli generate --input` writes `index.html` from that file (d.4). Command name stays `docli`.
 - A sample-library proof: the sample calls `FromCommand`, then Rust `docli generate` writes HTML and still accepts `--markdown` (d.5). d.5 depends on d.4 because it calls `RustDocli.Generate`, which d.4 owns. This proof does not invoke the tool and does not read `docli model` output.
-- The decision record for that boundary (d.1, `ADR-005`, `ARCH-RULE-010`)
+- d.1 adds the decision record (`ADR-005`) and `ARCH-RULE-010` for that boundary.
 
 ## What Phase D does not close
 
