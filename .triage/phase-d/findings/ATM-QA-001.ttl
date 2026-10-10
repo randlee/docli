@@ -1,0 +1,378 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/ATM-QA-001>
+  a triage:Finding ;
+  triage:findingId "ATM-QA-001" ;
+  triage:title "Plans cite REQ-DOCLI-NET-002 before the baseline exists" ;
+  triage:description "Authoritative Phase D README and d.2-d.5 sprint Closes sections cite REQ-DOCLI-NET-002, but docs/requirements.md on this branch has no REQ-DOCLI-NET-002 body or index row. The requirements header still scopes normative text to Phase A and Phase B only. d.1 is specified to land that text during execution." ;
+  triage:phaseId "phase-d" ;
+  triage:category "requirements" ;
+  triage:severity "important" ;
+  triage:triageMode "initial_pass" ;
+  triage:repeatable true ;
+  triage:sweepScope "workspace" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:requirementId "REQ-DOCLI-NET-001" ;
+  triage:adrId "ADR-005" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/1> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/2> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/3> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/4> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/5> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/6> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/7> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/8> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/9> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/10> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/11> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/12> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/13> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/14> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/15> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/16> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/17> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/18> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/19> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/20> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/21> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/22> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/23> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/24> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/25> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/26> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/27> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/28> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/29> ;
+  triage:openOn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> ;
+  triage:promoteTo <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> ;
+  triage:triagedAt "2026-10-10T04:47:00Z"^^xsd:dateTime .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/1>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d4-dotnet-tool-json.md" ;
+  triage:line 18 ;
+  triage:snippet "`REQ-DOCLI-NET-002` — the tool's own `docli model` JSON." ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/2>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 20 ;
+  triage:snippet "Requirement text for `REQ-DOCLI-NET-002`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/3>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 29 ;
+  triage:snippet "the `REQ-DOCLI-NET-002` bullet" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/4>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 30 ;
+  triage:snippet "Section 2 phases table gains a Phase D row with `REQ-DOCLI-NET-002`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/5>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 31 ;
+  triage:snippet "`REQ-DOCLI-NET-002` is not in that Later cell" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/6>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 34 ;
+  triage:snippet "`REQ-DOCLI-NET-002`: a library under `dotnet/` walks a `System.CommandLine.Command`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/7>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 36 ;
+  triage:snippet "Section 11 gains a `REQ-DOCLI-NET-002` row" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/8>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 45 ;
+  triage:snippet "**Requirements**: REQ-DOCLI-NET-002" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/9>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 96 ;
+  triage:snippet "The Phase D row Closes cell is `REQ-DOCLI-NET-002`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/10>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 99 ;
+  triage:snippet "The `REQ-DOCLI-NET-002` bullet contains" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/11>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 100 ;
+  triage:snippet "`REQ-DOCLI-NET-002` does not show `(later)`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/12>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 102 ;
+  triage:snippet "The section 11 row for `REQ-DOCLI-NET-002`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/13>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 105 ;
+  triage:snippet "`ADR-005` names `REQ-DOCLI-NET-002`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/14>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 107 ;
+  triage:snippet "`REQ-DOCLI-NET-002` has no `(later)`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/15>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 115 ;
+  triage:snippet "rg -n \"REQ-DOCLI-NET-002: host FromCommand JSON" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/16>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 123 ;
+  triage:snippet "rg -n \"REQ-DOCLI-NET-002\" docs/requirements.md" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/17>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 134 ;
+  triage:snippet "rg -n \"REQ-DOCLI-NET-002\" docs/architecture.md" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/18>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 141 ;
+  triage:snippet "rg -n 'REQ-DOCLI-NET-002.*\\(later\\)'" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/19>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 147 ;
+  triage:snippet "rg -n '^\\| `REQ-DOCLI-NET-002`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/20>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 150 ;
+  triage:snippet "rg -n '^\\| `REQ-DOCLI-NET-002`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/21>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/README.md" ;
+  triage:line 28 ;
+  triage:snippet "- `REQ-DOCLI-NET-002`: a `System.CommandLine` tree" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/22>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/README.md" ;
+  triage:line 54 ;
+  triage:snippet "| d.2 | [d2-cli-model-json.md](d2-cli-model-json.md) | `REQ-DOCLI-NET-002`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/23>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/README.md" ;
+  triage:line 55 ;
+  triage:snippet "| d.3 | [d3-commandline-walker.md](d3-commandline-walker.md) | `REQ-DOCLI-NET-002`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/24>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/README.md" ;
+  triage:line 56 ;
+  triage:snippet "| d.4 | [d4-dotnet-tool-json.md](d4-dotnet-tool-json.md) | `REQ-DOCLI-NET-002`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/25>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/README.md" ;
+  triage:line 57 ;
+  triage:snippet "| d.5 | [d5-sample-rust-html-proof.md](d5-sample-rust-html-proof.md) | `REQ-DOCLI-NET-002`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/26>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d3-commandline-walker.md" ;
+  triage:line 18 ;
+  triage:snippet "`REQ-DOCLI-NET-002` — `FromCommand` for" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/27>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d5-sample-rust-html-proof.md" ;
+  triage:line 18 ;
+  triage:snippet "`REQ-DOCLI-NET-002` — the sample command" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/28>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d2-cli-model-json.md" ;
+  triage:line 18 ;
+  triage:snippet "`REQ-DOCLI-NET-002` — the JSON types" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ATM-QA-001/plan-phase-d/29>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 150 ;
+  triage:snippet "Every other `rg` command exits 0" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b>
+  a triage:WorktreeSnapshot ;
+  triage:branch "plan/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:orderIndex 0 .

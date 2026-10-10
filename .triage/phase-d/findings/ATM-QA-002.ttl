@@ -1,0 +1,41 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/ATM-QA-002>
+  a triage:Finding ;
+  triage:findingId "ATM-QA-002" ;
+  triage:title "Phase README closure bullet is a sentence fragment" ;
+  triage:description "README bullet 'The decision record for that boundary (d.1, ADR-005, ARCH-RULE-010)' is a sentence fragment without a verb." ;
+  triage:triageMode "initial_pass" ;
+  triage:category "requirements" ;
+  triage:phaseId "phase-d" ;
+  triage:severity "minor" ;
+  triage:repeatable false ;
+  triage:sweepScope "file_only" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:originatingSprintDoc "docs/plans/phase-d/README.md" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-002/plan-phase-d/1> ;
+  triage:openOn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> ;
+  triage:promoteTo <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> ;
+  triage:triagedAt "2026-10-10T12:48:00-07:00"^^xsd:dateTime .
+
+<urn:atm:triage:occurrence/ATM-QA-002/plan-phase-d/1>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/README.md" ;
+  triage:line 31 ;
+  triage:snippet "- The decision record for that boundary (d.1, `ADR-005`, `ARCH-RULE-010`)" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b>
+  a triage:WorktreeSnapshot ;
+  triage:branch "plan/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:orderIndex 0 .
