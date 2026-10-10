@@ -1,0 +1,21 @@
+# Disk pack prototype: jQuery Fancytree sidebar with CLI-oriented icons (not folder/file glyphs).
+# Vendored deps live under vendor/; run ./build-script.sh after editing docli-app.js.
+id = "fancytree-nav"
+name = "Fancytree nav (CLI icons)"
+version = "1"
+description = "Quarto-like docs shell with Fancytree filtering; custom SVG icons for root, subcommand groups, and leaf commands (see sidebar legend)."
+min_docli = "0.1.0"
+
+[theme_schema]
+bg = { type = "color", default = "#ffffff", description = "Main content background" }
+fg = { type = "color", default = "#212529", description = "Body text" }
+sidebar_bg = { type = "color", default = "#f8f9fa", description = "Sidebar background" }
+sidebar_border = { type = "color", default = "#dee2e6", description = "Sidebar and header borders" }
+accent = { type = "color", default = "#d73a49", description = "Primary accent (cli-doc red)" }
+accent_hover = { type = "color", default = "#b31d28", description = "Accent hover" }
+muted = { type = "color", default = "#6c757d", description = "Secondary text" }
+header_bg = { type = "color", default = "#ffffff", description = "Top bar background" }
+code_bg = { type = "color", default = "#f6f8fa", description = "Usage block background" }
+icon = { type = "color", default = "#57606a", description = "Tree icon fill (SVG set)" }
+font_body = { type = "string", default = "1rem/1.6 system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif", description = "Body font" }
+font_title = { type = "string", default = "1.75rem/1.2 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", description = "Page title font" }
