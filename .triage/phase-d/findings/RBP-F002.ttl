@@ -1,0 +1,41 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/RBP-F002>
+  a triage:Finding ;
+  triage:findingId "RBP-F002" ;
+  triage:title "Parse and usage exits are explicitly undocumented" ;
+  triage:description "The plan states the parse-error exit code of Parse().Invoke() is not covered and repeats that exclusion under Out of Scope." ;
+  triage:phaseId "phase-d" ;
+  triage:triageMode "initial_pass" ;
+  triage:category "best-practices" ;
+  triage:severity "important" ;
+  triage:repeatable true ;
+  triage:sweepScope "workspace" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:triagedAt "2026-10-10T12:48:00Z"^^xsd:dateTime ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d4-dotnet-tool-json.md" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/RBP-F002/plan-phase-d/1> ;
+  triage:openOn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> ;
+  triage:promoteTo <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/RBP-F002/plan-phase-d/1>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d4-dotnet-tool-json.md" ;
+  triage:line 76 ;
+  triage:snippet "The exit code of `Parse().Invoke()` for a parse error is not covered." ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b>
+  a triage:WorktreeSnapshot ;
+  triage:branch "plan/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:orderIndex 0 .

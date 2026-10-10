@@ -1,0 +1,41 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/ARCH-002>
+  a triage:Finding ;
+  triage:findingId "ARCH-002" ;
+  triage:title "ADR-005 forbids the csproj pin it also requires" ;
+  triage:description "The ADR-005 text says the package version and TFM in that decision are the only copy of those two values. d.2-d.5 still require those literals in the project files. Once that sentence is pasted into docs/architecture.md, the csproj values are a second copy of the pin the ADR forbids." ;
+  triage:phaseId "phase-d" ;
+  triage:triageMode "initial_pass" ;
+  triage:category "architecture" ;
+  triage:severity "important" ;
+  triage:repeatable true ;
+  triage:sweepScope "workspace" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:triagedAt "2026-10-10T19:47:00Z"^^xsd:dateTime ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ARCH-002/plan-phase-d/1> ;
+  triage:openOn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> ;
+  triage:promoteTo <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ARCH-002/plan-phase-d/1>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 51 ;
+  triage:snippet "Package and TFM pins in this decision are the only copy of those two values." ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b>
+  a triage:WorktreeSnapshot ;
+  triage:branch "plan/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:orderIndex 0 .

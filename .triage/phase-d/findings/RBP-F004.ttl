@@ -1,0 +1,53 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/RBP-F004>
+  a triage:Finding ;
+  triage:findingId "RBP-F004" ;
+  triage:title "Rust failure proof does not name the error envelope" ;
+  triage:description "Generate_captures_rust_failure only requires a non-zero exit and non-empty stderr. It does not tie the failure to the Rust DOCLI envelope or stable codes." ;
+  triage:phaseId "phase-d" ;
+  triage:triageMode "initial_pass" ;
+  triage:category "best-practices" ;
+  triage:severity "minor" ;
+  triage:repeatable true ;
+  triage:sweepScope "workspace" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d4-dotnet-tool-json.md" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/RBP-F004/plan-d/1> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/RBP-F004/plan-d/2> ;
+  triage:openOn <urn:atm:triage:worktree/plan-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> ;
+  triage:promoteTo <urn:atm:triage:worktree/plan-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> ;
+  triage:triagedAt "2026-10-10T00:48:00Z"^^xsd:dateTime .
+
+<urn:atm:triage:occurrence/RBP-F004/plan-d/1>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d4-dotnet-tool-json.md" ;
+  triage:line 78 ;
+  triage:snippet "- `Generate_captures_rust_failure` and `Pack_produces_tool_package` are `[Fact]` methods in `ToolCommandTests`." ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/RBP-F004/plan-d/2>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d4-dotnet-tool-json.md" ;
+  triage:line 95 ;
+  triage:snippet "- `Generate_captures_rust_failure`: `RustDocli.Generate` with an input path that does not exist returns a non-zero `ExitCode` and a non-empty `Stderr`" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:worktree/plan-d/a484ebddf463ac76ea511f18ebc96e279d8a145b>
+  a triage:WorktreeSnapshot ;
+  triage:branch "plan/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:orderIndex 0 .
