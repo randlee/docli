@@ -202,7 +202,7 @@ public static class CliModelJson
 
 ## Required Validation
 
-- Phase D host gate for d.2–d.5 — [README.md](README.md)
+- Phase D host gate for d.2 and d.3 — [README.md](README.md)
 - `dotnet test dotnet/Docli.sln -c Release --filter CliModelJsonTests`
 - `git check-ignore -v dotnet/src/Docli/bin/Debug/x dotnet/src/Docli/obj/x`
 - `git status --porcelain`

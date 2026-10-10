@@ -110,6 +110,6 @@ public static class CommandLineAdapter
 
 ## Required Validation
 
-- Phase D host gate for d.2–d.5 — [README.md](README.md)
+- Phase D host gate for d.2 and d.3 — [README.md](README.md)
 - `dotnet test dotnet/Docli.sln -c Release --filter CommandLineAdapterTests`
 - `rg -n "GetField|GetProperty|BindingFlags|NonPublic" dotnet/src/Docli/CommandLineAdapter.cs` returns no matches

@@ -27,7 +27,7 @@ Planning branch: `plan/phase-d` (PR target `develop`). Execution trunk after the
 
 - `FromCommand` JSON for a host app's own `System.CommandLine` tree (d.2 types, d.3 walker)
 - The tool's own `docli model` JSON, proven when Rust `docli generate --input` writes `index.html` from that file (d.4)
-- A sample-library proof: the sample calls `FromCommand`, then Rust `docli generate` writes HTML and still accepts `--markdown` (d.5). The d.5 dependency on d.4 is ordering-only
+- A sample-library proof: the sample calls `FromCommand`, then Rust `docli generate` writes HTML and still accepts `--markdown` (d.5). d.5 depends on d.4 because it calls `RustDocli.Generate`, which d.4 owns. This proof does not invoke the tool and does not read `docli model` output.
 - The decision record for that boundary (d.1, `ADR-005`, `ARCH-RULE-010`)
 
 ## What Phase D does not close
@@ -64,7 +64,7 @@ Not **d.0**. **d.1** is docs only: its Required Validation is the gate (the solu
 
 Install the .NET SDK that satisfies `global.json` before the host gate. `dotnet --version` satisfies the SDK pinned in `global.json`. Phase D does not add a .NET CI job. The host gate is the only .NET gate.
 
-**d.2** through **d.5**, from repo root. After these commands, `git status --porcelain` lists no `dotnet/**/bin` or `dotnet/**/obj` path:
+**d.2** and **d.3**, from repo root. After these commands, `git status --porcelain` lists no `dotnet/**/bin` or `dotnet/**/obj` path:
 
 ```text
 dotnet test dotnet/Docli.sln -c Release
@@ -72,9 +72,13 @@ dotnet build dotnet/Docli.sln -c Release
 git diff --check
 ```
 
-**d.4** and **d.5** invoke the Rust `docli` binary through `Docli.Tests.RustDocli` (owned by d.4). They also run:
+**d.4** and **d.5** invoke the Rust `docli` binary through `Docli.Tests.RustDocli` (owned by d.4). From repo root, `cargo build --bin docli` runs before `dotnet test` so `RustDocli` does not use a stale `target/debug/docli`. After these commands, `git status --porcelain` lists no `dotnet/**/bin` or `dotnet/**/obj` path:
 
 ```text
+cargo build --bin docli
+dotnet test dotnet/Docli.sln -c Release
+dotnet build dotnet/Docli.sln -c Release
+git diff --check
 cargo test
 cargo clippy --all-targets --all-features -- -D warnings
 cargo fmt --check

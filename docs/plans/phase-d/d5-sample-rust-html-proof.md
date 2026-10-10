@@ -19,7 +19,7 @@ No requirement id. This sprint implements the HTML proof named by `ADR-005`. The
 
 ## Hard Dependencies
 
-- d.4 — ordering-only. The tool is already on `integrate/phase-d` before this sprint starts. This proof does not invoke the tool and does not read `docli model` output. It calls `CommandLineAdapter.FromCommand(SampleCommands.Create())` and then the Rust `docli` binary.
+- d.4 — `RustDocli` (test helper) on `integrate/phase-d`. d.5 depends on d.4 because it calls `RustDocli.Generate`, which d.4 owns. This proof does not invoke the tool and does not read `docli model` output. It calls `CommandLineAdapter.FromCommand(SampleCommands.Create())`.
 
 ## Deliverables
 
@@ -55,6 +55,6 @@ public static class SampleCommands
 
 ## Required Validation
 
-- Phase D host gate for d.2–d.5, including the d.5 Rust commands — [README.md](README.md)
+- Phase D host gate for d.4 and d.5 — [README.md](README.md)
 - `dotnet test dotnet/Docli.sln -c Release --filter Sample_json_generates_html_and_markdown`
 - `rg -n "html::render|page\\.html\\.j2|MiniJinja" dotnet` returns no matches. `rg` skips gitignored paths, including the d.2 `dotnet/**/bin/` and `dotnet/**/obj/` rules

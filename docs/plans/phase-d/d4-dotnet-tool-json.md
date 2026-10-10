@@ -82,7 +82,7 @@ public static class ModelCommand
 
 ## Required Validation
 
-- Phase D host gate for d.2–d.5, including the d.4 Rust commands — [README.md](README.md)
+- Phase D host gate for d.4 and d.5 — [README.md](README.md)
 - `dotnet test dotnet/Docli.sln -c Release --filter ToolCommandTests`
 - `dotnet pack dotnet/src/Docli.Tool/Docli.Tool.csproj -c Release`
 - `rg -n "<ToolCommandName>docli</ToolCommandName>" dotnet/src/Docli.Tool/Docli.Tool.csproj`
