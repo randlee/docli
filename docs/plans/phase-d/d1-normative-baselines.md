@@ -25,13 +25,14 @@ target: integrate/phase-d
 ## Deliverables
 
 - [`docs/requirements.md`](../../requirements.md) header: normative scope is **Phase A, Phase B, and Phase D** unless marked **(later)**. The Phase D adapter paragraph in section 5 is normative for Phase D. `REQ-DOCLI-NET-001` stays **(later)**.
+- Each sentence checked by a Required Validation `rg` is one physical line in the target file. Do not hard-wrap inside it. That includes the header phrase `Phase A, Phase B, and Phase D`, the section 5 sentence `Phase D does not implement this sentence and does not close this id`, the adapter fragments `walks a System.CommandLine.Command`, `docli generate --input`, and `docli model`, the system overview sentence, and the section 11 `REQ-DOCLI-NET-001` row.
 - Section 2 phases table gains a Phase D row. Closes cell text, exact: `host FromCommand JSON, the tool's own docli model JSON, and Rust docli generate --input HTML`. Does-not-close cell text, exact: `a .NET HTML or Markdown renderer, a template-engine port, Go, Python, MCP, NuGet publish, and a tool that walks a third-party app`.
 - Section 2 Later row names these as still later: `REQ-DOCLI-GO-001`, `REQ-DOCLI-PY-001`, the renderer sentence of `REQ-DOCLI-NET-001`, `REQ-DOCLI-PRODUCT-004`, `REQ-DOCLI-GEN-003`, and `REQ-DOCLI-MD-002`. The Phase D adapter is the Phase D row, not this Later cell.
 - Section 5 replaces the single `REQ-DOCLI-NET-001` bullet with these two bullets, in this wording:
   - `REQ-DOCLI-NET-001` (later): a .NET generator renders the neutral JSON to the shared HTML and Markdown. Phase D does not implement this sentence and does not close this id.
   - Phase D adapter (normative, not a close of `REQ-DOCLI-NET-001`): a library under `dotnet/` walks a `System.CommandLine.Command` and writes the snake_case JSON documented by `REQ-DOCLI-INPUT-001` through `REQ-DOCLI-INPUT-005` and `src/schema.rs` (`CliModel`, `OptionSpec`, `ArgumentSpec`, unknown fields preserved). A host app emits its own tree by calling `Docli.CommandLineAdapter.FromCommand`. The Rust command `docli generate --input <that-json>` writes the HTML. `--markdown` remains a flag on that same Rust command. The dotnet tool whose command name is `docli` emits JSON only for the command tree it owns (`docli model`). It does not walk a third-party app and does not render HTML or Markdown.
 - Section 11 row for `REQ-DOCLI-NET-001`: summary text is `.NET renderer stays later. Phase D adapter JSON is ADR-005, not a close of this id.` Text column stays `section 5`. ADR column stays `—`.
-- [`docs/architecture.md`](../../architecture.md) system overview: one sentence that `Docli.CommandLineAdapter.FromCommand` produces `CliModel` JSON and does not call `html::render` or `markdown::render`.
+- [`docs/architecture.md`](../../architecture.md) system overview, one physical line: `Docli.CommandLineAdapter.FromCommand produces CliModel JSON and does not call html::render or markdown::render.`
 - ADR index table in `docs/architecture.md` gains an ADR-005 row: link `[ADR-005](#adr-005--net-emits-climodel-json-rust-renders-html)`, title `.NET emits CliModel JSON; Rust renders HTML`, status Accepted. The body is placed after ADR-004 and before the `## Architectural rules` section.
 - `ADR-005` in that file, status Accepted:
 
@@ -68,7 +69,7 @@ target: integrate/phase-d
 
 ## Acceptance Criteria
 
-- The requirements header contains `Phase A, Phase B, and Phase D`
+- The requirements header contains `Phase A, Phase B, and Phase D` on one physical line
 - The Phase D row Closes cell is `host FromCommand JSON, the tool's own docli model JSON, and Rust docli generate --input HTML`
 - The Phase D row Does-not-close cell is `a .NET HTML or Markdown renderer, a template-engine port, Go, Python, MCP, NuGet publish, and a tool that walks a third-party app`
 - The Later row contains `REQ-DOCLI-GO-001`, `REQ-DOCLI-PY-001`, `REQ-DOCLI-NET-001`, `REQ-DOCLI-PRODUCT-004`, `REQ-DOCLI-GEN-003`, and `REQ-DOCLI-MD-002`
@@ -102,6 +103,9 @@ rg -n "ARCH-RULE-010" docs/architecture.md
 rg -n "must not render HTML or Markdown" docs/architecture.md
 rg -n "ARCH-RULE-001–010" docs/architecture.md
 rg -n "ARCH-RULE-001–009" docs/architecture.md
+rg -n '^\| \[ADR-005\].*Accepted' docs/architecture.md
+rg -n '^### ADR-00[45]|^## Architectural rules' docs/architecture.md
+rg -n '^\| `REQ-DOCLI-NET-001` .*ADR-005.*\| — \|$' docs/requirements.md
 ```
 
-The last command must exit 1 (no matches). Every other `rg` command must exit 0.
+`rg -n "ARCH-RULE-001–009" docs/architecture.md` exits 1 (no matches). `rg -n '^\| \[ADR-005\].*Accepted' docs/architecture.md` exits 0. `rg -n '^### ADR-00[45]|^## Architectural rules' docs/architecture.md` exits 0, and the matches are `### ADR-004`, then `### ADR-005`, then `## Architectural rules`. `rg -n '^\| `REQ-DOCLI-NET-001` .*ADR-005.*\| — \|$' docs/requirements.md` exits 0. Every other `rg` command exits 0.

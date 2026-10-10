@@ -16,7 +16,7 @@ Planning branch: `plan/phase-d` (PR target `develop`). Execution trunk after the
 
 | Path | Sprint | Role |
 |------|--------|------|
-| `global.json` | d.2 | SDK pin `10.0.401` |
+| `global.json` | d.2 | SDK pinned in `global.json` |
 | `dotnet/Docli.sln` | d.2 (tool and sample projects added later) | Solution |
 | `dotnet/src/Docli/` | d.2 model and JSON; d.3 walker | Class library |
 | `dotnet/src/Docli.Tool/` | d.4 | Console app, `PackAsTool`, command name `docli` |
@@ -62,7 +62,7 @@ Execution stacks use **`/sc-gh-stack`** on trunk **`integrate/phase-d`** after o
 
 Not **d.0**. **d.1** is docs only: its Required Validation is the gate (the solution does not exist yet).
 
-The .NET SDK is the d.2 repo-root `global.json`: version `10.0.401`, `rollForward` `latestPatch`, `allowPrerelease` false. `dotnet --version` is `10.0.401` or a later `10.0.4xx` patch. Phase D does not add a .NET CI job. The host gate is the only .NET gate.
+Install the .NET SDK that satisfies `global.json` before the host gate. `dotnet --version` satisfies the SDK pinned in `global.json`. Phase D does not add a .NET CI job. The host gate is the only .NET gate.
 
 **d.2** through **d.5**, from repo root. After these commands, `git status --porcelain` lists no `dotnet/**/bin` or `dotnet/**/obj` path:
 
@@ -72,7 +72,7 @@ dotnet build dotnet/Docli.sln -c Release
 git diff --check
 ```
 
-**d.4** and **d.5** also invoke the Rust `docli` binary (a prebuilt `target/debug/docli` is acceptable). They also run:
+**d.4** and **d.5** invoke the Rust `docli` binary through `Docli.Tests.RustDocli` (owned by d.4). They also run:
 
 ```text
 cargo test

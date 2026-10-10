@@ -35,7 +35,7 @@ No requirement id. This sprint implements the JSON types named by `ADR-005`. It 
 }
 ```
 
-  `10.0.401` is the .NET 10 SDK on the download page for the September 8, 2026 runtime (10.0.12). `latestPatch` allows a later `10.0.4xx` patch only.
+  Install the .NET SDK that satisfies `global.json` before the host gate. The version number stays in this sample only.
 - `.gitignore` gains these two lines and no broader `bin/` or `obj/` rule:
 
 ```text
@@ -56,7 +56,7 @@ dotnet/**/obj/
 ```
 
 - Tests are public classes with `[Fact]` methods. d.3–d.5 add classes to this project and do not add test packages.
-- `dotnet/tests/Docli.Tests/RepoRoot.cs` is the only parent walk. d.4 and d.5 call it; they do not walk parents themselves.
+- `dotnet/tests/Docli.Tests/RepoRoot.cs` is the only parent walk. d.4 and d.5 call it; they do not walk parents themselves. Rust binary selection is `RustDocli` in d.4, not this file.
 
 ```csharp
 namespace Docli.Tests;
@@ -192,8 +192,8 @@ public static class CliModelJson
 
 ## Acceptance Criteria
 
-- `dotnet --version` is `10.0.401` or a later `10.0.4xx` patch
-- `git check-ignore` matches `dotnet/src/Docli/bin/Debug` and `dotnet/src/Docli/obj` via the two new gitignore lines
+- `dotnet --version` satisfies the SDK pinned in `global.json`
+- After the host gate, `git check-ignore` matches the file paths `dotnet/src/Docli/bin/Debug/x` and `dotnet/src/Docli/obj/x` via the two new gitignore lines. Those paths need not exist as directories beforehand.
 - After the host gate, `git status --porcelain` lists no `dotnet/**/bin` or `dotnet/**/obj` path
 - `Deserialize_contract_fixture` loads `fixtures/contract/model.json` and sees root name `demo`, version `1.0.0`, option `output` with `value_name` `PATH` and choices `json` then `yaml`, option `verbose` with `long` `--verbose` and `short` `-v`, subcommand `run` whose `usage` contains `demo run`, nested command `once`, and subcommand `check` argument `config` with `required` true
 - `RoundTrip_preserves_unknown_fields`: keys `vendor_ext` on the root, `vendor_opt` on an option, `vendor_arg` on an argument, and `vendor_sub` on a nested subcommand survive `Deserialize` then `Serialize`
@@ -204,5 +204,5 @@ public static class CliModelJson
 
 - Phase D host gate for d.2–d.5 — [README.md](README.md)
 - `dotnet test dotnet/Docli.sln -c Release --filter CliModelJsonTests`
-- `git check-ignore -v dotnet/src/Docli/bin/Debug dotnet/src/Docli/obj`
+- `git check-ignore -v dotnet/src/Docli/bin/Debug/x dotnet/src/Docli/obj/x`
 - `git status --porcelain`

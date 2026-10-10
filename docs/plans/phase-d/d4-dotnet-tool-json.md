@@ -25,6 +25,19 @@ No requirement id. This sprint implements the tool argv named by `ADR-005`. It d
 
 - Add `dotnet/src/Docli.Tool/Docli.Tool.csproj` to `dotnet/Docli.sln`. SDK `Microsoft.NET.Sdk`, `OutputType` `Exe`, `TargetFramework` the ADR-005 TFM pin, `Nullable` enable, `ImplicitUsings` enable, `PackAsTool` true, `ToolCommandName` `docli`, `PackageId` `Docli.Tool`. `ProjectReference` to `../Docli/Docli.csproj`. No direct `System.CommandLine` package reference. No new test packages.
 - Tests live in `dotnet/tests/Docli.Tests/ToolCommandTests.cs`. The repo root is `RepoRoot.Find()` from d.2.
+- `Docli.Tests` gains a `ProjectReference` to `dotnet/src/Docli.Tool/Docli.Tool.csproj` and no other new packages. Tests call `ToolCommands.ToolVersion()` in-process.
+- `dotnet/tests/Docli.Tests/RustDocli.cs` is the only Rust binary selection. d.5 calls it and does not restate the rule.
+
+```csharp
+namespace Docli.Tests;
+
+public static class RustDocli
+{
+    public static int Generate(string repoRoot, string inputPath, string htmlDir, string? markdownPath, TimeSpan timeout);
+}
+```
+
+  If `target/debug/docli` exists under `repoRoot` (`docli.exe` on Windows), run that file. Otherwise run `cargo run --quiet --bin docli --` with working directory `repoRoot`. Arguments are `generate`, `--input`, `inputPath`, `--html`, `htmlDir`, plus `--markdown` and `markdownPath` when that path is non-null. Return the process exit code. Throw if the command cannot start. The `timeout` argument is the process timeout.
 - The tool root is a `Command` named `docli`, not a `RootCommand`, so the model name stays `docli` when the process name differs.
 - Public surface:
 
@@ -34,7 +47,7 @@ namespace Docli.Tool;
 public static class ToolCommands
 {
     public static Command Create();
-    public static string ToolVersion();
+    public static string? ToolVersion();
 }
 
 public static class ModelCommand
@@ -64,8 +77,8 @@ public static class ModelCommand
 - `Output_flag_writes_a_file`: `--output` writes that JSON to the path and leaves stdout without a `CliModel` `name` key
 - `Missing_output_directory_exits_2`: a missing parent directory exits 2, stderr is non-empty, and the path is not created
 - `Write_failure_exits_2`: `--output` pointing at a directory exits 2, stderr is non-empty, and stdout has no JSON object
-- `Tool_has_no_html_or_markdown_command`: `docli --help` exits 0 and stdout contains `model`; `docli model --help` exits 0 and stdout contains `--output`; neither stdout contains `generate`, `show`, `--html`, or `--markdown`
-- `Model_json_generates_html`: `docli model --output <file>` exits 0 and the file is the tool's own tree (`name` is `docli`). Rust `docli generate --input <file> --html <dir>` then exits 0 and `<dir>/index.html` exists. Use `target/debug/docli` when that binary is already built; otherwise `cargo run --quiet --bin docli --` from `RepoRoot.Find()`. This check does not pass a third-party command tree
+- `Tool_has_no_html_or_markdown_command`: `docli --help` exits 0 and stdout contains `model`; `docli model --help` exits 0 and stdout contains `--output`. Absence of `generate`, `show`, `--html`, and `--markdown` is an ordinal, case-sensitive substring check on stdout. The default help text `Show help and usage information` is allowed.
+- `Model_json_generates_html`: `docli model --output <file>` exits 0 and the file is the tool's own tree (`name` is `docli`). `RustDocli.Generate(RepoRoot.Find(), file, dir, null, TimeSpan.FromSeconds(180))` returns 0 and `<dir>/index.html` exists. This check does not pass a third-party command tree.
 
 ## Required Validation
 

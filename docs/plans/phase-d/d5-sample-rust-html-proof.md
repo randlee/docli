@@ -37,13 +37,7 @@ public static class SampleCommands
 ```
 
 - `Create()` returns command name `sample`, description `Sample command tree`, with option `Option<string>("--output", "-o")` (`Description` `Write output to PATH`, `HelpName` `PATH`, `Required` false) and subcommand `run`, description `Run the thing`. No arguments and no further subcommands.
-- `Sample_json_generates_html_and_markdown` writes `CliModelJson.Serialize(CommandLineAdapter.FromCommand(SampleCommands.Create()))` to a temp file and runs the Rust generator with working directory `RepoRoot.Find()`. Use `target/debug/docli` when that binary exists; otherwise:
-
-```text
-cargo run --quiet --bin docli -- generate --input <json> --html <dir> --markdown <md>
-```
-
-- The test timeout is 180 seconds. It fails when neither the prebuilt binary nor `cargo` is available. It does not compare HTML bytes to `fixtures/contract/index.html`.
+- `Sample_json_generates_html_and_markdown` writes `CliModelJson.Serialize(CommandLineAdapter.FromCommand(SampleCommands.Create()))` to a temp file and calls `RustDocli.Generate` from d.4: `RustDocli.Generate(RepoRoot.Find(), json, dir, md, TimeSpan.FromSeconds(180))`. It does not choose between `target/debug/docli` and `cargo run` itself. It does not compare HTML bytes to `fixtures/contract/index.html`.
 
 ## Out of Scope
 
@@ -54,7 +48,7 @@ cargo run --quiet --bin docli -- generate --input <json> --html <dir> --markdown
 
 ## Acceptance Criteria
 
-- The Rust `docli generate` invocation exits 0, whether it is `target/debug/docli` or `cargo run`
+- `RustDocli.Generate` returns 0
 - `<dir>/index.html` exists and contains `id="docli-data"`, `sample`, `--output`, and `run`
 - `<md>` exists and contains `# sample CLI Reference` and `` `sample run` ``
 - `rg` under `dotnet/` finds no `html::render`, `page.html.j2`, or `MiniJinja`
