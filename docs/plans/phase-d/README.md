@@ -8,14 +8,15 @@ Planning branch: `plan/phase-d` (PR target `develop`). Execution trunk after the
 
 ## Pipeline
 
-1. A library under `dotnet/` walks a `System.CommandLine` tree and writes the same neutral JSON that `docli::clap_model::from_clap` writes (`CliModel`, `OptionSpec`, `ArgumentSpec` in `src/schema.rs`, snake_case, unknown fields preserved).
+1. A host .NET app calls `Docli.CommandLineAdapter.FromCommand` on its own `System.CommandLine` tree. That library method writes the same neutral JSON that `docli::clap_model::from_clap` writes (`CliModel`, `OptionSpec`, `ArgumentSpec` in `src/schema.rs`, snake_case, unknown fields preserved).
 2. The Rust command `docli generate --input <that-json>` writes the HTML. `--markdown` stays on that same Rust command.
-3. A console app under `dotnet/`, packed as a dotnet tool with command name `docli`, emits that JSON. It does not render HTML or Markdown.
+3. The dotnet tool, command name `docli`, emits JSON only for the command tree it owns (`docli model`). It is not a way to document an arbitrary user app. It does not render HTML or Markdown.
 
 ## Layout
 
 | Path | Sprint | Role |
 |------|--------|------|
+| `global.json` | d.2 | SDK pin `10.0.401` |
 | `dotnet/Docli.sln` | d.2 (tool and sample projects added later) | Solution |
 | `dotnet/src/Docli/` | d.2 model and JSON; d.3 walker | Class library |
 | `dotnet/src/Docli.Tool/` | d.4 | Console app, `PackAsTool`, command name `docli` |
@@ -24,8 +25,9 @@ Planning branch: `plan/phase-d` (PR target `develop`). Execution trunk after the
 
 ## What Phase D closes
 
-- The .NET adapter JSON for a `System.CommandLine` tree (d.2–d.4)
-- A proof that the Rust `docli generate` command writes HTML, and still accepts `--markdown`, from that JSON (d.5)
+- `FromCommand` JSON for a host app's own `System.CommandLine` tree (d.2 types, d.3 walker)
+- The tool's own `docli model` JSON, proven when Rust `docli generate --input` writes `index.html` from that file (d.4)
+- A sample-library proof: the sample calls `FromCommand`, then Rust `docli generate` writes HTML and still accepts `--markdown` (d.5). The d.5 dependency on d.4 is ordering-only
 - The decision record for that boundary (d.1, `ADR-005`, `ARCH-RULE-010`)
 
 ## What Phase D does not close
@@ -37,6 +39,9 @@ Planning branch: `plan/phase-d` (PR target `develop`). Execution trunk after the
 - `REQ-DOCLI-PRODUCT-004`
 - The renderer sentence of `REQ-DOCLI-NET-001` (that id stays later)
 - `REQ-DOCLI-GEN-003`
+- NuGet publish (`dotnet nuget push` or a packed feed)
+- A tool that walks a third-party app (no assembly loader; `docli model` documents only the tool's own tree)
+- A .NET CI job. `.github/workflows/ci.yml` stays Rust-only. The host gate below is the only .NET gate
 
 No sprint Closes section marks those items done. [`phase-c/README.md`](../phase-c/README.md) stays a retired bookmark: there is no Phase C release.
 
@@ -48,7 +53,7 @@ No sprint Closes section marks those items done. [`phase-c/README.md`](../phase-
 | d.1 | [d1-normative-baselines.md](d1-normative-baselines.md) | `ADR-005`, `ARCH-RULE-010` |
 | d.2 | [d2-cli-model-json.md](d2-cli-model-json.md) | JSON types for `ADR-005` |
 | d.3 | [d3-commandline-walker.md](d3-commandline-walker.md) | `FromCommand` walker |
-| d.4 | [d4-dotnet-tool-json.md](d4-dotnet-tool-json.md) | Tool command `docli model` |
+| d.4 | [d4-dotnet-tool-json.md](d4-dotnet-tool-json.md) | Tool's own `docli model` JSON |
 | d.5 | [d5-sample-rust-html-proof.md](d5-sample-rust-html-proof.md) | Sample tree + Rust HTML proof |
 
 Execution stacks use **`/sc-gh-stack`** on trunk **`integrate/phase-d`** after operator **go**.
@@ -57,7 +62,9 @@ Execution stacks use **`/sc-gh-stack`** on trunk **`integrate/phase-d`** after o
 
 Not **d.0**. **d.1** is docs only: its Required Validation is the gate (the solution does not exist yet).
 
-**d.2** through **d.5**, from repo root:
+The .NET SDK is the d.2 repo-root `global.json`: version `10.0.401`, `rollForward` `latestPatch`, `allowPrerelease` false. `dotnet --version` is `10.0.401` or a later `10.0.4xx` patch. Phase D does not add a .NET CI job. The host gate is the only .NET gate.
+
+**d.2** through **d.5**, from repo root. After these commands, `git status --porcelain` lists no `dotnet/**/bin` or `dotnet/**/obj` path:
 
 ```text
 dotnet test dotnet/Docli.sln -c Release
@@ -65,7 +72,7 @@ dotnet build dotnet/Docli.sln -c Release
 git diff --check
 ```
 
-**d.5** also:
+**d.4** and **d.5** also invoke the Rust `docli` binary (a prebuilt `target/debug/docli` is acceptable). They also run:
 
 ```text
 cargo test

@@ -23,9 +23,53 @@ No requirement id. This sprint implements the JSON types named by `ADR-005`. It 
 
 ## Deliverables
 
-- `dotnet/Docli.sln` with `dotnet/src/Docli/Docli.csproj` and `dotnet/tests/Docli.Tests/Docli.Tests.csproj` only. Both projects: `net10.0`, `Nullable` enable, `ImplicitUsings` enable. The library is not `PackAsTool`. Neither project references `System.CommandLine`.
-- `dotnet/tests/Docli.Tests/CliModelJsonTests.cs` references the library and reads `fixtures/contract/model.json` by walking parents for `Cargo.toml`.
-- Public types in namespace `Docli`. JSON names are the `[JsonPropertyName]` values. CLR names are the property names. Missing `name` fails deserialize. Every other field uses the `src/schema.rs` default: null for optional strings and counts, `""` for strings, `false` for `required`, empty lists for collections. Unknown JSON keys round-trip through `Extra` and must not reuse a known key.
+- Repo-root `global.json` pins the SDK. This is the only SDK pin:
+
+```json
+{
+  "sdk": {
+    "version": "10.0.401",
+    "rollForward": "latestPatch",
+    "allowPrerelease": false
+  }
+}
+```
+
+  `10.0.401` is the .NET 10 SDK on the download page for the September 8, 2026 runtime (10.0.12). `latestPatch` allows a later `10.0.4xx` patch only.
+- `.gitignore` gains these two lines and no broader `bin/` or `obj/` rule:
+
+```text
+dotnet/**/bin/
+dotnet/**/obj/
+```
+
+- `dotnet/Docli.sln` with `dotnet/src/Docli/Docli.csproj` and `dotnet/tests/Docli.Tests/Docli.Tests.csproj` only. Both projects use the ADR-005 TFM pin, `Nullable` enable, `ImplicitUsings` enable. The library is not `PackAsTool`. Neither project references `System.CommandLine`. d.3–d.5 reuse this TFM pin and these test packages; they do not restate the version numbers.
+- `Docli.Tests.csproj` is an xUnit v2 VSTest project. Package versions were checked on nuget.org on 2026-10-09. `xunit` 2.9.3 is the current v2 package (NuGet marks it legacy). This sprint does not use `xunit.v3` 4.0.2, because v3's Microsoft Testing Platform does not accept `dotnet test --filter <ClassName>`. An expression with no operator is a contains match on `FullyQualifiedName` for this VSTest adapter (Microsoft Learn, selective unit tests), so `--filter CliModelJsonTests` is valid.
+
+```xml
+<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+<PackageReference Include="xunit" Version="2.9.3" />
+<PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+  <PrivateAssets>all</PrivateAssets>
+</PackageReference>
+```
+
+- Tests are public classes with `[Fact]` methods. d.3–d.5 add classes to this project and do not add test packages.
+- `dotnet/tests/Docli.Tests/RepoRoot.cs` is the only parent walk. d.4 and d.5 call it; they do not walk parents themselves.
+
+```csharp
+namespace Docli.Tests;
+
+public static class RepoRoot
+{
+    public static string Find();
+}
+```
+
+  `Find` starts at the test assembly directory and walks parents until a directory contains `Cargo.toml`. If none does, it throws `DirectoryNotFoundException`.
+- `dotnet/tests/Docli.Tests/CliModelJsonTests.cs` references the library and opens `fixtures/contract/model.json` under `RepoRoot.Find()`.
+- Public types in namespace `Docli`. JSON names are the `[JsonPropertyName]` values. CLR names are the property names. Missing `name` fails deserialize with `JsonException`. Every other field uses the `src/schema.rs` default: null for optional strings and counts, `""` for strings, `false` for `required`, empty lists for collections. Unknown keys (names that are not known properties) round-trip through `Extra`. A second copy of a known property name is a `JsonException` from the serializer, not an `Extra` entry.
 
 ```csharp
 namespace Docli;
@@ -141,19 +185,24 @@ public static class CliModelJson
 
 ## Out of Scope
 
+- Phase D non-closures: see [README.md](README.md)
 - `System.CommandLine`, `CommandLineAdapter`, the dotnet tool, the sample, Rust edits under `src/` or `templates/`
+- A .NET CI job (host gate only)
 - Byte-identical output against `fixtures/contract/model.json` (that file omits defaults; comparison is semantic)
-- A .NET HTML or Markdown renderer, a template-engine port, Go or Python adapters, an MCP wrapper
-- Closing `REQ-DOCLI-PRODUCT-004`, `REQ-DOCLI-NET-001`, or `REQ-DOCLI-GEN-003`
 
 ## Acceptance Criteria
 
+- `dotnet --version` is `10.0.401` or a later `10.0.4xx` patch
+- `git check-ignore` matches `dotnet/src/Docli/bin/Debug` and `dotnet/src/Docli/obj` via the two new gitignore lines
+- After the host gate, `git status --porcelain` lists no `dotnet/**/bin` or `dotnet/**/obj` path
 - `Deserialize_contract_fixture` loads `fixtures/contract/model.json` and sees root name `demo`, version `1.0.0`, option `output` with `value_name` `PATH` and choices `json` then `yaml`, option `verbose` with `long` `--verbose` and `short` `-v`, subcommand `run` whose `usage` contains `demo run`, nested command `once`, and subcommand `check` argument `config` with `required` true
-- `RoundTrip_preserves_unknown_fields`: a root key `vendor_ext` and an option key `vendor_opt` survive `Deserialize` then `Serialize`
-- `Missing_name_is_rejected`: a command object without `name` throws
+- `RoundTrip_preserves_unknown_fields`: keys `vendor_ext` on the root, `vendor_opt` on an option, `vendor_arg` on an argument, and `vendor_sub` on a nested subcommand survive `Deserialize` then `Serialize`
+- `Missing_name_is_rejected`: a command object without `name` throws `JsonException`
 - `Omitted_defaults_match_serde`: omitted `version` is null, omitted `required` is false, omitted `options` is empty, and `Serialize` writes `"version": null` when `Version` is null
 
 ## Required Validation
 
 - Phase D host gate for d.2–d.5 — [README.md](README.md)
 - `dotnet test dotnet/Docli.sln -c Release --filter CliModelJsonTests`
+- `git check-ignore -v dotnet/src/Docli/bin/Debug dotnet/src/Docli/obj`
+- `git status --porcelain`
