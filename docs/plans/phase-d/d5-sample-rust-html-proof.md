@@ -37,7 +37,7 @@ public static class SampleCommands
 ```
 
 - `Create()` returns command name `sample`, description `Sample command tree`, with option `Option<string>("--output", "-o")` (`Description` `Write output to PATH`, `HelpName` `PATH`, `Required` false) and subcommand `run`, description `Run the thing`. No arguments and no further subcommands.
-- `Sample_json_generates_html_and_markdown` writes `CliModelJson.Serialize(CommandLineAdapter.FromCommand(SampleCommands.Create()))` to a temp file and calls `RustDocli.Generate` from d.4: `RustDocli.Generate(RepoRoot.Find(), json, dir, md, TimeSpan.FromSeconds(180))`. It does not choose between `target/debug/docli` and `cargo run` itself. It does not compare HTML bytes to `fixtures/contract/index.html`. `cargo build --bin docli` in Required Validation runs immediately before this test.
+- `Sample_json_generates_html_and_markdown` writes `CliModelJson.Serialize(CommandLineAdapter.FromCommand(SampleCommands.Create()))` to a temp file and calls `RustDocli.Generate` from d.4: `RustDocli.Generate(RepoRoot.Find(), json, dir, md, TimeSpan.FromSeconds(180))`. It does not choose between `target/debug/docli` and `cargo run` itself. It does not compare HTML bytes to `fixtures/contract/index.html`. `cargo build --bin docli` in Required Validation runs immediately before this test. It takes the inner text of `<script id="docli-data" type="application/json">` and passes that string to `CliModelJson.Deserialize`. The Rust renderer inserts `model_json` with `Value::from_safe_string`, so that inner text is raw JSON and the test does not HTML-unescape it.
 
 ## Out of Scope
 
@@ -49,16 +49,14 @@ public static class SampleCommands
 ## Acceptance Criteria
 
 - `RustDocli.Generate(...).ExitCode` is 0
-- The `id="docli-data"` JSON deserializes to the same `CliModel` the sample produced: name `sample`, an option whose `long` is `--output`, and a subcommand named `run`
+- The inner text of `<script id="docli-data" type="application/json">` is passed to `CliModelJson.Deserialize` with no HTML unescape. That model matches the sample: name `sample`, an option whose `long` is `--output`, and a subcommand named `run`
 - `<dir>/index.html` contains `<title>sample CLI Reference</title>`
 - `<md>` exists and contains `# sample CLI Reference` and `` `sample run` ``
-- The `ARCH-RULE-010` gate from d.1 passes on `dotnet/src` and `dotnet/samples`
+- The three commands in the `### ARCH-RULE-010 gate` block in `docs/architecture.md` pass
 
 ## Required Validation
 
 - Phase D host gate for d.4 and d.5 — [README.md](README.md)
 - `cargo build --bin docli` immediately before the filtered `dotnet test` below. A filtered test without that build is not a valid proof.
 - `dotnet test dotnet/Docli.sln -c Release --filter Sample_json_generates_html_and_markdown`
-- `rg -n 'html::render|markdown::render|MiniJinja|\.j2|<!DOCTYPE|<html|CLI Reference|Scriban|Fluid|Razor' dotnet/src dotnet/samples` exits 1
-- `find dotnet -type d -name templates -print` prints nothing
-- `rg -n 'Include=.*\.(html|md)' dotnet/src dotnet/samples -g '*.csproj'` exits 1. These three commands are the `ARCH-RULE-010` gate. They do not scan `dotnet/tests`.
+- Run the three commands in the `### ARCH-RULE-010 gate` block in [`docs/architecture.md`](../../architecture.md), the block d.1 writes under the Architectural rules table. Do not copy those commands here. The first exits 1, the find prints nothing, and the third exits 1.

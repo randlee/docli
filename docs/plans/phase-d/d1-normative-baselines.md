@@ -26,7 +26,7 @@ target: integrate/phase-d
 ## Deliverables
 
 - [`docs/requirements.md`](../../requirements.md) header: normative scope is **Phase A, Phase B, and Phase D** unless marked **(later)**. The Phase D adapter paragraph in section 5 is normative for Phase D. `REQ-DOCLI-NET-001` stays **(later)**.
-- Each sentence checked by a Required Validation `rg` is one physical line in the target file. Do not hard-wrap inside it. That includes the header phrase `Phase A, Phase B, and Phase D`, the section 5 sentence `Phase D does not implement this sentence and does not close this id`, the `REQ-DOCLI-NET-002` bullet (including `walks a System.CommandLine.Command`, `schema field set and snake_case names`, `docli generate --input`, `docli model`, and `can shadow the Rust`), the system overview sentence, the section 11 `REQ-DOCLI-NET-001` row, and the section 11 `REQ-DOCLI-NET-002` row.
+- Each sentence checked by a Required Validation `rg` is one physical line in the target file. Do not hard-wrap inside it. That includes the header phrase `Phase A, Phase B, and Phase D`, the section 5 sentence `Phase D does not implement this sentence and does not close this id`, the `REQ-DOCLI-NET-002` bullet (including `walks a System.CommandLine.Command`, `schema field set and snake_case names`, `docli generate --input`, `docli model`, and `can shadow the Rust`), the system overview sentence, the section 11 `REQ-DOCLI-NET-001` row, the section 11 `REQ-DOCLI-NET-002` row, and the `ARCH-RULE-010` table row.
 - Section 2 phases table gains a Phase D row. Closes cell text, exact: `REQ-DOCLI-NET-002: host FromCommand JSON, the tool's own docli model JSON, and Rust docli generate --input HTML`. Does-not-close cell text, exact: `a .NET HTML or Markdown renderer, a template-engine port, Go, Python, MCP, NuGet publish, and a tool that walks a third-party app`.
 - Section 2 Later row names these as still later: `REQ-DOCLI-GO-001`, `REQ-DOCLI-PY-001`, the renderer sentence of `REQ-DOCLI-NET-001`, `REQ-DOCLI-PRODUCT-004`, `REQ-DOCLI-GEN-003`, and `REQ-DOCLI-MD-002`. `REQ-DOCLI-NET-002` is not in that Later cell.
 - Section 5 replaces the single `REQ-DOCLI-NET-001` bullet with these two bullets, each one physical line:
@@ -64,7 +64,23 @@ target: integrate/phase-d
 - A .NET renderer, a template-engine port, Go, Python, and MCP need a later ADR.
 ```
 
-- `ARCH-RULE-010` row: ADR-005. Check text: The `dotnet/` tree may serialize `CliModel` JSON and walk `System.CommandLine`. It must not render HTML or Markdown, embed template packs, or define a second renderer. HTML bytes for that JSON come from the Rust `docli generate` path. arch-qa applies the same three commands d.5 runs, scoped to non-test sources `dotnet/src` and `dotnet/samples` so `RustDocli.cs` and HTML assertions under `dotnet/tests` do not trip them. `rg -n 'html::render|markdown::render|MiniJinja|\.j2|<!DOCTYPE|<html|CLI Reference|Scriban|Fluid|Razor' dotnet/src dotnet/samples` exits 1. `find dotnet -type d -name templates -print` prints nothing. `rg -n 'Include=.*\.(html|md)' dotnet/src dotnet/samples -g '*.csproj'` exits 1. No `templates/` directory under `dotnet/`. No `.html` or `.md` content resources in those csproj files.
+- `ARCH-RULE-010` row, one physical line, exactly three columns, no `|` inside any cell. Copy this line into the rules table:
+
+```text
+| **ARCH-RULE-010** | ADR-005 | The `dotnet/` tree may serialize `CliModel` JSON and walk `System.CommandLine`. It must not render HTML or Markdown, embed template packs, or define a second renderer. HTML bytes for that JSON come from the Rust `docli generate` path. arch-qa runs the three ARCH-RULE-010 gate commands listed directly under this table. |
+```
+
+- Immediately after that table and before `**Evaluation (arch-qa)**`, write the block below. d.5 runs these commands from `docs/architecture.md` and does not keep a second copy. The first command exits 1. The find command prints nothing. The third command exits 1. They do not scan `dotnet/tests`.
+
+````text
+### ARCH-RULE-010 gate
+
+```text
+rg -n 'html::render|markdown::render|MiniJinja|\.j2|<!DOCTYPE|<html|CLI Reference|Scriban|Fluid|Razor' dotnet/src dotnet/samples
+find dotnet -type d -name templates -print
+rg -n 'Include=.*\.(html|md)' dotnet/src dotnet/samples -g '*.csproj'
+```
+````
 - arch-qa evaluation range in that file becomes `ARCH-RULE-001`–`010`.
 
 ## Out of Scope
@@ -87,7 +103,8 @@ target: integrate/phase-d
 - The system overview contains `does not call html::render or markdown::render`
 - The ADR index contains `[ADR-005](#adr-005` with title `.NET emits CliModel JSON; Rust renders HTML` and status Accepted, and the body sits after ADR-004 and before `## Architectural rules`
 - `ADR-005` names sprint d.3 as the only signature source for `FromCommand`, names `REQ-DOCLI-NET-002`, contains `Package System.CommandLine version 2.0.12` and `TFM net10.0`, contains `schema field set and those snake_case names`, and contains `can shadow the Rust \`docli\` binary`
-- The `ARCH-RULE-010` row contains `must not render HTML or Markdown` and the three gate commands (`html::render|markdown::render|MiniJinja`, `find dotnet -type d -name templates`, and `Include=.*\.(html|md)`)
+- The `ARCH-RULE-010` row is one physical line with exactly three columns and no `|` inside a cell. It contains `must not render HTML or Markdown` and `listed directly under this table`. The pipe-containing patterns sit in the `### ARCH-RULE-010 gate` block, not in that row.
+- `REQ-DOCLI-NET-002` has no `(later)` on its section 5 bullet or its section 11 row
 - The arch-qa evaluation step says `ARCH-RULE-001–010`, and `ARCH-RULE-001–009` does not appear
 
 ## Required Validation
@@ -116,6 +133,12 @@ rg -n "schema field set and those snake_case names" docs/architecture.md
 rg -n "can shadow the Rust" docs/architecture.md
 rg -n "REQ-DOCLI-NET-002" docs/architecture.md
 rg -n "find dotnet -type d -name templates" docs/architecture.md
+rg -n '^\| \*\*ARCH-RULE-010\*\* \| ADR-005 \| [^|]+ \|$' docs/architecture.md
+rg -n -F 'html::render|markdown::render|MiniJinja' docs/architecture.md
+rg -n -F 'Include=.*\.(html|md)' docs/architecture.md
+rg -n '^\| \*\*ARCH-RULE-010\*\*.*html::render\|' docs/architecture.md
+rg -n '^\| \*\*ARCH-RULE-010\*\*.*Include=' docs/architecture.md
+rg -n 'REQ-DOCLI-NET-002.*\(later\)' docs/requirements.md
 rg -n "ARCH-RULE-001–010" docs/architecture.md
 rg -n "ARCH-RULE-001–009" docs/architecture.md
 rg -n '^\| \[ADR-005\].*Accepted' docs/architecture.md
@@ -124,4 +147,4 @@ rg -n '^\| `REQ-DOCLI-NET-001` .*\| — \|$' docs/requirements.md
 rg -n '^\| `REQ-DOCLI-NET-002` .*\| ADR-005 \|$' docs/requirements.md
 ```
 
-`rg -n "ARCH-RULE-001–009" docs/architecture.md` exits 1 (no matches). `rg -n '^\| \[ADR-005\].*Accepted' docs/architecture.md` exits 0. `rg -n '^### ADR-00[45]|^## Architectural rules' docs/architecture.md` exits 0, and the matches are `### ADR-004`, then `### ADR-005`, then `## Architectural rules`. `rg -n '^\| `REQ-DOCLI-NET-001` .*\| — \|$' docs/requirements.md` exits 0. `rg -n '^\| `REQ-DOCLI-NET-002` .*\| ADR-005 \|$' docs/requirements.md` exits 0. Every other `rg` command exits 0.
+`rg -n "ARCH-RULE-001–009" docs/architecture.md` exits 1 (no matches). `rg -n '^\| \[ADR-005\].*Accepted' docs/architecture.md` exits 0. `rg -n '^### ADR-00[45]|^## Architectural rules' docs/architecture.md` exits 0, and the matches are `### ADR-004`, then `### ADR-005`, then `## Architectural rules`. `rg -n '^\| `REQ-DOCLI-NET-001` .*\| — \|$' docs/requirements.md` exits 0. `rg -n '^\| `REQ-DOCLI-NET-002` .*\| ADR-005 \|$' docs/requirements.md` exits 0. `rg -n '^\| \*\*ARCH-RULE-010\*\* \| ADR-005 \| [^|]+ \|$' docs/architecture.md` exits 0. `rg -n -F 'html::render|markdown::render|MiniJinja' docs/architecture.md` exits 0. `rg -n -F 'Include=.*\.(html|md)' docs/architecture.md` exits 0. `rg -n '^\| \*\*ARCH-RULE-010\*\*.*html::render\|' docs/architecture.md` exits 1. `rg -n '^\| \*\*ARCH-RULE-010\*\*.*Include=' docs/architecture.md` exits 1. `rg -n 'REQ-DOCLI-NET-002.*\(later\)' docs/requirements.md` exits 1. Every other `rg` command exits 0.
