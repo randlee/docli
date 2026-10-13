@@ -1,7 +1,7 @@
 ---
 id: d.2
 title: CliModel JSON types and parity tests
-status: planned
+status: complete
 branch: feature/phase-d-d2-model
 worktree: ../docli-worktrees/feature/phase-d-d2-model
 target: integrate/phase-d

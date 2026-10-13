@@ -1,0 +1,41 @@
+{
+  "name": "demo",
+  "version": "2.1.0",
+  "description": "All-fields demo",
+  "long_description": "Every schema field except extra.",
+  "epilogue": "End of the all-fields command.",
+  "usage": "demo --output <PATH> <file>",
+  "vendor_root": "root-extra",
+  "options": [
+    {
+      "name": "output",
+      "long": "--output",
+      "short": "-o",
+      "help": "Write output",
+      "long_help": "Write output to PATH",
+      "value_name": "PATH",
+      "required": true,
+      "default_value": "out.json",
+      "choices": ["json", "yaml"],
+      "min_values": 1,
+      "max_values": 2,
+      "vendor_opt": "opt-extra"
+    }
+  ],
+  "arguments": [
+    {
+      "name": "file",
+      "help": "Input file",
+      "required": true,
+      "default_value": "input.txt",
+      "choices": ["input.txt", "other.txt"],
+      "vendor_arg": "arg-extra"
+    }
+  ],
+  "subcommands": [
+    {
+      "name": "run",
+      "vendor_sub": "sub-extra"
+    }
+  ]
+}
