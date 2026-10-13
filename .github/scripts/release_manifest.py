@@ -241,12 +241,16 @@ def workspace_version(workspace_toml: Path) -> str:
     cargo_version = data.get("workspace", {}).get("package", {}).get("version")
     if isinstance(cargo_version, str) and cargo_version:
         return cargo_version
+    package_version = data.get("package", {}).get("version")
+    if isinstance(package_version, str) and package_version:
+        return package_version
     project_version = data.get("project", {}).get("version")
     if isinstance(project_version, str) and project_version:
         return project_version
     raise SystemExit(
         f"{workspace_toml}: version source must declare [workspace.package].version "
-        "(Cargo workspace) or [project].version (pyproject)"
+        "(Cargo workspace), [package].version (single-crate Cargo.toml), or "
+        "[project].version (pyproject)"
     )
 
 

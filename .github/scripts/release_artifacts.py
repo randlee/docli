@@ -347,10 +347,14 @@ def cmd_validate_manifest(args: argparse.Namespace) -> int:
         _validate_scoop_channel(manifest)
     seen = set()
     if manifest["crates"]:
-        members = workspace_members(Path(args.workspace_toml))
+        workspace_toml = Path(args.workspace_toml)
+        members = workspace_members(workspace_toml)
         missing = []
         for crate in manifest["crates"]:
-            if crate["cargo_toml"].removesuffix("/Cargo.toml") not in members and "workspace" not in tomllib.loads(Path(crate["cargo_toml"]).read_text()):
+            cargo_path = (workspace_toml.parent / crate["cargo_toml"]).resolve()
+            if cargo_path == workspace_toml.resolve():
+                continue
+            if crate["cargo_toml"].removesuffix("/Cargo.toml") not in members and "workspace" not in tomllib.loads(cargo_path.read_text(encoding="utf-8")):
                 missing.append(crate["cargo_toml"])
         if missing:
             raise SystemExit(f"manifest references non-member crates: {', '.join(missing)}")
