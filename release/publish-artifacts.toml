@@ -1,0 +1,92 @@
+schema_version = 1
+
+[project]
+name = "docli"
+archive_prefix = "docli"
+description = "Language-agnostic CLI documentation generator: HTML + Markdown from a neutral command-tree JSON"
+homepage = "https://github.com/randlee/docli"
+license = "MIT"
+readme_dependency_crate = "docli"
+renderer_archive_path = "bin/docli"
+workspace_toml = "Cargo.toml"
+rust_toolchain = "1.94.1"
+
+
+[[release_targets]]
+target = "x86_64-unknown-linux-gnu"
+os = "ubuntu-latest"
+archive = "tar.gz"
+[[release_targets]]
+target = "aarch64-unknown-linux-gnu"
+os = "ubuntu-24.04-arm"
+archive = "tar.gz"
+[[release_targets]]
+target = "x86_64-apple-darwin"
+os = "macos-latest"
+archive = "tar.gz"
+[[release_targets]]
+target = "aarch64-apple-darwin"
+os = "macos-latest"
+archive = "tar.gz"
+[[release_targets]]
+target = "x86_64-pc-windows-msvc"
+os = "windows-latest"
+archive = "zip"
+
+[[crates]]
+artifact = "docli"
+package = "docli"
+cargo_toml = "Cargo.toml"
+publish = true
+publish_order = 1
+wait_after_publish_seconds = 0
+
+[[release_binaries]]
+name = "docli"
+[[release_binaries]]
+name = "cargo-docli"
+
+
+
+
+[channels.homebrew]
+workflow = "homebrew-publish.yml"
+dispatch_inputs = {  }
+tap_repository = "randlee/homebrew-tap"
+renderer_target = "x86_64-unknown-linux-gnu"
+
+[[channels.homebrew.formulas]]
+path = "Formula/docli.rb"
+template = "release/homebrew/formula.rb.j2"
+class = "Docli"
+binaries = ["docli", "cargo-docli"]
+test_binary = "docli"
+test_command = "--help"
+test_output = "Language-agnostic CLI documentation generator"
+release_track = "stable"
+
+[[channels.homebrew.assets]]
+key = "macos_arm"
+target = "aarch64-apple-darwin"
+[[channels.homebrew.assets]]
+key = "macos_intel"
+target = "x86_64-apple-darwin"
+[[channels.homebrew.assets]]
+key = "linux"
+target = "x86_64-unknown-linux-gnu"
+
+[channels.winget]
+workflow = "winget-publish.yml"
+dispatch_inputs = {  }
+identifier = "randlee.docli"
+installer_target = "x86_64-pc-windows-msvc"
+
+[channels.scoop]
+workflow = "scoop-publish.yml"
+dispatch_inputs = {  }
+bucket_repository = "randlee/scoop-bucket"
+manifest_path = "bucket/docli.json"
+manifest_template = "release/scoop/manifest.json.j2"
+installer_target = "x86_64-pc-windows-msvc"
+binary = "bin/docli.exe"
+renderer_target = "x86_64-unknown-linux-gnu"
