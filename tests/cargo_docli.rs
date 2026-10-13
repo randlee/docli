@@ -136,6 +136,30 @@ fn help_lists_generate_and_show() {
     assert!(help.contains("show"), "help missing show:\n{help}");
 }
 
+#[test]
+fn dotnet_project_conflict_matches_docli() {
+    let args = [
+        "generate",
+        "--input",
+        "foo.json",
+        "--dotnet-project",
+        "bar.csproj",
+        "--json",
+    ];
+    let docli = run(&mut docli_bin(), &args);
+    let cargo = run(&mut cargo_docli_bin(), &args);
+    assert_eq!(docli.status.code(), Some(2));
+    assert_eq!(cargo.status.code(), Some(2));
+    assert_eq!(docli.stdout, cargo.stdout);
+    let envelope = parse_envelope(&docli.stdout);
+    assert_eq!(envelope["ok"], false);
+    assert_eq!(envelope["error"]["code"], "DOCLI.USAGE");
+    let suggested = envelope["error"]["suggested_action"]
+        .as_str()
+        .expect("suggested_action");
+    assert!(suggested.contains("--dotnet-project"), "{suggested}");
+}
+
 fn run_with_stdin(bin: &mut Command, args: &[&str], stdin_bytes: Option<&[u8]>) -> Output {
     match stdin_bytes {
         None => run(bin, args),

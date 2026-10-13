@@ -6,6 +6,7 @@
 use std::collections::BTreeMap;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::Serialize;
@@ -241,6 +242,239 @@ pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
         preview_dir,
         outputs,
     })
+}
+
+/// Flag name for `docli generate --dotnet-project`.
+const DOTNET_PROJECT_FLAG: &str = "--dotnet-project";
+
+/// Run `docli-dotnet project` for [`DOTNET_PROJECT_FLAG`] and return a temp JSON path.
+///
+/// Resolution uses `docli-dotnet` on `PATH` when that file exists. Otherwise it
+/// runs `dotnet` on `dotnet/src/Docli.Tool/bin/Release/<tfm>/Docli.Tool.dll`,
+/// where `<tfm>` is the `TargetFramework` in that tool project (the ADR-005 pin)
+/// and the repo root is the nearest ancestor of the current directory or the
+/// running binary that contains both `Cargo.toml` and the tool project.
+/// The returned file is the child stdout. [`generate`] reads it as [`InputSource::File`].
+///
+/// # Errors
+///
+/// Returns `DOCLI.IO` when the tool cannot be started, the repo or Release DLL
+/// is missing, or the child exits non-zero. Returns `DOCLI.INPUT_INVALID` when
+/// the child stdout is empty or is not `CliModel` JSON.
+pub fn materialize_dotnet_project(csproj: &Path) -> Result<PathBuf, ErrorBody> {
+    let output = run_dotnet_project(csproj)?;
+    if !output.status.success() {
+        let code = output.status.code().unwrap_or(-1);
+        let detail = one_line(&String::from_utf8_lossy(&output.stderr));
+        let detail = if detail.is_empty() {
+            "no stderr".to_owned()
+        } else {
+            detail
+        };
+        return Err(ErrorBody::io(
+            format!(
+                "docli generate {DOTNET_PROJECT_FLAG}: docli-dotnet project exited {code}: {detail}. Fix the export project and rerun"
+            ),
+            csproj,
+            None,
+        ));
+    }
+
+    let stdout = String::from_utf8(output.stdout).map_err(|err| {
+        ErrorBody::io(
+            format!("docli generate {DOTNET_PROJECT_FLAG} stdout was not UTF-8: {err}"),
+            csproj,
+            None,
+        )
+    })?;
+    let label = csproj.display().to_string();
+    if stdout.trim().is_empty() {
+        return Err(ErrorBody::input_invalid(
+            &label,
+            Some(&format!(
+                "docli generate {DOTNET_PROJECT_FLAG} returned empty stdout"
+            )),
+        ));
+    }
+    if let Err(err) = serde_json::from_str::<CliModel>(&stdout) {
+        return Err(ErrorBody::input_invalid(
+            &label,
+            Some(&format!(
+                "docli generate {DOTNET_PROJECT_FLAG} returned JSON that is not a CliModel: {err}"
+            )),
+        ));
+    }
+
+    let path = dotnet_project_temp_json();
+    std::fs::write(&path, stdout.as_bytes())
+        .map_err(|err| ErrorBody::io(err.to_string(), &path, None))?;
+    Ok(path)
+}
+
+fn run_dotnet_project(csproj: &Path) -> Result<std::process::Output, ErrorBody> {
+    let mut command = command_for_dotnet_project(csproj)?;
+    command
+        .arg("--project")
+        .arg(csproj)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    command.output().map_err(|err| {
+        ErrorBody::io(
+            format!("docli generate {DOTNET_PROJECT_FLAG} failed to start docli-dotnet: {err}"),
+            csproj,
+            None,
+        )
+    })
+}
+
+fn command_for_dotnet_project(csproj: &Path) -> Result<Command, ErrorBody> {
+    if let Some(tool) = docli_dotnet_on_path() {
+        let mut command = Command::new(tool);
+        command.arg("project");
+        return Ok(command);
+    }
+
+    let Some(repo) = find_repo_root() else {
+        return Err(missing_dotnet_tool(csproj, None));
+    };
+    let dll = release_tool_dll(&repo)?;
+    if !dll.is_file() {
+        return Err(missing_dotnet_tool(csproj, Some(dll)));
+    }
+    let mut command = Command::new("dotnet");
+    command.arg(&dll).arg("project");
+    Ok(command)
+}
+
+fn missing_dotnet_tool(csproj: &Path, expected_dll: Option<PathBuf>) -> ErrorBody {
+    let location = match &expected_dll {
+        Some(dll) => format!(
+            "docli-dotnet was not on PATH and {} was not found",
+            dll.display()
+        ),
+        None => "docli-dotnet was not on PATH and the repo root could not be resolved".to_owned(),
+    };
+    ErrorBody::io(
+        format!(
+            "docli generate {DOTNET_PROJECT_FLAG}: {location}. Build with `dotnet build dotnet/Docli.sln -c Release` or install docli-dotnet on PATH"
+        ),
+        csproj,
+        None,
+    )
+}
+
+fn docli_dotnet_on_path() -> Option<PathBuf> {
+    let path_var = std::env::var_os("PATH")?;
+    let file_name = if cfg!(windows) {
+        "docli-dotnet.exe"
+    } else {
+        "docli-dotnet"
+    };
+    std::env::split_paths(&path_var)
+        .map(|dir| dir.join(file_name))
+        .find(|candidate| candidate.is_file())
+}
+
+fn find_repo_root() -> Option<PathBuf> {
+    let mut starts = Vec::new();
+    if let Ok(cwd) = std::env::current_dir() {
+        starts.push(cwd);
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            starts.push(parent.to_path_buf());
+        }
+    }
+    for start in starts {
+        for ancestor in start.ancestors() {
+            if ancestor.join("Cargo.toml").is_file()
+                && ancestor
+                    .join("dotnet/src/Docli.Tool/Docli.Tool.csproj")
+                    .is_file()
+            {
+                return Some(ancestor.to_path_buf());
+            }
+        }
+    }
+    None
+}
+
+fn release_tool_dll(repo: &Path) -> Result<PathBuf, ErrorBody> {
+    let csproj = repo.join("dotnet/src/Docli.Tool/Docli.Tool.csproj");
+    let tfm = tool_target_framework(&csproj)?;
+    Ok(repo
+        .join("dotnet/src/Docli.Tool/bin/Release")
+        .join(tfm)
+        .join("Docli.Tool.dll"))
+}
+
+fn tool_target_framework(csproj: &Path) -> Result<String, ErrorBody> {
+    let text = std::fs::read_to_string(csproj).map_err(|err| {
+        ErrorBody::io(
+            format!(
+                "docli generate {DOTNET_PROJECT_FLAG} could not read {}: {err}",
+                csproj.display()
+            ),
+            csproj,
+            None,
+        )
+    })?;
+    let Some(rest) = text.split_once("<TargetFramework>") else {
+        return Err(ErrorBody::io(
+            format!(
+                "docli generate {DOTNET_PROJECT_FLAG} found no TargetFramework in {}",
+                csproj.display()
+            ),
+            csproj,
+            None,
+        ));
+    };
+    let Some(tfm) = rest.1.split_once("</TargetFramework>") else {
+        return Err(ErrorBody::io(
+            format!(
+                "docli generate {DOTNET_PROJECT_FLAG} found an unclosed TargetFramework in {}",
+                csproj.display()
+            ),
+            csproj,
+            None,
+        ));
+    };
+    let tfm = tfm.0.trim();
+    if tfm.is_empty() {
+        return Err(ErrorBody::io(
+            format!(
+                "docli generate {DOTNET_PROJECT_FLAG} found an empty TargetFramework in {}",
+                csproj.display()
+            ),
+            csproj,
+            None,
+        ));
+    }
+    Ok(tfm.to_owned())
+}
+
+fn dotnet_project_temp_json() -> PathBuf {
+    static NEXT_MODEL: AtomicU64 = AtomicU64::new(0);
+    let seq = NEXT_MODEL.fetch_add(1, Ordering::Relaxed);
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0);
+    std::env::temp_dir().join(format!(
+        "docli-dotnet-project-{}-{nanos}-{seq}.json",
+        std::process::id()
+    ))
+}
+
+fn one_line(text: &str) -> String {
+    const MAX: usize = 240;
+    let collapsed = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if collapsed.len() <= MAX {
+        collapsed
+    } else {
+        collapsed.chars().take(MAX).collect()
+    }
 }
 
 /// Hash requested artifacts that already exist on disk.

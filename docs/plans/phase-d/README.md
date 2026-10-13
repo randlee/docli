@@ -12,7 +12,7 @@ This planning branch does not edit [`docs/requirements.md`](../../requirements.m
 
 1. A host .NET app calls `Docli.CommandLineAdapter.FromCommand` on its own `System.CommandLine` tree. That library method writes `CliModel` JSON whose field set and snake_case names match `src/schema.rs` (`CliModel`, `OptionSpec`, `ArgumentSpec`, unknown fields preserved). "Same JSON" means that schema field set and those names. It does not mean byte-identical output with `from_clap` for an arbitrary tree. This phase does not add a live clap dump harness.
 2. The Rust command `docli generate --input <that-json>` writes the HTML. `--markdown` stays on that same Rust command.
-3. The dotnet global tool, command name `docli-dotnet`, emits JSON only for the command tree it owns (`docli-dotnet model`). It is not a way to document an arbitrary user app. It does not render HTML or Markdown. Rust `docli` is the user-facing doc product.
+3. The dotnet global tool, command name `docli-dotnet`, emits JSON only for the command tree it owns (`docli-dotnet model`) and, with `docli-dotnet project`, for an export host named by `--project`. It is not a way to document an arbitrary user app. It does not render HTML or Markdown. Rust `docli` is the user-facing doc product. `docli generate --dotnet-project` orchestrates `docli-dotnet project` and then renders that JSON.
 
 ## Layout
 
@@ -22,12 +22,13 @@ This planning branch does not edit [`docs/requirements.md`](../../requirements.m
 | `dotnet/Docli.sln` | d.2 (tool and sample projects added later) | Solution |
 | `dotnet/src/Docli/` | d.2 model and JSON; d.3 walker | Class library |
 | `dotnet/src/Docli.Tool/` | d.4 | Console app, `PackAsTool`, command name `docli-dotnet` |
-| `dotnet/tests/Docli.Tests/` | d.2–d.5 | JSON parity, adapter, tool, HTML proof |
+| `dotnet/tests/Docli.Tests/` | d.2–d.6 | JSON parity, adapter, tool, HTML proof, project orchestration |
 | `dotnet/samples/Docli.Sample/` | d.5 | Sample command tree for the proof |
+| `dotnet/samples/Docli.Sample.Export/` | d.6 | Export host that writes the sample tree as CliModel JSON |
 
 ## What Phase D closes
 
-- `REQ-DOCLI-NET-002`: a `System.CommandLine` tree becomes `CliModel` JSON, and Rust `docli generate` renders it. This is an id split of the adapter half of `REQ-DOCLI-NET-001`, not a new feature. Portions: d.2 JSON types and schema field names; d.3 `FromCommand`; d.4 the tool's own `docli model` JSON; d.5 the sample proof. d.1 writes the requirement and `ADR-005` text and does not implement the adapter.
+- `REQ-DOCLI-NET-002`: a `System.CommandLine` tree becomes `CliModel` JSON, and Rust `docli generate` renders it. This is an id split of the adapter half of `REQ-DOCLI-NET-001`, not a new feature. Portions: d.2 JSON types and schema field names; d.3 `FromCommand`; d.4 the tool's own `docli model` JSON; d.5 the sample proof; d.6 `docli generate --dotnet-project` orchestrating `docli-dotnet project`. d.1 writes the requirement and `ADR-005` text and does not implement the adapter.
 - The tool's own `docli-dotnet model` JSON, proven when Rust `docli generate --input` writes `index.html` from that file (d.4). Global tool command name is `docli-dotnet`.
 - A sample-library proof: the sample calls `FromCommand`, then Rust `docli generate` writes HTML and still accepts `--markdown` (d.5). d.5 depends on d.4 because it calls `RustDocli.Generate`, which d.4 owns. This proof does not invoke the tool and does not read `docli model` output.
 - d.1 adds the decision record (`ADR-005`) and `ARCH-RULE-010` for that boundary.
@@ -57,6 +58,7 @@ No sprint Closes section marks those items done. [`phase-c/README.md`](../phase-
 | d.3 | [d3-commandline-walker.md](d3-commandline-walker.md) | `REQ-DOCLI-NET-002` `FromCommand` walker |
 | d.4 | [d4-dotnet-tool-json.md](d4-dotnet-tool-json.md) | `REQ-DOCLI-NET-002` tool `docli model` JSON |
 | d.5 | [d5-sample-rust-html-proof.md](d5-sample-rust-html-proof.md) | `REQ-DOCLI-NET-002` sample tree + Rust HTML proof |
+| d.6 | [d6-generate-docli-dotnet.md](d6-generate-docli-dotnet.md) | `REQ-DOCLI-NET-002` Rust `generate --dotnet-project` + `docli-dotnet project` |
 
 Execution stacks use **`/sc-gh-stack`** on trunk **`integrate/phase-d`** after operator **go**.
 
@@ -84,6 +86,16 @@ git diff --check
 cargo test
 cargo clippy --all-targets --all-features -- -D warnings
 cargo fmt --check
+```
+
+**d.6** adds Rust orchestration and `docli-dotnet project`. From repo root. After these commands, `git status --porcelain` lists no `dotnet/**/bin` or `dotnet/**/obj` path:
+
+```text
+cargo build --bin docli
+cargo test --test cli_contract -- --nocapture
+dotnet build dotnet/Docli.sln -c Release
+dotnet test dotnet/Docli.sln -c Release --filter "ProjectCommandTests|DotnetGenerateOrchestrationTests"
+git diff --check
 ```
 
 ## Phase-end QA

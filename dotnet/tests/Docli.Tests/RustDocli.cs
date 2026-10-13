@@ -14,12 +14,56 @@ public static class RustDocli
         string? markdownPath,
         TimeSpan timeout)
     {
+        var args = new List<string>
+        {
+            "generate",
+            "--input",
+            inputPath,
+            "--html",
+            htmlDir,
+        };
+        if (markdownPath is not null)
+        {
+            args.Add("--markdown");
+            args.Add(markdownPath);
+        }
+
+        return Run(repoRoot, timeout, args);
+    }
+
+    public static GenerateResult GenerateDotnetProject(
+        string repoRoot,
+        string csproj,
+        string htmlDir,
+        string? markdownPath,
+        TimeSpan timeout)
+    {
+        var args = new List<string>
+        {
+            "generate",
+            "--dotnet-project",
+            csproj,
+            "--html",
+            htmlDir,
+        };
+        if (markdownPath is not null)
+        {
+            args.Add("--markdown");
+            args.Add(markdownPath);
+        }
+
+        return Run(repoRoot, timeout, args);
+    }
+
+    private static GenerateResult Run(string repoRoot, TimeSpan timeout, IReadOnlyList<string> args)
+    {
         var binaryName = OperatingSystem.IsWindows() ? "docli.exe" : "docli";
         var binaryPath = Path.Combine(repoRoot, "target", "debug", binaryName);
         var start = new ProcessStartInfo
         {
             WorkingDirectory = repoRoot,
             UseShellExecute = false,
+            RedirectStandardInput = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             StandardOutputEncoding = Encoding.UTF8,
@@ -40,15 +84,9 @@ public static class RustDocli
             start.ArgumentList.Add("--");
         }
 
-        start.ArgumentList.Add("generate");
-        start.ArgumentList.Add("--input");
-        start.ArgumentList.Add(inputPath);
-        start.ArgumentList.Add("--html");
-        start.ArgumentList.Add(htmlDir);
-        if (markdownPath is not null)
+        foreach (var arg in args)
         {
-            start.ArgumentList.Add("--markdown");
-            start.ArgumentList.Add(markdownPath);
+            start.ArgumentList.Add(arg);
         }
 
         Process process;
@@ -66,6 +104,7 @@ public static class RustDocli
 
         using (process)
         {
+            process.StandardInput.Close();
             var stdoutTask = process.StandardOutput.ReadToEndAsync();
             var stderrTask = process.StandardError.ReadToEndAsync();
             var milliseconds = (int)Math.Min(int.MaxValue, Math.Max(0, timeout.TotalMilliseconds));
