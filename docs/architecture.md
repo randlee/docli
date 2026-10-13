@@ -218,6 +218,9 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
 **Consequences**
 
 - HTML bytes for adapter JSON come from the Rust `docli generate` path (ADR-001, ADR-004).
+- Rust render and `docli generate --input` failures stay on the section 9 `DOCLI.*` contract (ADR-003). This ADR adds no codes.
+- Dotnet adapter and tool human stderr and exit semantics are closed in sprint d.4 (`docs/plans/phase-d/d4-dotnet-tool-json.md`). The dotnet tool is not the Rust version `"1"` envelope.
+- An exception from `DefaultValueFactory` propagates unchanged from `FromCommand`, per sprint d.3 (`docs/plans/phase-d/d3-commandline-walker.md`).
 - A global `dotnet tool install` shim named `docli` can shadow the Rust `docli` binary. This phase's tests and proofs invoke the built DLL or a local tool path, not a global install. `REQ-DOCLI-PRODUCT-004` stays later and must reconcile that shim when it is closed.
 - A .NET renderer, a template-engine port, Go, Python, and MCP need a later ADR.
 
