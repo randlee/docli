@@ -1,7 +1,7 @@
 ---
 id: d.4
 title: dotnet tool emits JSON
-status: planned
+status: complete
 branch: feature/phase-d-d4-tool
 worktree: ../docli-worktrees/feature/phase-d-d4-tool
 target: integrate/phase-d
