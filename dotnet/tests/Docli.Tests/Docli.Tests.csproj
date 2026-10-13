@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Docli\Docli.csproj" />
     <ProjectReference Include="..\..\src\Docli.Tool\Docli.Tool.csproj" />
+    <ProjectReference Include="..\..\samples\Docli.Sample\Docli.Sample.csproj" />
   </ItemGroup>
 
 </Project>
