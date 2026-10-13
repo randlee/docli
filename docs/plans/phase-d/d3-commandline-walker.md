@@ -1,7 +1,7 @@
 ---
 id: d.3
 title: System.CommandLine walker
-status: planned
+status: complete
 branch: feature/phase-d-d3-adapter
 worktree: ../docli-worktrees/feature/phase-d-d3-adapter
 target: integrate/phase-d
