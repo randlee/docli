@@ -656,3 +656,149 @@ fn docli_stdin_empty_is_input_invalid() {
     assert_eq!(error["details"], serde_json::json!({}));
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
 }
+
+#[test]
+fn docli_io_dotnet_project_subprocess_failure_json() {
+    let dir = unique_dir();
+    install_fake_docli_dotnet(&dir);
+    let csproj = dir.join("export-host.csproj");
+    let output = run_generate_dotnet_project(
+        &dir,
+        &[
+            ("DOCLI_FAKE_EXIT", "2"),
+            ("DOCLI_FAKE_STDERR", "export host failed"),
+        ],
+        &csproj,
+    );
+    assert_exit(&output, 4);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        4,
+        "dependency",
+        "DOCLI.IO",
+    );
+    assert_eq!(error["message"], "docli-dotnet project exited 2");
+    assert_eq!(error["details"]["cause"], "export host failed");
+    assert!(error["details"].get("outputs_written").is_none());
+    let action = error["suggested_action"].as_str().unwrap();
+    assert!(action.contains(csproj.to_str().unwrap()), "{action}");
+    assert!(action.contains("--dotnet-project"), "{action}");
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[test]
+fn docli_input_invalid_dotnet_project_stdout_json() {
+    let dir = unique_dir();
+    install_fake_docli_dotnet(&dir);
+    let csproj = dir.join("export-host.csproj");
+    let output = run_generate_dotnet_project(
+        &dir,
+        &[("DOCLI_FAKE_EXIT", "0"), ("DOCLI_FAKE_STDOUT", "not-json")],
+        &csproj,
+    );
+    assert_exit(&output, 2);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        2,
+        "validation",
+        "DOCLI.INPUT_INVALID",
+    );
+    assert_eq!(
+        error["message"],
+        "docli-dotnet project stdout is not CliModel JSON"
+    );
+    let cause = error["details"]["cause"].as_str().expect("serde cause");
+    assert!(cause.contains("expected"), "{cause}");
+    assert_eq!(error["details"].as_object().expect("details").len(), 1);
+    let action = error["suggested_action"].as_str().unwrap();
+    assert!(action.contains(csproj.to_str().unwrap()), "{action}");
+    assert!(action.contains("--dotnet-project"), "{action}");
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+fn run_generate_dotnet_project(
+    fake_dir: &std::path::Path,
+    env: &[(&str, &str)],
+    csproj: &std::path::Path,
+) -> std::process::Output {
+    let mut command = docli_bin();
+    let mut paths = vec![fake_dir.to_path_buf()];
+    if let Some(existing) = std::env::var_os("PATH") {
+        paths.extend(std::env::split_paths(&existing));
+    }
+    command.env("PATH", std::env::join_paths(paths).expect("join PATH"));
+    for (key, value) in env {
+        command.env(key, value);
+    }
+    run(
+        &mut command,
+        &[
+            "generate",
+            "--dotnet-project",
+            csproj.to_str().expect("utf8 csproj"),
+            "--json",
+        ],
+    )
+}
+
+/// Writes a `docli-dotnet` executable whose stdout, stderr, and exit come from
+/// `DOCLI_FAKE_STDOUT`, `DOCLI_FAKE_STDERR`, and `DOCLI_FAKE_EXIT`.
+fn install_fake_docli_dotnet(dir: &std::path::Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+
+        let path = dir.join("docli-dotnet");
+        fs::write(
+            &path,
+            "#!/bin/sh\n\
+             if [ -n \"${DOCLI_FAKE_STDERR:-}\" ]; then\n\
+               printf '%s' \"$DOCLI_FAKE_STDERR\" >&2\n\
+             fi\n\
+             if [ -n \"${DOCLI_FAKE_STDOUT:-}\" ]; then\n\
+               printf '%s' \"$DOCLI_FAKE_STDOUT\"\n\
+             fi\n\
+             exit \"${DOCLI_FAKE_EXIT:-0}\"\n",
+        )
+        .expect("write fake docli-dotnet");
+        let mut permissions = fs::metadata(&path).expect("fake metadata").permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(&path, permissions).expect("chmod fake docli-dotnet");
+    }
+    #[cfg(windows)]
+    {
+        let source = dir.join("fake_docli_dotnet.rs");
+        fs::write(
+            &source,
+            "fn main() {\n\
+             if let Ok(text) = std::env::var(\"DOCLI_FAKE_STDERR\") {\n\
+             eprint!(\"{text}\");\n\
+             }\n\
+             if let Ok(text) = std::env::var(\"DOCLI_FAKE_STDOUT\") {\n\
+             print!(\"{text}\");\n\
+             }\n\
+             let code = std::env::var(\"DOCLI_FAKE_EXIT\")\n\
+             .ok()\n\
+             .and_then(|value| value.parse::<i32>().ok())\n\
+             .unwrap_or(0);\n\
+             std::process::exit(code);\n\
+             }\n",
+        )
+        .expect("write fake docli-dotnet source");
+        let exe = dir.join("docli-dotnet.exe");
+        let compiled = std::process::Command::new("rustc")
+            .arg(&source)
+            .arg("-o")
+            .arg(&exe)
+            .output()
+            .expect("run rustc to build fake docli-dotnet");
+        assert!(
+            compiled.status.success(),
+            "rustc failed to build fake docli-dotnet\nstdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&compiled.stdout),
+            String::from_utf8_lossy(&compiled.stderr)
+        );
+    }
+}

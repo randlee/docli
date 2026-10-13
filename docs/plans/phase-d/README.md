@@ -66,7 +66,7 @@ Execution stacks use **`/sc-gh-stack`** on trunk **`integrate/phase-d`** after o
 
 Not **d.0**. **d.1** is docs only: its Required Validation is the gate (the solution does not exist yet).
 
-Install the .NET SDK that satisfies `global.json` before the host gate. `dotnet --version` satisfies the SDK pinned in `global.json`. Phase D does not add a .NET CI job. A .NET CI job is a deliberate later item. The host gate is the only .NET gate. d.4 tool tests require `-c Release`. A `dotnet test` without `-c Release` is not a valid run of those tests. Each implementation sprint PR (d.2, d.3, d.4, and d.5) pastes that sprint's host-gate output in the PR description.
+Install the .NET SDK that satisfies `global.json` before the host gate. `dotnet --version` satisfies the SDK pinned in `global.json`. Phase D does not add a .NET CI job. A .NET CI job is a deliberate later item. The host gate is the only .NET gate. d.4 tool tests require `-c Release`. A `dotnet test` without `-c Release` is not a valid run of those tests. Each implementation sprint PR (d.2, d.3, d.4, d.5, and d.6) pastes that sprint's host-gate output in the PR description.
 
 **d.2** and **d.3**, from repo root. After these commands, `git status --porcelain` lists no `dotnet/**/bin` or `dotnet/**/obj` path:
 
