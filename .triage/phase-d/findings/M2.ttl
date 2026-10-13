@@ -1,0 +1,43 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/M2>
+  a triage:Finding ;
+  triage:findingId "M2" ;
+  triage:title "Always Release build, no framework override" ;
+  triage:description "materialize_dotnet_project() runs `dotnet build <csproj> -c Release` (Release hardcoded). There is no flag to select Debug or a custom framework. The phase-d architecture and docs require Release for the d.4 and d.5 host gate and tests, but no user-facing option is present for a developer building locally or in a different environment. This is acceptable if documented in the README as a known constraint; currently it is not surfaced." ;
+  triage:phaseId "phase-d" ;
+  triage:triageMode "initial_pass" ;
+  triage:repeatable false ;
+  triage:sweepScope "file_only" ;
+  triage:status "open" ;
+  triage:dispatchReady false ;
+  triage:category "M" ;
+  triage:severity "minor" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d6-generate-docli-dotnet.md" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/M2/code/1> ;
+  triage:openOn <urn:atm:triage:worktree/integrate-phase-d/608c413> ;
+  triage:acceptedDeferralId "NET-CI" ;
+  triage:deferralReason "Phase D does not add a .NET CI job; Release-only is a documented phase constraint acceptable for d.6 execution" ;
+  triage:promoteTo <urn:atm:triage:worktree/integrate-phase-d/608c413> ;
+  triage:triagedAt "2026-10-13T08:21:00Z"^^xsd:dateTime .
+
+<urn:atm:triage:occurrence/M2/code/1>
+  a triage:Occurrence ;
+  triage:file "src/ops.rs" ;
+  triage:line 809 ;
+  triage:snippet "command.arg(\"-c\").arg(\"Release\")" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "integrate/phase-d" ;
+  triage:headSha "608c413" ;
+  triage:occursIn <urn:atm:triage:worktree/integrate-phase-d/608c413> .
+
+<urn:atm:triage:worktree/integrate-phase-d/608c413>
+  a triage:WorktreeSnapshot ;
+  triage:branch "integrate/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/integrate/phase-d" ;
+  triage:headSha "608c413" ;
+  triage:orderIndex 1 .

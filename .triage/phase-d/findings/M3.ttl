@@ -1,0 +1,43 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/M3>
+  a triage:Finding ;
+  triage:findingId "M3" ;
+  triage:title "Windows exe-only lookup; SDK patch unrecorded in CI" ;
+  triage:description "docli_dotnet_on_path() probes for docli-dotnet.exe on Windows but docli-dotnet on Unix. This is correct for platform conventions. However, the .NET SDK version used in the Release build (pinned via global.json at ADR-005 pin net10.0) is not recorded or validated in the host gate or CI output. If the Windows CI agent has a different SDK patch version, it may produce a binary with different behavior. Phase D docs note that CI is not added for .NET; the Windows host gate currently has no CI enforcement." ;
+  triage:phaseId "phase-d" ;
+  triage:triageMode "initial_pass" ;
+  triage:repeatable false ;
+  triage:sweepScope "file_only" ;
+  triage:status "open" ;
+  triage:dispatchReady false ;
+  triage:category "M" ;
+  triage:severity "minor" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d6-generate-docli-dotnet.md" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/M3/code/1> ;
+  triage:openOn <urn:atm:triage:worktree/integrate-phase-d/608c413> ;
+  triage:acceptedDeferralId "NET-CI" ;
+  triage:deferralReason "Phase D explicitly defers .NET CI job; Windows platform-specific SDK patches are acceptable pre-CI constraint" ;
+  triage:promoteTo <urn:atm:triage:worktree/integrate-phase-d/608c413> ;
+  triage:triagedAt "2026-10-13T08:21:00Z"^^xsd:dateTime .
+
+<urn:atm:triage:occurrence/M3/code/1>
+  a triage:Occurrence ;
+  triage:file "src/ops.rs" ;
+  triage:line 823 ;
+  triage:snippet "let file_name = if cfg!(windows) { \"docli-dotnet.exe\" } else { \"docli-dotnet\" };" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "integrate/phase-d" ;
+  triage:headSha "608c413" ;
+  triage:occursIn <urn:atm:triage:worktree/integrate-phase-d/608c413> .
+
+<urn:atm:triage:worktree/integrate-phase-d/608c413>
+  a triage:WorktreeSnapshot ;
+  triage:branch "integrate/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/integrate/phase-d" ;
+  triage:headSha "608c413" ;
+  triage:orderIndex 1 .

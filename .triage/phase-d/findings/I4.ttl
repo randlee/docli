@@ -1,0 +1,53 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/I4>
+  a triage:Finding ;
+  triage:findingId "I4" ;
+  triage:title "No CLI/subprocess timeout; stderr truncated to 240 chars" ;
+  triage:description "run_dotnet_project() calls output() without a timeout. Stderr is truncated by one_line() to the first newline only, losing diagnostic context. The .NET subprocess or a hanging process has no deadline. Phase D host gate and tests have timeout constraints (d.6 PR timeouts 180s for build+run), but no runtime timeout is enforced in production." ;
+  triage:phaseId "phase-d" ;
+  triage:triageMode "initial_pass" ;
+  triage:repeatable false ;
+  triage:sweepScope "file_only" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:category "I" ;
+  triage:severity "important" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d6-generate-docli-dotnet.md" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/I4/code/1> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/I4/code/2> ;
+  triage:openOn <urn:atm:triage:worktree/integrate-phase-d/608c413> ;
+  triage:promoteTo <urn:atm:triage:worktree/integrate-phase-d/608c413> ;
+  triage:triagedAt "2026-10-13T08:21:00Z"^^xsd:dateTime .
+
+<urn:atm:triage:occurrence/I4/code/1>
+  a triage:Occurrence ;
+  triage:file "src/ops.rs" ;
+  triage:line 818 ;
+  triage:snippet "command.output().map_err(|err| start_failure(&command, err, csproj))" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "integrate/phase-d" ;
+  triage:headSha "608c413" ;
+  triage:occursIn <urn:atm:triage:worktree/integrate-phase-d/608c413> .
+
+<urn:atm:triage:occurrence/I4/code/2>
+  a triage:Occurrence ;
+  triage:file "src/ops.rs" ;
+  triage:line 775 ;
+  triage:snippet "fn one_line(s: &str) -> String { s.lines().next().unwrap_or(\"\").trim().to_owned() }" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "integrate/phase-d" ;
+  triage:headSha "608c413" ;
+  triage:occursIn <urn:atm:triage:worktree/integrate-phase-d/608c413> .
+
+<urn:atm:triage:worktree/integrate-phase-d/608c413>
+  a triage:WorktreeSnapshot ;
+  triage:branch "integrate/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/integrate/phase-d" ;
+  triage:headSha "608c413" ;
+  triage:orderIndex 1 .
