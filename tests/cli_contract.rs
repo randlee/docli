@@ -721,3 +721,188 @@ fn envelope_always_serializes_data_error_and_docs() {
     assert_eq!(failure["data"], Value::Null);
     assert_eq!(failure["error"]["docs"], Value::Null);
 }
+
+#[test]
+fn generate_rejects_input_file_with_dotnet_project() {
+    let output = bin()
+        .args([
+            "generate",
+            "--input",
+            "foo.json",
+            "--dotnet-project",
+            "bar.csproj",
+            "--json",
+        ])
+        .output()
+        .expect("run generate");
+
+    assert_eq!(output.status.code(), Some(2));
+    let envelope = parse_envelope(&output.stdout);
+    let error = assert_failure(
+        output.status.code(),
+        &envelope,
+        2,
+        "validation",
+        "DOCLI.USAGE",
+    );
+    assert_suggested_action_contains(&error, &["--input", "--dotnet-project"]);
+    assert_eq!(error["details"]["cause"], error["suggested_action"]);
+}
+
+#[test]
+fn generate_dotnet_project_writes_sample_html_when_tool_is_available() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let tool_csproj = repo.join("dotnet/src/Docli.Tool/Docli.Tool.csproj");
+    let tfm = target_framework(&tool_csproj);
+    let dll = repo
+        .join("dotnet/src/Docli.Tool/bin/Release")
+        .join(&tfm)
+        .join("Docli.Tool.dll");
+    build_release_tool(repo);
+    assert!(
+        dll.is_file(),
+        "Release tool is missing after dotnet build: {}",
+        dll.display()
+    );
+    assert_project_subcommand(&dll);
+
+    let export = repo.join("dotnet/samples/Docli.Sample.Export/Docli.Sample.Export.csproj");
+    let dir = unique_dir();
+    let html_dir = dir.join("html");
+    let started = std::time::SystemTime::now();
+    let output = bin()
+        .args([
+            "generate",
+            "--dotnet-project",
+            export.to_str().expect("utf8 export path"),
+            "--html",
+            html_dir.to_str().expect("utf8 html dir"),
+        ])
+        .current_dir(repo)
+        .env("PATH", path_without_docli_dotnet())
+        .env("MSBUILDDISABLENODEREUSE", "1")
+        .output()
+        .expect("run generate --dotnet-project");
+
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let html_path = html_dir.join("index.html");
+    assert!(html_path.is_file(), "missing {}", html_path.display());
+    let html = fs::read_to_string(&html_path).expect("read index.html");
+    assert!(
+        html.contains("<title>sample CLI Reference</title>"),
+        "index.html did not render the sample command"
+    );
+    let leaked = leaked_dotnet_project_json(started);
+    assert!(
+        leaked.is_empty(),
+        "generate left temp export JSON: {}",
+        leaked
+            .iter()
+            .map(|path| path.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+}
+
+fn build_release_tool(repo: &Path) {
+    let output = Command::new("dotnet")
+        .args([
+            "build",
+            "dotnet/src/Docli.Tool/Docli.Tool.csproj",
+            "-c",
+            "Release",
+            "--nologo",
+        ])
+        .current_dir(repo)
+        .env("MSBUILDDISABLENODEREUSE", "1")
+        .output()
+        .unwrap_or_else(|err| {
+            panic!(
+                "dotnet build of Docli.Tool failed to start ({err}). Install the SDK pinned in global.json. This test does not pass when the Release tool is missing or stale."
+            );
+        });
+    assert!(
+        output.status.success(),
+        "dotnet build -c Release of Docli.Tool failed\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+fn assert_project_subcommand(dll: &Path) {
+    let output = Command::new("dotnet")
+        .arg(dll)
+        .args(["project", "--help"])
+        .env("MSBUILDDISABLENODEREUSE", "1")
+        .output()
+        .unwrap_or_else(|err| {
+            panic!(
+                "failed to start the Release tool at {}: {err}",
+                dll.display()
+            );
+        });
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        output.status.success() && stdout.contains("--project"),
+        "Release Docli.Tool.dll project subcommand is missing or stale\nstdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+}
+
+fn path_without_docli_dotnet() -> std::ffi::OsString {
+    let file_name = if cfg!(windows) {
+        "docli-dotnet.exe"
+    } else {
+        "docli-dotnet"
+    };
+    let dirs = std::env::var_os("PATH")
+        .map(|existing| {
+            std::env::split_paths(&existing)
+                .filter(|dir| !dir.join(file_name).is_file())
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    std::env::join_paths(dirs).expect("join PATH without docli-dotnet")
+}
+
+fn leaked_dotnet_project_json(started: std::time::SystemTime) -> Vec<PathBuf> {
+    let Ok(entries) = fs::read_dir(std::env::temp_dir()) else {
+        return Vec::new();
+    };
+    entries
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| {
+            let name = entry.file_name();
+            let name = name.to_string_lossy();
+            if !name.starts_with("docli-dotnet-project-") {
+                return false;
+            }
+            entry
+                .metadata()
+                .and_then(|metadata| metadata.modified())
+                .is_ok_and(|modified| modified >= started)
+        })
+        .map(|entry| entry.path())
+        .collect()
+}
+
+fn target_framework(csproj: &Path) -> String {
+    let text = fs::read_to_string(csproj).unwrap_or_else(|err| {
+        panic!("read {}: {err}", csproj.display());
+    });
+    let rest = text
+        .split_once("<TargetFramework>")
+        .unwrap_or_else(|| panic!("no TargetFramework in {}", csproj.display()))
+        .1;
+    rest.split_once("</TargetFramework>")
+        .unwrap_or_else(|| panic!("unclosed TargetFramework in {}", csproj.display()))
+        .0
+        .trim()
+        .to_owned()
+}

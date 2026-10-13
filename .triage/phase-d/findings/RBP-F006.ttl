@@ -1,0 +1,51 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/RBP-F006>
+  a triage:Finding ;
+  triage:findingId "RBP-F006" ;
+  triage:title "ADR-005 missing error ownership" ;
+  triage:description "ADR-005 accepts dotnet CLI and FromCommand but defines no error boundary, exception policy, or cross-reference to actionable failure contracts per RBP-001." ;
+  triage:phaseId "phase-d" ;
+  triage:triageMode "initial_pass" ;
+  triage:category "RBP" ;
+  triage:severity "important" ;
+  triage:repeatable false ;
+  triage:sweepScope "docs" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:triagedAt "2026-10-12T17:56:00-07:00"^^xsd:dateTime ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:adrId "ADR-003" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/RBP-F006/d1-baselines/1> ;
+  triage:openOn <urn:atm:triage:worktree/d1-baselines/cd996b7> ;
+  triage:promoteTo <urn:atm:triage:worktree/d1-baselines/cd996b7> .
+
+<urn:atm:triage:occurrence/RBP-F006/d1-baselines/1>
+  a triage:Occurrence ;
+  triage:file "docs/architecture.md" ;
+  triage:line 200 ;
+  triage:snippet "### ADR-005 — .NET emits CliModel JSON; Rust renders HTML" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "feature/phase-d-d1-baselines" ;
+  triage:headSha "cd996b7" ;
+  triage:occursIn <urn:atm:triage:worktree/d1-baselines/cd996b7> .
+
+<urn:atm:triage:worktree/integrate/phase-d/3761d2b>
+  a triage:WorktreeSnapshot ;
+  triage:branch "integrate/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/integrate/phase-d" ;
+  triage:headSha "3761d2b" ;
+  triage:orderIndex 0 ;
+  triage:status "absent" .
+
+<urn:atm:triage:worktree/d1-baselines/cd996b7>
+  a triage:WorktreeSnapshot ;
+  triage:branch "feature/phase-d-d1-baselines" ;
+  triage:path "/Users/randlee/github/docli-worktrees/feature/phase-d-d1-baselines" ;
+  triage:headSha "cd996b7" ;
+  triage:orderIndex 1 ;
+  triage:status "open" .

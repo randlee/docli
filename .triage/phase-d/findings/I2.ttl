@@ -1,0 +1,41 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/I2>
+  a triage:Finding ;
+  triage:findingId "I2" ;
+  triage:title "PATH file probe vs repo DLL; cwd-first find_repo_root" ;
+  triage:description "find_repo_root() checks std::env::current_dir() before std::env::current_exe(), which may locate a stale docli-dotnet binary on PATH in the current working directory before discovering the repo-built Release DLL. This creates a PATH resolution order ambiguity: cwd wins over repo discovery." ;
+  triage:phaseId "phase-d" ;
+  triage:triageMode "initial_pass" ;
+  triage:repeatable false ;
+  triage:sweepScope "file_only" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:category "I" ;
+  triage:severity "important" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d6-generate-docli-dotnet.md" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/I2/code/1> ;
+  triage:openOn <urn:atm:triage:worktree/integrate-phase-d/608c413> ;
+  triage:promoteTo <urn:atm:triage:worktree/integrate-phase-d/608c413> ;
+  triage:triagedAt "2026-10-13T08:21:00Z"^^xsd:dateTime .
+
+<urn:atm:triage:occurrence/I2/code/1>
+  a triage:Occurrence ;
+  triage:file "src/ops.rs" ;
+  triage:line 833 ;
+  triage:snippet "fn find_repo_root() -> Option<PathBuf> { let mut starts = Vec::new(); if let Ok(cwd) = std::env::current_dir() { starts.push(cwd); }" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "integrate/phase-d" ;
+  triage:headSha "608c413" ;
+  triage:occursIn <urn:atm:triage:worktree/integrate-phase-d/608c413> .
+
+<urn:atm:triage:worktree/integrate-phase-d/608c413>
+  a triage:WorktreeSnapshot ;
+  triage:branch "integrate/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/integrate/phase-d" ;
+  triage:headSha "608c413" ;
+  triage:orderIndex 1 .

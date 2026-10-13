@@ -26,7 +26,7 @@ Operator guide: [`.plan-hardening/README.md`](../../.plan-hardening/README.md).
 | A | `integrate/phase-a` | [phase-a/README.md](phase-a/README.md) | Complete (merged to `develop`) |
 | B | `integrate/phase-b` | [phase-b/README.md](phase-b/README.md) | Execution complete on integrate; phase-end QA → merge to **develop** |
 | C | — | [phase-c/README.md](phase-c/README.md) | Retired redirect. No Phase C release |
-| D | `integrate/phase-d` | [phase-d/README.md](phase-d/README.md) | Planned |
+| D | `integrate/phase-d` | [phase-d/README.md](phase-d/README.md) | Execution complete on integrate; phase-end QA → merge to **develop** |
 
 ## Branch model (every phase)
 
@@ -49,7 +49,7 @@ Two Git tracks, **one phase plan** (`docs/plans/phase-<N>/`):
 
 Planning and execution **do not run as two phases**; they are two **merge targets** so docs stay readable on `develop` while code lands atomically on the stack.
 
-Phase D is planned. Phase B remains the execution record for templating. HTML templating is **b.7–b.10** inside Phase B. [phase-c/README.md](phase-c/README.md) is a retired redirect: there is no Phase C release and no `integrate/phase-c` branch.
+Phase D execution is complete on `integrate/phase-d`; phase-end QA merges it to `develop`. Phase B remains the execution record for templating. HTML templating is **b.7–b.10** inside Phase B. [phase-c/README.md](phase-c/README.md) is a retired redirect: there is no Phase C release and no `integrate/phase-c` branch.
 
 Phase B and Phase D follow [codex-orchestration](../../.claude/skills/codex-orchestration/SKILL.md):
 sprint docs are authoritative for `req-qa` deliverable enumeration.
@@ -91,4 +91,5 @@ Phase D authority is [phase-d/README.md](phase-d/README.md).
 | d.2 | [d2-cli-model-json.md](phase-d/d2-cli-model-json.md) | `feature/phase-d-d2-model` | `../docli-worktrees/feature/phase-d-d2-model` |
 | d.3 | [d3-commandline-walker.md](phase-d/d3-commandline-walker.md) | `feature/phase-d-d3-adapter` | `../docli-worktrees/feature/phase-d-d3-adapter` |
 | d.4 | [d4-dotnet-tool-json.md](phase-d/d4-dotnet-tool-json.md) | `feature/phase-d-d4-tool` | `../docli-worktrees/feature/phase-d-d4-tool` |
-| d.5 | [d5-sample-rust-html-proof.md](phase-d/d5-sample-rust-html-proof.md) | `feature/phase-d-d5-html-proof` | `../docli-worktrees/feature/phase-d-d5-html-proof` |
+| d.5 | [d5-sample-rust-html-proof.md](phase-d/d5-sample-rust-html-proof.md) | `feature/phase-d-d5-proof` | `../docli-worktrees/feature/phase-d-d5-proof` |
+| d.6 | [d6-generate-docli-dotnet.md](phase-d/d6-generate-docli-dotnet.md) | `feature/phase-d-generate-docli-dotnet` | `../docli-worktrees/feature/phase-d-generate-docli-dotnet` |

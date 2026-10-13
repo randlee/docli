@@ -86,6 +86,10 @@ pub enum ErrorCode {
     #[serde(rename = "DOCLI.USAGE")]
     Usage,
     /// Model JSON is missing, empty, or does not match known field types.
+    ///
+    /// Also empty or non-`CliModel` stdout from `docli generate --dotnet-project`,
+    /// including a `docli-dotnet project` exit 2 whose stderr reports an empty
+    /// or invalid JSON export.
     #[serde(rename = "DOCLI.INPUT_INVALID")]
     InputInvalid,
     /// `--input` path does not exist.
@@ -94,7 +98,7 @@ pub enum ErrorCode {
     /// `show` asked for an artifact that is not on disk.
     #[serde(rename = "DOCLI.OUTPUT_NOT_FOUND")]
     OutputNotFound,
-    /// Reading or writing a file failed.
+    /// Reading or writing a file failed, or a `docli-dotnet` / `dotnet` subprocess failed.
     #[serde(rename = "DOCLI.IO")]
     Io,
     /// A template pack manifest or template failed to compile.
@@ -202,6 +206,26 @@ impl ErrorBody {
         }
     }
 
+    /// Invalid input with an explicit message. The code stays `DOCLI.INPUT_INVALID`.
+    ///
+    /// `details` is `{ "cause" }`. Use this when the model-JSON sentence would
+    /// name the wrong artifact, such as empty or non-`CliModel` stdout from
+    /// `docli-dotnet project`.
+    pub fn input_invalid_with_action(
+        message: impl Into<String>,
+        cause: impl Into<String>,
+        suggested_action: impl Into<String>,
+    ) -> Self {
+        Self {
+            kind: ErrorKind::Validation,
+            code: ErrorCode::InputInvalid,
+            message: message.into(),
+            details: serde_json::json!({ "cause": cause.into() }),
+            suggested_action: suggested_action.into(),
+            docs: None,
+        }
+    }
+
     /// Missing `--input` path.
     pub fn input_not_found(path: impl AsRef<std::path::Path>) -> Self {
         let path = path.as_ref().display().to_string();
@@ -247,6 +271,26 @@ impl ErrorBody {
             message: format!("failed to read or write {failed_path}"),
             details,
             suggested_action: format!("Retry after fixing access to {failed_path}: {cause}"),
+            docs: None,
+        }
+    }
+
+    /// Dependency failure with an explicit message. The code stays `DOCLI.IO`.
+    ///
+    /// `details` is `{ "cause" }` and omits `outputs_written`. Use this for a
+    /// `docli-dotnet` or `dotnet` subprocess failure. File read and write
+    /// failures stay on [`Self::io`].
+    pub fn io_with_action(
+        message: impl Into<String>,
+        cause: impl Into<String>,
+        suggested_action: impl Into<String>,
+    ) -> Self {
+        Self {
+            kind: ErrorKind::Dependency,
+            code: ErrorCode::Io,
+            message: message.into(),
+            details: serde_json::json!({ "cause": cause.into() }),
+            suggested_action: suggested_action.into(),
             docs: None,
         }
     }
@@ -351,5 +395,29 @@ mod tests {
         assert!(text.contains("unknown command or invalid flags"));
         assert!(text.contains("Pass --html DIR and/or --markdown FILE"));
         assert!(!text.contains("cause"));
+    }
+
+    #[test]
+    fn explicit_input_and_io_messages_keep_stable_codes() {
+        let input = ErrorBody::input_invalid_with_action(
+            "docli-dotnet project returned empty stdout",
+            "export host stdout was empty",
+            "Make the export host write CliModel JSON to stdout",
+        );
+        assert_eq!(input.code, ErrorCode::InputInvalid);
+        assert_eq!(input.details["cause"], "export host stdout was empty");
+        assert!(input.details.get("outputs_written").is_none());
+        assert!(!input.message.contains("model JSON is missing"));
+
+        let io = ErrorBody::io_with_action(
+            "docli-dotnet project exited 2",
+            "build failed",
+            "Fix the export project and rerun docli generate --dotnet-project",
+        );
+        assert_eq!(io.code, ErrorCode::Io);
+        assert_eq!(io.kind, ErrorKind::Dependency);
+        assert_eq!(io.details.as_object().expect("object").len(), 1);
+        assert_eq!(io.details["cause"], "build failed");
+        assert!(!io.message.contains("failed to read or write"));
     }
 }

@@ -1,7 +1,7 @@
 ---
 id: d.2
 title: CliModel JSON types and parity tests
-status: planned
+status: complete
 branch: feature/phase-d-d2-model
 worktree: ../docli-worktrees/feature/phase-d-d2-model
 target: integrate/phase-d
@@ -172,7 +172,7 @@ public sealed class ArgumentSpec
 [JsonSourceGenerationOptions(
     WriteIndented = true,
     DefaultIgnoreCondition = JsonIgnoreCondition.Never,
-    PropertyNamingPolicy = null)]
+    PropertyNamingPolicy = JsonKnownNamingPolicy.Unspecified)]
 [JsonSerializable(typeof(CliModel))]
 public sealed partial class DocliJsonContext : JsonSerializerContext;
 
@@ -183,6 +183,7 @@ public static class CliModelJson
 }
 ```
 
+- The `JsonSourceGenerationOptions` argument is `JsonKnownNamingPolicy.Unspecified`. The generator writes `PropertyNamingPolicy = null`. Names stay the `[JsonPropertyName]` values.
 - `Serialize` uses `DocliJsonContext` and returns indented JSON with null known fields present. It does not append a trailing newline. `Deserialize` uses the same context.
 
 ## Out of Scope
@@ -194,6 +195,19 @@ public static class CliModelJson
 - Byte-identical output with `from_clap` for an arbitrary tree, and a live clap dump harness
 - Serde error behavior that System.Text.Json does not match by default: explicit JSON `null` on a non-optional string (`name`, `description`, and the other non-nullable strings), duplicate keys in one JSON object, and wrong-typed values. This sprint does not set `RespectNullableAnnotations` or `AllowDuplicateProperties`. It does not claim those inputs throw. It does not claim an `Extra` key that repeats a known property name throws on serialize.
 
+## Error Inventory
+
+Normative ownership for `REQ-DOCLI-NET-002` stays on the section 5 bullet in [`docs/requirements.md`](../../requirements.md) (sprint d.1) and on the `ADR-005` Consequences in [`docs/architecture.md`](../../architecture.md). Rust `docli generate --input` failures use the existing section 9 `DOCLI.*` codes (ADR-003). This requirement adds no codes. Tool `Write` failures stay in the failure-mode table in [d4-dotnet-tool-json.md](d4-dotnet-tool-json.md). This section does not copy that table. Library exceptions propagate unchanged to the caller, as that `REQ-DOCLI-NET-002` bullet specifies for library errors.
+
+| Failure mode | Code | Cause | Recovery steps |
+|---|---|---|---|
+| A command, option, or argument object has no `name` | `JsonException` with message `Missing required property 'name'.` | `CliModel`, `OptionSpec`, or `ArgumentSpec` is constructed with a null `name` because the JSON object omitted `name`. | Add a JSON string `name` and call `CliModelJson.Deserialize` again. `Missing_name_is_rejected` asserts `JsonException`. The exception reaches the caller. |
+| `RepoRoot.Find` finds no `Cargo.toml` | `DirectoryNotFoundException` | No directory from the test assembly directory upward contains `Cargo.toml`. | Run the test from a checkout that contains `Cargo.toml`. The message includes the start directory. |
+
+`CliModelJson.Deserialize` throws `JsonException` with message `CliModel JSON was null.` when the root value is JSON `null`. Pass a JSON object. That path uses the same exception type.
+
+`JsonKnownNamingPolicy.Unspecified` on `DocliJsonContext` is the source-generator form of a null naming policy, described with the type sample above. Generated options set `PropertyNamingPolicy` to null, and JSON names stay the `[JsonPropertyName]` values.
+
 ## Acceptance Criteria
 
 - `dotnet --version` satisfies the SDK pinned in `global.json`
@@ -202,6 +216,7 @@ public static class CliModelJson
 - `Deserialize_contract_fixture` loads `fixtures/contract/model.json` and sees root name `demo`, version `1.0.0`, option `output` with `value_name` `PATH` and choices `json` then `yaml`, option `verbose` with `long` `--verbose` and `short` `-v`, subcommand `run` whose `usage` contains `demo run`, nested command `once`, and subcommand `check` argument `config` with `required` true
 - `RoundTrip_preserves_unknown_fields`: keys `vendor_ext` on the root, `vendor_opt` on an option, `vendor_arg` on an argument, and `vendor_sub` on a nested subcommand survive `Deserialize` then `Serialize`
 - `Missing_name_is_rejected`: a command object without `name` throws `JsonException`
+- The Error Inventory lists `JsonException` message `Missing required property 'name'.` for a missing `name` and `DirectoryNotFoundException` for `RepoRoot.Find`. User-facing `DOCLI.*` codes stay in requirements section 9. The d.4 failure-mode table stays in [d4-dotnet-tool-json.md](d4-dotnet-tool-json.md) and is not copied here.
 - `Omitted_defaults_match_serde`: omitted `version` is null, omitted `required` is false, omitted `options` is empty, and `Serialize` writes `"version": null` when `Version` is null
 - `Schema_fields_match_src_schema_rs`: the `pub` field names of `CliModel`, `OptionSpec`, and `ArgumentSpec` in `src/schema.rs`, excluding `extra`, equal the `[JsonPropertyName]` sets
 - `RoundTrip_all_fields`: `Fixtures/all-fields.json` round-trips with `long_help`, `min_values`, `max_values`, `default_value`, and `choices` preserved
