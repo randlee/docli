@@ -311,6 +311,33 @@ fn templates_validate_every_repo_html_pack() {
 }
 
 #[test]
+fn generate_disk_extra_packs_render_with_pack_markers() {
+    let dir = unique_dir();
+    let model = workspace_fixture("fixtures/repos/docli.json");
+    for (pack_rel, marker) in [
+        (
+            "templates/html/fancytree-nav",
+            "id=\"docli-fancytree-nav-pack\"",
+        ),
+        (
+            "templates/html/quarto-docs",
+            "id=\"docli-quarto-docs-pack\"",
+        ),
+    ] {
+        let pack = workspace_fixture(pack_rel);
+        let html_dir = dir.join(pack.file_name().expect("pack name"));
+        let html = render_template(&dir, &model, pack.to_str().expect("utf8"), &html_dir);
+        assert!(
+            html.contains(marker),
+            "pack {} missing {marker}",
+            pack.display()
+        );
+        assert!(html.contains("id=\"docli-data\""));
+        assert!(html.contains("id=\"docli-search\""));
+    }
+}
+
+#[test]
 fn generate_cli_doc_docli_repo_fixture_has_layout_markers() {
     let dir = unique_dir();
     let model = workspace_fixture("fixtures/repos/docli.json");
