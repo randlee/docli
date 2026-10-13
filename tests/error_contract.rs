@@ -688,6 +688,107 @@ fn docli_io_dotnet_project_subprocess_failure_json() {
 }
 
 #[test]
+fn docli_input_invalid_dotnet_project_exit_empty_json() {
+    let dir = unique_dir();
+    install_fake_docli_dotnet(&dir);
+    let csproj = dir.join("export-host.csproj");
+    let output = run_generate_dotnet_project(
+        &dir,
+        &[
+            ("DOCLI_FAKE_EXIT", "2"),
+            (
+                "DOCLI_FAKE_STDERR",
+                "docli-dotnet: empty export stdout: export-host.csproj",
+            ),
+        ],
+        &csproj,
+    );
+    assert_exit(&output, 2);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        2,
+        "validation",
+        "DOCLI.INPUT_INVALID",
+    );
+    assert_eq!(
+        error["message"],
+        "docli-dotnet project returned empty stdout"
+    );
+    assert_eq!(
+        error["details"]["cause"],
+        "docli-dotnet: empty export stdout: export-host.csproj"
+    );
+    let action = error["suggested_action"].as_str().unwrap();
+    assert!(action.contains(csproj.to_str().unwrap()), "{action}");
+    assert!(action.contains("--dotnet-project"), "{action}");
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[test]
+fn docli_input_invalid_dotnet_project_exit_parse_json() {
+    let dir = unique_dir();
+    install_fake_docli_dotnet(&dir);
+    let csproj = dir.join("export-host.csproj");
+    let output = run_generate_dotnet_project(
+        &dir,
+        &[
+            ("DOCLI_FAKE_EXIT", "2"),
+            (
+                "DOCLI_FAKE_STDERR",
+                "docli-dotnet: json parse failed: unexpected token",
+            ),
+        ],
+        &csproj,
+    );
+    assert_exit(&output, 2);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        2,
+        "validation",
+        "DOCLI.INPUT_INVALID",
+    );
+    assert_eq!(
+        error["message"],
+        "docli-dotnet project stdout is not CliModel JSON"
+    );
+    assert_eq!(
+        error["details"]["cause"],
+        "docli-dotnet: json parse failed: unexpected token"
+    );
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[test]
+fn docli_io_dotnet_project_non_validation_exit_stays_io() {
+    let dir = unique_dir();
+    install_fake_docli_dotnet(&dir);
+    let csproj = dir.join("export-host.csproj");
+    let output = run_generate_dotnet_project(
+        &dir,
+        &[
+            ("DOCLI_FAKE_EXIT", "1"),
+            (
+                "DOCLI_FAKE_STDERR",
+                "docli-dotnet: json parse failed: unexpected token",
+            ),
+        ],
+        &csproj,
+    );
+    assert_exit(&output, 4);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        4,
+        "dependency",
+        "DOCLI.IO",
+    );
+    assert_eq!(error["message"], "docli-dotnet project exited 1");
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[test]
 fn docli_input_invalid_dotnet_project_stdout_json() {
     let dir = unique_dir();
     install_fake_docli_dotnet(&dir);

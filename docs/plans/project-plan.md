@@ -26,7 +26,7 @@ Operator guide: [`.plan-hardening/README.md`](../../.plan-hardening/README.md).
 | A | `integrate/phase-a` | [phase-a/README.md](phase-a/README.md) | Complete (merged to `develop`) |
 | B | `integrate/phase-b` | [phase-b/README.md](phase-b/README.md) | Execution complete on integrate; phase-end QA → merge to **develop** |
 | C | — | [phase-c/README.md](phase-c/README.md) | Retired redirect. No Phase C release |
-| D | `integrate/phase-d` | [phase-d/README.md](phase-d/README.md) | Planned |
+| D | `integrate/phase-d` | [phase-d/README.md](phase-d/README.md) | Execution complete on integrate; phase-end QA → merge to **develop** |
 
 ## Branch model (every phase)
 
@@ -49,7 +49,7 @@ Two Git tracks, **one phase plan** (`docs/plans/phase-<N>/`):
 
 Planning and execution **do not run as two phases**; they are two **merge targets** so docs stay readable on `develop` while code lands atomically on the stack.
 
-Phase D is planned. Phase B remains the execution record for templating. HTML templating is **b.7–b.10** inside Phase B. [phase-c/README.md](phase-c/README.md) is a retired redirect: there is no Phase C release and no `integrate/phase-c` branch.
+Phase D execution is complete on `integrate/phase-d`; phase-end QA merges it to `develop`. Phase B remains the execution record for templating. HTML templating is **b.7–b.10** inside Phase B. [phase-c/README.md](phase-c/README.md) is a retired redirect: there is no Phase C release and no `integrate/phase-c` branch.
 
 Phase B and Phase D follow [codex-orchestration](../../.claude/skills/codex-orchestration/SKILL.md):
 sprint docs are authoritative for `req-qa` deliverable enumeration.

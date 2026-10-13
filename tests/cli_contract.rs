@@ -758,17 +758,18 @@ fn generate_dotnet_project_writes_sample_html_when_tool_is_available() {
         .join("dotnet/src/Docli.Tool/bin/Release")
         .join(&tfm)
         .join("Docli.Tool.dll");
-    if !dll.is_file() && docli_dotnet_on_path().is_none() {
-        eprintln!(
-            "skipped: docli-dotnet is not on PATH and {dll} does not exist. Prerequisite: dotnet build dotnet/Docli.sln -c Release",
-            dll = dll.display()
-        );
-        return;
-    }
+    build_release_tool(repo);
+    assert!(
+        dll.is_file(),
+        "Release tool is missing after dotnet build: {}",
+        dll.display()
+    );
+    assert_project_subcommand(&dll);
 
     let export = repo.join("dotnet/samples/Docli.Sample.Export/Docli.Sample.Export.csproj");
     let dir = unique_dir();
     let html_dir = dir.join("html");
+    let started = std::time::SystemTime::now();
     let output = bin()
         .args([
             "generate",
@@ -778,6 +779,8 @@ fn generate_dotnet_project_writes_sample_html_when_tool_is_available() {
             html_dir.to_str().expect("utf8 html dir"),
         ])
         .current_dir(repo)
+        .env("PATH", path_without_docli_dotnet())
+        .env("MSBUILDDISABLENODEREUSE", "1")
         .output()
         .expect("run generate --dotnet-project");
 
@@ -795,6 +798,98 @@ fn generate_dotnet_project_writes_sample_html_when_tool_is_available() {
         html.contains("<title>sample CLI Reference</title>"),
         "index.html did not render the sample command"
     );
+    let leaked = leaked_dotnet_project_json(started);
+    assert!(
+        leaked.is_empty(),
+        "generate left temp export JSON: {}",
+        leaked
+            .iter()
+            .map(|path| path.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+}
+
+fn build_release_tool(repo: &Path) {
+    let output = Command::new("dotnet")
+        .args([
+            "build",
+            "dotnet/src/Docli.Tool/Docli.Tool.csproj",
+            "-c",
+            "Release",
+            "--nologo",
+        ])
+        .current_dir(repo)
+        .env("MSBUILDDISABLENODEREUSE", "1")
+        .output()
+        .unwrap_or_else(|err| {
+            panic!(
+                "dotnet build of Docli.Tool failed to start ({err}). Install the SDK pinned in global.json. This test does not pass when the Release tool is missing or stale."
+            );
+        });
+    assert!(
+        output.status.success(),
+        "dotnet build -c Release of Docli.Tool failed\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+fn assert_project_subcommand(dll: &Path) {
+    let output = Command::new("dotnet")
+        .arg(dll)
+        .args(["project", "--help"])
+        .env("MSBUILDDISABLENODEREUSE", "1")
+        .output()
+        .unwrap_or_else(|err| {
+            panic!(
+                "failed to start the Release tool at {}: {err}",
+                dll.display()
+            );
+        });
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        output.status.success() && stdout.contains("--project"),
+        "Release Docli.Tool.dll project subcommand is missing or stale\nstdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+}
+
+fn path_without_docli_dotnet() -> std::ffi::OsString {
+    let file_name = if cfg!(windows) {
+        "docli-dotnet.exe"
+    } else {
+        "docli-dotnet"
+    };
+    let dirs = std::env::var_os("PATH")
+        .map(|existing| {
+            std::env::split_paths(&existing)
+                .filter(|dir| !dir.join(file_name).is_file())
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    std::env::join_paths(dirs).expect("join PATH without docli-dotnet")
+}
+
+fn leaked_dotnet_project_json(started: std::time::SystemTime) -> Vec<PathBuf> {
+    let Ok(entries) = fs::read_dir(std::env::temp_dir()) else {
+        return Vec::new();
+    };
+    entries
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| {
+            let name = entry.file_name();
+            let name = name.to_string_lossy();
+            if !name.starts_with("docli-dotnet-project-") {
+                return false;
+            }
+            entry
+                .metadata()
+                .and_then(|metadata| metadata.modified())
+                .is_ok_and(|modified| modified >= started)
+        })
+        .map(|entry| entry.path())
+        .collect()
 }
 
 fn target_framework(csproj: &Path) -> String {
@@ -810,16 +905,4 @@ fn target_framework(csproj: &Path) -> String {
         .0
         .trim()
         .to_owned()
-}
-
-fn docli_dotnet_on_path() -> Option<PathBuf> {
-    let path_var = std::env::var_os("PATH")?;
-    let file_name = if cfg!(windows) {
-        "docli-dotnet.exe"
-    } else {
-        "docli-dotnet"
-    };
-    std::env::split_paths(&path_var)
-        .map(|dir| dir.join(file_name))
-        .find(|candidate| candidate.is_file())
 }

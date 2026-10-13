@@ -132,15 +132,15 @@ pub fn run_with_name(app_name: &'static str) {
                 },
                 None => None,
             };
-            let input = if let Some(csproj) = dotnet_project {
+            let (input, dotnet_json) = if let Some(csproj) = dotnet_project {
                 match materialize_dotnet_project(&csproj) {
-                    Ok(path) => InputSource::File(path),
+                    Ok(path) => (InputSource::File(path.clone()), Some(path)),
                     Err(error) => finish(cli.json, Envelope::<()>::failure(error), |_| {}),
                 }
             } else if input == "-" {
-                InputSource::Stdin
+                (InputSource::Stdin, None)
             } else {
-                InputSource::File(PathBuf::from(input))
+                (InputSource::File(PathBuf::from(input)), None)
             };
             let request = GenerateRequest {
                 input,
@@ -151,6 +151,10 @@ pub fn run_with_name(app_name: &'static str) {
                 markdown,
             };
             let envelope = generate(request);
+            // `finish` exits the process, so the temp export JSON is removed here.
+            if let Some(path) = dotnet_json {
+                let _ = std::fs::remove_file(path);
+            }
             finish(cli.json, envelope, |data| print_artifacts(&data.outputs));
         }
         Command::Show { html, markdown } => {

@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Docli.Tests;
 
+[Collection("ExportHost")]
 public sealed class ToolCommandTests
 {
     [Fact(Timeout = 60_000)]
@@ -221,7 +222,7 @@ public sealed class ToolCommandTests
                 modelPath,
                 htmlDir,
                 null,
-                TimeSpan.FromSeconds(180));
+                TimeSpan.FromSeconds(150));
             Assert.Equal(0, generated.ExitCode);
             Assert.True(File.Exists(Path.Combine(htmlDir, "index.html")));
         }
@@ -245,7 +246,7 @@ public sealed class ToolCommandTests
                 missing,
                 htmlDir.FullName,
                 null,
-                TimeSpan.FromSeconds(60));
+                TimeSpan.FromSeconds(40));
 
             Assert.NotEqual(0, result.ExitCode);
             Assert.False(string.IsNullOrEmpty(result.Stderr));

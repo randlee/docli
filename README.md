@@ -78,6 +78,11 @@ The default `--html` directory is `site/cli` (`REQ-DOCLI-HTML-006`,
 `REQ-DOCLI-CLI-005`). Omitting `--html` writes `site/cli/index.html`. HTML is
 not written to stdout. With no `--markdown`, no Markdown file is written.
 
+`docli generate --dotnet-project path/to/export.csproj` executes that project.
+`docli-dotnet project` builds and runs the csproj, and the host must write one
+CliModel JSON document to stdout. Rust `docli` renders that JSON. The temporary
+export file under the system temp directory is removed when `generate` finishes.
+
 ## HTML templates
 
 Bundled packs are `default` and `cli-doc`. Discover them with

@@ -70,19 +70,13 @@ public static class RustDocli
             StandardErrorEncoding = Encoding.UTF8,
         };
 
-        if (File.Exists(binaryPath))
+        if (!File.Exists(binaryPath))
         {
-            start.FileName = binaryPath;
+            throw new FileNotFoundException(
+                $"'{binaryPath}' was not found. Run `cargo build --bin docli` from the repo root before dotnet test. RustDocli does not fall back to `cargo run`.");
         }
-        else
-        {
-            start.FileName = "cargo";
-            start.ArgumentList.Add("run");
-            start.ArgumentList.Add("--quiet");
-            start.ArgumentList.Add("--bin");
-            start.ArgumentList.Add("docli");
-            start.ArgumentList.Add("--");
-        }
+
+        start.FileName = binaryPath;
 
         foreach (var arg in args)
         {

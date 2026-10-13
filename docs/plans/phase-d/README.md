@@ -92,12 +92,16 @@ cargo fmt --check
 
 ```text
 cargo build --bin docli
-cargo test --test cli_contract -- --nocapture
 dotnet build dotnet/Docli.sln -c Release
+cargo test --test cli_contract -- --nocapture
 dotnet test dotnet/Docli.sln -c Release --filter "ProjectCommandTests|DotnetGenerateOrchestrationTests"
 git diff --check
 ```
 
 ## Phase-end QA
 
-After **d.5** merges to `integrate/phase-d`, **quality-mgr** re-runs the d.4 and d.5 host gate, including `cargo build --bin docli` before `dotnet test`. A phase-end docs commit then sets the project-plan Phase D status off `Planned` and sets each sprint doc frontmatter off `status: planned`. d.1 does not edit `project-plan.md`. d.5 does not change that status. Then merge **`integrate/phase-d` → `develop`**. d.5 does not depend on QA completing first.
+After **d.6** merges to `integrate/phase-d`, **quality-mgr** re-runs the d.4, d.5, and d.6 host gates. The d.4 and d.5 gate includes `cargo build --bin docli` before `dotnet test`. The d.6 gate runs `dotnet build dotnet/Docli.sln -c Release` before `cargo test --test cli_contract`, so that contract test does not see a missing or stale Release `Docli.Tool.dll`. A phase-end docs commit then sets the project-plan Phase D status off `Planned` and sets each sprint doc frontmatter off `status: planned`, including d.0. d.1 does not edit `project-plan.md`. d.6 does not change that status. Then merge **`integrate/phase-d` → `develop`**. d.6 does not depend on QA completing first.
+
+A GitHub Actions job that runs `dotnet test` stays deferred. The Rust test job installs the SDK pinned by `global.json` so `generate_dotnet_project_writes_sample_html_when_tool_is_available` can build the Release tool and fail, rather than skip, when that build does not produce a working `project` subcommand. That one contract test is not a substitute for the host gate. Develop merge of the .NET suite is honest only when the d.4, d.5, and d.6 host-gate output is on the phase-end PR.
+
+`docli generate --dotnet-project <csproj>` executes that project: `docli-dotnet project` runs `dotnet build` and `dotnet run` on the csproj, then Rust renders the export host's stdout. The temporary JSON file under the system temp directory is removed after `generate` finishes.

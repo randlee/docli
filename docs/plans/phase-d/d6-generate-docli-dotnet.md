@@ -50,7 +50,7 @@ A developer runs one Rust command, `docli generate --dotnet-project <csproj>`, t
 
 - `dotnet/tests/Docli.Tests/ProjectCommandTests.cs`: at least `Project_stdout_json_is_sample_tree`, `Project_output_flag_writes_file`, `Project_missing_csproj_exits_2`. Invoke the built Release tool DLL like d.4 (`dotnet test -c Release`). Timeout 180s for build+run tests.
 - `dotnet/tests/Docli.Tests/DotnetGenerateOrchestrationTests.cs` (or extend `HtmlProofTests`): `Generate_dotnet_project_writes_html` calls `RustDocli` with new argv helper `RustDocli.GenerateDotnetProject(repoRoot, csproj, htmlDir, markdown, timeout)` that runs `docli generate --dotnet-project <csproj> ...`. Assert exit 0 and `index.html` exists; optionally assert embedded `docli-data` deserializes to a model whose root name is `sample`.
-- Rust `tests/cli_contract.rs` (or dedicated integration test): one test that runs `docli generate --dotnet-project` against `Docli.Sample.Export.csproj` when `docli-dotnet` DLL path exists (skip or build prerequisite documented in test). Prefer the same repo-root discovery pattern as other contract tests.
+- Rust `tests/cli_contract.rs` (or dedicated integration test): one test that runs `docli generate --dotnet-project` against `Docli.Sample.Export.csproj`. The test runs `dotnet build` of `Docli.Tool` in Release, then asserts `project --help` lists `--project`, then generates. It does not pass when that DLL is missing or the `project` subcommand is absent. It removes `docli-dotnet` from `PATH` for the generate process so a global tool cannot hide a stale DLL.
 
 ### Docs and index
 
@@ -64,7 +64,7 @@ A developer runs one Rust command, `docli generate --dotnet-project <csproj>`, t
 - Loading and reflecting arbitrary third-party app assemblies without an export console host
 - NuGet publish, global `dotnet tool install` proofs, CI .NET job
 - .NET HTML/Markdown rendering; Rust changes to template packs beyond what orchestration requires
-- Updating historical d.1–d.5 sprint doc strings from `docli` to `docli-dotnet` (optional follow-up)
+- Rewriting every historical d.1–d.5 sentence. Phase-end closeout updates the d.1 and d.4 normative command-name text and validation `rg` strings to `docli-dotnet`. Other historical prose may still say `docli` where it means the Rust binary.
 
 ## Acceptance Criteria
 
@@ -81,8 +81,8 @@ Phase D host gate for d.6 — from repo root. After these commands, `git status 
 
 ```text
 cargo build --bin docli
-cargo test --test cli_contract -- --nocapture
 dotnet build dotnet/Docli.sln -c Release
+cargo test --test cli_contract -- --nocapture
 dotnet test dotnet/Docli.sln -c Release --filter "ProjectCommandTests|DotnetGenerateOrchestrationTests"
 git diff --check
 ```

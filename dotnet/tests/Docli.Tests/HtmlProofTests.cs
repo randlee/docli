@@ -26,7 +26,7 @@ public sealed class HtmlProofTests
                 jsonPath,
                 htmlDir,
                 markdownPath,
-                TimeSpan.FromSeconds(180));
+                TimeSpan.FromSeconds(150));
             Assert.True(
                 result.ExitCode == 0,
                 $"docli generate exited {result.ExitCode}. stdout: {result.Stdout} stderr: {result.Stderr}");

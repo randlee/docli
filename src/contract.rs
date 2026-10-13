@@ -87,7 +87,9 @@ pub enum ErrorCode {
     Usage,
     /// Model JSON is missing, empty, or does not match known field types.
     ///
-    /// Also empty or non-`CliModel` stdout from `docli generate --dotnet-project`.
+    /// Also empty or non-`CliModel` stdout from `docli generate --dotnet-project`,
+    /// including a `docli-dotnet project` exit 2 whose stderr reports an empty
+    /// or invalid JSON export.
     #[serde(rename = "DOCLI.INPUT_INVALID")]
     InputInvalid,
     /// `--input` path does not exist.
