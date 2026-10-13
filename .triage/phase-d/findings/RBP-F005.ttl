@@ -1,0 +1,73 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/RBP-F005>
+  a triage:Finding ;
+  triage:findingId "RBP-F005" ;
+  triage:title "NET-002 lacks Phase D error inventory" ;
+  triage:description "REQ-DOCLI-NET-002 normatively introduces FromCommand, docli model, and docli generate --input without failure-mode inventory, stable error codes, or recovery steps per RBP-001." ;
+  triage:category "RBP" ;
+  triage:severity "important" ;
+  triage:triageMode "initial_pass" ;
+  triage:repeatable false ;
+  triage:sweepScope "docs" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:phaseId "phase-d" ;
+  triage:triagedAt "2026-10-12T21:56:00Z"^^xsd:dateTime ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:openOn <urn:atm:triage:worktree/integrate-phase-d/3761d2b> ;
+  triage:openOn <urn:atm:triage:worktree/feature-phase-d-d1-baselines/cd996b7> ;
+  triage:promoteTo <urn:atm:triage:worktree/feature-phase-d-d1-baselines/cd996b7> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/RBP-F005/d1nb/1> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/RBP-F005/d1nb/2> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/RBP-F005/d4tool/1> .
+
+<urn:atm:triage:occurrence/RBP-F005/d1nb/1>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 37 ;
+  triage:snippet "REQ-DOCLI-NET-002: a library under dotnet/ walks a System.CommandLine.Command and writes the snake_case JSON documented by REQ-DOCLI-INPUT-001 through REQ-DOCLI-INPUT-005 and src/schema.rs (CliModel, OptionSpec, ArgumentSpec, unknown fields preserved)." ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "integrate/phase-d" ;
+  triage:headSha "3761d2b" ;
+  triage:occursIn <urn:atm:triage:worktree/integrate-phase-d/3761d2b> .
+
+<urn:atm:triage:occurrence/RBP-F005/d1nb/2>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 37 ;
+  triage:snippet "A host app emits its own tree by calling Docli.CommandLineAdapter.FromCommand. The Rust command docli generate --input <that-json> writes the HTML. No failure-mode inventory, stable error codes, or recovery steps defined in d.1 baseline." ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "integrate/phase-d" ;
+  triage:headSha "3761d2b" ;
+  triage:occursIn <urn:atm:triage:worktree/integrate-phase-d/3761d2b> .
+
+<urn:atm:triage:occurrence/RBP-F005/d4tool/1>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d4-dotnet-tool-json.md" ;
+  triage:line 85 ;
+  triage:snippet "d.4 defines stderr error table with 4 failure modes: Missing parent directory (exit 2), Path is a directory (exit 2), Unauthorized (exit 2), Serialize failure (exit 2). Each has stderr prefix and recovery guidance. NOT in d.1 baseline." ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "integrate/phase-d" ;
+  triage:headSha "3761d2b" ;
+  triage:occursIn <urn:atm:triage:worktree/integrate-phase-d/3761d2b> .
+
+<urn:atm:triage:worktree/integrate-phase-d/3761d2b>
+  a triage:WorktreeSnapshot ;
+  triage:branch "integrate/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/integrate/phase-d" ;
+  triage:headSha "3761d2b" ;
+  triage:orderIndex 0 .
+
+<urn:atm:triage:worktree/feature-phase-d-d1-baselines/cd996b7>
+  a triage:WorktreeSnapshot ;
+  triage:branch "feature/phase-d-d1-baselines" ;
+  triage:path "/Users/randlee/github/docli-worktrees/feature/phase-d-d1-baselines" ;
+  triage:headSha "cd996b7" ;
+  triage:orderIndex 1 .

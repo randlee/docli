@@ -1,0 +1,35 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/RBP-F007>
+  a triage:Finding ;
+  triage:findingId "RBP-F007" ;
+  triage:title "d.1 spec lacks error AC" ;
+  triage:description "d.1 sprint deliverable spec copies NET-002/ADR-005 without requiring error inventory for new Phase D operations unlike b.1 CLI error pattern." ;
+  triage:phaseId "phase-d" ;
+  triage:triageMode "initial_pass" ;
+  triage:category "RBP" ;
+  triage:severity "minor" ;
+  triage:repeatable false ;
+  triage:sweepScope "docs" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:openOn <urn:atm:triage:worktree/d1-feature/cd996b7> ;
+  triage:triagedAt "2026-10-12T17:56:00Z"^^xsd:dateTime ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" .
+
+<urn:atm:triage:worktree/integrate/3761d2b>
+  a triage:WorktreeSnapshot ;
+  triage:branch "integrate/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/integrate/phase-d" ;
+  triage:headSha "3761d2b" ;
+  triage:orderIndex 0 .
+
+<urn:atm:triage:worktree/d1-feature/cd996b7>
+  a triage:WorktreeSnapshot ;
+  triage:branch "feature/phase-d-d1-baselines" ;
+  triage:path "/Users/randlee/github/docli-worktrees/feature/phase-d-d1-baselines" ;
+  triage:headSha "cd996b7" ;
+  triage:orderIndex 1 .
