@@ -5,7 +5,7 @@
 **Consumers**: `req-qa` (compliance), implementers, sprint plans.
 
 **Hard requirements**: every `REQ-DOCLI-*` id with a requirement sentence in
-this document is normative for **Phase A and Phase B** unless marked **(later)**.
+this document is normative for **Phase A, Phase B, and Phase D** unless marked **(later)**.
 Use **MUST** / **MUST NOT** semantics when implementing or reviewing. Section 11
 rows whose body is not yet written are traceability-only until the owning sprint
 lands the normative sentence in this file (Phase B bodies for **b.7–b.11** are
@@ -58,7 +58,8 @@ not a site framework or a theme library.
 | Phase | Closes | Does not close |
 |---|---|---|
 | A | Rust library, `docli` CLI, `cargo docli`, clap adapter, HTML and Markdown renderer, `generate` / `show` envelope, and `fixtures/contract/` produced by that Rust tool | Go, .NET, Python, crates.io publish, MCP wrapper |
-| Later | `REQ-DOCLI-GO-001`, `REQ-DOCLI-NET-001`, `REQ-DOCLI-PY-001`, cross-language byte match (`REQ-DOCLI-GEN-003`), per-language installers (`REQ-DOCLI-MD-002`). The crates.io upload (`cargo publish`) stays a maintainer step after publish-readiness | — |
+| D | REQ-DOCLI-NET-002: host FromCommand JSON, the tool's own docli model JSON, and Rust docli generate --input HTML | a .NET HTML or Markdown renderer, a template-engine port, Go, Python, MCP, NuGet publish, and a tool that walks a third-party app |
+| Later | `REQ-DOCLI-GO-001`, `REQ-DOCLI-PY-001`, the renderer sentence of `REQ-DOCLI-NET-001`, `REQ-DOCLI-PRODUCT-004`, `REQ-DOCLI-GEN-003`, and `REQ-DOCLI-MD-002`. The crates.io upload (`cargo publish`) stays a maintainer step after publish-readiness | — |
 
 Phase A acceptance is the Rust rows in the sections below. A later-phase id is not a Phase A gap.
 
@@ -118,8 +119,7 @@ framework-specific concepts. Every implementation accepts this document.
 
 ## 5. Language Adapters
 
-Each language walks its native command definition and emits the neutral model,
-then renders that model with that language's generator.
+Each language adapter walks its native command definition and emits CliModel JSON. Phase D's .NET adapter does not render. HTML and Markdown bytes for that JSON come from the Rust generator.
 
 - `REQ-DOCLI-RUST-001`: Rust maps a live `clap::Command` through
   `docli::from_clap`. clap's `possible_values` map to `choices`,
@@ -129,12 +129,9 @@ then renders that model with that language's generator.
 - `REQ-DOCLI-GO-001` (later): a Go adapter emits the same JSON from a cobra
   command tree, and the Go generator renders that JSON to the shared HTML and
   Markdown.
-- `REQ-DOCLI-NET-001` (later): a .NET adapter emits the same JSON from a
-  System.CommandLine command tree, and the .NET generator renders that JSON
-  to the shared HTML and Markdown.
-- `REQ-DOCLI-PY-001` (later): a Python adapter emits the same JSON from the
-  project's Python CLI definition (argparse, Typer, or click), and the Python
-  generator renders that JSON to the shared HTML and Markdown.
+- `REQ-DOCLI-NET-001` (later): a .NET generator renders the neutral JSON to the shared HTML and Markdown. Phase D does not implement this sentence and does not close this id.
+- `REQ-DOCLI-NET-002`: a library under `dotnet/` walks a `System.CommandLine.Command` and writes the snake_case JSON documented by `REQ-DOCLI-INPUT-001` through `REQ-DOCLI-INPUT-005` and `src/schema.rs` (`CliModel`, `OptionSpec`, `ArgumentSpec`, unknown fields preserved). Same JSON means the schema field set and snake_case names, not byte-identical output with `from_clap` for an arbitrary tree. A host app emits its own tree by calling `Docli.CommandLineAdapter.FromCommand`. The Rust command `docli generate --input <that-json>` writes the HTML. `--markdown` remains a flag on that same Rust command. The dotnet tool whose command name is `docli` emits JSON only for the command tree it owns (`docli model`). It does not walk a third-party app and does not render HTML or Markdown. A global `dotnet tool install` shim named `docli` can shadow the Rust `docli` binary. This phase's tests and proofs invoke the built DLL or a local tool path, not a global install. `REQ-DOCLI-PRODUCT-004` stays later and must reconcile that shim when it is closed. Error ownership for this id: Rust `docli generate --input` failures use the existing section 9 `DOCLI.*` codes (ADR-003) and this requirement adds no codes. The dotnet tool whose command name is `docli` is not the Rust version `"1"` envelope. Host `FromCommand` and library errors, including an exception from `DefaultValueFactory`, propagate unchanged from the adapter as specified in `docs/plans/phase-d/d3-commandline-walker.md`. Tool `Write` failures use the human stderr and exit semantics in the normative failure-mode table in `docs/plans/phase-d/d4-dotnet-tool-json.md` (sprint d.4); this baseline does not copy that table. PATH shadow of the Rust `docli` binary is the global shim named in this bullet; it is not a section 9 code and not a d.4 `Write` failure.
+- `REQ-DOCLI-PY-001` (later): a Python adapter emits the same JSON from the project's Python CLI definition (argparse, Typer, or click), and the Python generator renders that JSON to the shared HTML and Markdown.
 
 ## 6. HTML Output
 
@@ -425,7 +422,8 @@ substitute for those sections.
 | `REQ-DOCLI-RUST-001` | `docli::from_clap` maps clap fields | section 5 | — |
 | `REQ-DOCLI-RUST-002` | Clap adapter drops auto `--help`/`--version` and keeps usage paths | section 5 | — |
 | `REQ-DOCLI-GO-001` | Go cobra adapter and generator (later) | section 5 | — |
-| `REQ-DOCLI-NET-001` | .NET System.CommandLine adapter and generator (later) | section 5 | — |
+| `REQ-DOCLI-NET-001` | .NET renderer stays later. Phase D does not close this id. | section 5 | — |
+| `REQ-DOCLI-NET-002` | System.CommandLine tree to CliModel JSON; Rust renders | section 5 | ADR-005 |
 | `REQ-DOCLI-PY-001` | Python adapter and generator (later) | section 5 | — |
 | `REQ-DOCLI-HTML-001` | Self-contained single-file HTML with hash routes | section 6 | ADR-002 |
 | `REQ-DOCLI-HTML-002` | Two-pane tree and detail layout | section 6 | ADR-002 |
