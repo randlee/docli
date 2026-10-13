@@ -1,0 +1,23 @@
+{
+  "task_id": "phase-b-plan-hardening-step-1",
+  "phase": "phase-b",
+  "description": "Plan hardening for Phase B (planning branch only)",
+  "worktree_path": "/absolute/path/to/docli-worktrees/feature/phase-b-plans-and-skill",
+  "branch": "feature/phase-b-plans-and-skill",
+  "pr_target": "develop",
+  "plan_scope_review_cycle_limit": 3,
+  "critical_review_cycle_limit": 3,
+  "round_id": "STEP1-R1",
+  "round_index": 1,
+  "reviewer": "plan-scope-reviewer",
+  "reviewed_commit": "",
+  "previous_reviewed_commit": "",
+  "findings_hash": "",
+  "supersedes_task_id": "",
+  "replay_nonce": "",
+  "source_of_truth": "- docs/plans/phase-b/README.md\n- docs/plans/project-plan.md",
+  "references": "- docs/plans/phase-b/README.md\n- docs/plans/phase-b/b0-integrate-branch.md through b11-publish-readiness.md (no b4/b6)\n- docs/templates/AUTHOR.md\n- docs/templates/AGENT-PREVIEW.md",
+  "questions_or_concerns": "",
+  "previous_step_json": "",
+  "reviewer_findings_json": ""
+}

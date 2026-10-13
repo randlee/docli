@@ -163,11 +163,11 @@ pub struct ArgumentSpec {
 }
 ```
 
-Exit codes: `0` success, `2` validation (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`), `3` not found (`DOCLI.INPUT_NOT_FOUND`, `DOCLI.OUTPUT_NOT_FOUND`), `4` dependency (`DOCLI.IO`), `1` internal (`DOCLI.INTERNAL`).
+Exit codes: `0` success, `2` validation (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`, `DOCLI.TEMPLATE_INVALID`), `3` not found (`DOCLI.INPUT_NOT_FOUND`, `DOCLI.OUTPUT_NOT_FOUND`, `DOCLI.TEMPLATE_NOT_FOUND`), `4` dependency (`DOCLI.IO`), `1` internal (`DOCLI.INTERNAL`). Normative inventory: [`docs/requirements.md`](../../requirements.md) section 9.
 
 | Code | Kind | Cause | `details` | `suggested_action` |
 |---|---|---|---|---|
-| `DOCLI.USAGE` | validation | unknown command or invalid flags | `{}` | name the flag or command that was rejected |
+| `DOCLI.USAGE` | validation | unknown command or invalid flags | `{ "cause": "<recovery>" }` mirrors `suggested_action` | name the flag or command that was rejected |
 | `DOCLI.INPUT_INVALID` | validation | model JSON is missing, empty, or does not match known field types | `{ "cause": "<parse error>" }` when serde reports one, otherwise `{}` | point at the input and the parse error |
 | `DOCLI.INPUT_NOT_FOUND` | not_found | `--input` path does not exist | `{ "path": "<path>" }` | name the missing path |
 | `DOCLI.OUTPUT_NOT_FOUND` | not_found | `show` asked for an artifact that is not on disk | `{ "artifacts": [{ "path": "<path>", "exists": false }] }` for every requested artifact | name each missing path |

@@ -1,0 +1,63 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/RBP-F005>
+  a triage:Finding ;
+  triage:findingId "RBP-F005" ;
+  triage:title "d.2 sprint doc missing Error Inventory" ;
+  triage:description "docs/plans/phase-d/d2-cli-model-json.md documents failure modes (JsonException for missing name, DirectoryNotFoundException in RepoRoot.Find) but has no Error Inventory section with stable codes, causes, and recovery steps per RBP-001 pattern." ;
+  triage:category "RBP" ;
+  triage:severity "important" ;
+  triage:triageMode "followup_pass" ;
+  triage:repeatable false ;
+  triage:sweepScope "sprint_doc" ;
+  triage:status "closed" ;
+  triage:closedAt "2026-10-13T01:40:00Z"^^xsd:dateTime ;
+  triage:resolution "verified_fixed_on_feature/phase-d-d2-model@2d94a83" ;
+  triage:dispatchReady false ;
+  triage:phaseId "phase-d" ;
+  triage:triagedAt "2026-10-12T23:31:00Z"^^xsd:dateTime ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d2-cli-model-json.md" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:openOn <urn:atm:triage:worktree/feature-phase-d-d2-model/5ac4143> ;
+  triage:closedOn <urn:atm:triage:worktree/feature-phase-d-d2-model/2d94a83> ;
+  triage:promoteTo <urn:atm:triage:worktree/feature-phase-d-d2-model/2d94a83> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/RBP-F005/d2-json/1> ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/RBP-F005/d2-json/2> .
+
+<urn:atm:triage:occurrence/RBP-F005/d2-json/1>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d2-cli-model-json.md" ;
+  triage:line 70 ;
+  triage:snippet "If none does, it throws DirectoryNotFoundException" ;
+  triage:status "closed" ;
+  triage:closed true ;
+  triage:branch "feature/phase-d-d2-model" ;
+  triage:headSha "2d94a83803f31d1e14a362f859ad2666737956eb" ;
+  triage:occursIn <urn:atm:triage:worktree/feature-phase-d-d2-model/2d94a83> .
+
+<urn:atm:triage:occurrence/RBP-F005/d2-json/2>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d2-cli-model-json.md" ;
+  triage:line 72 ;
+  triage:snippet "Missing name fails deserialize with JsonException" ;
+  triage:status "closed" ;
+  triage:closed true ;
+  triage:branch "feature/phase-d-d2-model" ;
+  triage:headSha "2d94a83803f31d1e14a362f859ad2666737956eb" ;
+  triage:occursIn <urn:atm:triage:worktree/feature-phase-d-d2-model/2d94a83> .
+
+<urn:atm:triage:worktree/feature-phase-d-d2-model/5ac4143>
+  a triage:WorktreeSnapshot ;
+  triage:branch "feature/phase-d-d2-model" ;
+  triage:path "/Users/randlee/github/docli-worktrees/feature/phase-d-d2-model" ;
+  triage:headSha "5ac4143" ;
+  triage:orderIndex 2 .
+
+<urn:atm:triage:worktree/feature-phase-d-d2-model/2d94a83>
+  a triage:WorktreeSnapshot ;
+  triage:branch "feature/phase-d-d2-model" ;
+  triage:path "/Users/randlee/github/docli-worktrees/feature/phase-d-d2-model" ;
+  triage:headSha "2d94a83803f31d1e14a362f859ad2666737956eb" ;
+  triage:orderIndex 2 .

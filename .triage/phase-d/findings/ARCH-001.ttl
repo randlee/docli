@@ -1,0 +1,42 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/ARCH-001>
+  a triage:Finding ;
+  triage:findingId "ARCH-001" ;
+  triage:title "Section 5 lead-in still says each language renders" ;
+  triage:description "d.1 rewrites the REQ-DOCLI-NET-001 and REQ-DOCLI-NET-002 bullets so Phase D .NET code emits CliModel JSON and does not render, and ADR-005 / ARCH-RULE-010 say HTML bytes come only from Rust docli generate. It does not amend the section 5 lead-in at docs/requirements.md:121, which still says each language emits the model and then renders it with that language's generator. After d.1, that lead-in contradicts ADR-005 and the new NET-002 bullet." ;
+  triage:phaseId "phase-d" ;
+  triage:triageMode "initial_pass" ;
+  triage:category "architecture" ;
+  triage:severity "blocking" ;
+  triage:repeatable false ;
+  triage:sweepScope "file_only" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:triagedAt "2026-10-10T19:47:00Z"^^xsd:dateTime ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:requirementId "REQ-DOCLI-NET-001" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ARCH-001/plan-phase-d/1> ;
+  triage:openOn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> ;
+  triage:promoteTo <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:occurrence/ARCH-001/plan-phase-d/1>
+  a triage:Occurrence ;
+  triage:file "docs/requirements.md" ;
+  triage:line 121 ;
+  triage:snippet "Each language walks its native command definition and emits the neutral model, then renders that model with that language's generator." ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b> .
+
+<urn:atm:triage:worktree/plan-phase-d/a484ebddf463ac76ea511f18ebc96e279d8a145b>
+  a triage:WorktreeSnapshot ;
+  triage:branch "plan/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/plan/phase-d" ;
+  triage:headSha "a484ebddf463ac76ea511f18ebc96e279d8a145b" ;
+  triage:orderIndex 0 .

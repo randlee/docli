@@ -1,1 +1,2 @@
 fixtures/contract/* text eol=lf
+templates/html/** text eol=lf

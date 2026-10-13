@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en" id="docli-quarto-docs-pack">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="generator" content="docli">
+<title>{{ title|docli_escape }} – CLI Reference</title>
+<style>{{ style }}</style>
+</head>
+<body class="nav-sidebar docked quarto-light">
+<header id="quarto-header" class="quarto-header">
+  <nav class="quarto-secondary-nav" aria-label="Page header">
+    <div class="header-inner">
+      <button type="button" id="sidebar-toggle" class="quarto-btn-toggle" aria-label="Toggle sidebar navigation" aria-controls="quarto-sidebar" aria-expanded="true">
+        <span class="toggle-icon" aria-hidden="true"></span>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><span>{{ title|docli_escape }}</span></li>
+          <li class="breadcrumb-item active" aria-current="page">CLI Reference</li>
+        </ol>
+      </nav>
+      <label class="header-search quarto-search">
+        <span class="search-label">Search</span>
+        <input id="search" type="search" autocomplete="off" placeholder="commands and options">
+      </label>
+    </div>
+  </nav>
+</header>
+<div id="quarto-content" class="quarto-container page-layout-article">
+  <nav id="quarto-sidebar" class="sidebar sidebar-navigation docked" aria-label="Command tree">
+    <div class="sidebar-header">
+      <div class="sidebar-title">
+        <a href="#">{{ title|docli_escape }}</a>
+      </div>
+      {% if version %}<p class="sidebar-version">Version {{ version|docli_escape }}</p>{% endif %}
+    </div>
+    <div class="sidebar-menu-container">
+      <p class="sidebar-section-heading">Commands</p>
+      <nav id="tree" class="sidebar-menu">{{ tree }}</nav>
+    </div>
+  </nav>
+  <main class="content" id="quarto-document-content">
+    <article id="detail" class="quarto-body" aria-live="polite"></article>
+  </main>
+</div>
+<script id="docli-data" type="application/json">{{ model_json }}</script>
+<script id="docli-search" type="application/json">{{ search_json }}</script>
+<script>
+{{ script }}
+</script>
+</body>
+</html>

@@ -1,3 +1,6 @@
+#[path = "common/envelope.rs"]
+mod envelope;
+
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -6,6 +9,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use docli::ops::{generate, GenerateRequest, InputSource};
 use docli::{ArgumentSpec, CliModel, OptionSpec};
+use envelope::{assert_failure, parse_envelope};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
@@ -97,37 +101,6 @@ fn parse_json(stdout: &[u8]) -> Value {
     })
 }
 
-fn assert_docs_present(error: &Value) {
-    let docs = &error["docs"];
-    assert!(
-        docs.is_string() || docs.is_null(),
-        "docs must be a string or null, got {docs}"
-    );
-}
-
-fn assert_failure<'a>(envelope: &'a Value, kind: &str, code: &str) -> &'a Value {
-    assert_eq!(envelope["version"], "1");
-    assert_eq!(envelope["ok"], false);
-    assert_eq!(envelope["data"], Value::Null);
-    let error = &envelope["error"];
-    assert_eq!(error["kind"], kind);
-    assert_eq!(error["code"], code);
-    assert!(
-        error["details"].is_object(),
-        "details must be an object, got {}",
-        error["details"]
-    );
-    let suggested_action = error["suggested_action"]
-        .as_str()
-        .expect("suggested_action must be a string");
-    assert!(
-        !suggested_action.is_empty(),
-        "suggested_action must name the recovery step"
-    );
-    assert_docs_present(error);
-    error
-}
-
 fn assert_suggested_action_contains(error: &Value, needles: &[&str]) {
     let suggested_action = error["suggested_action"]
         .as_str()
@@ -203,13 +176,19 @@ fn generate_missing_input_is_not_found() {
         .expect("run generate");
 
     assert_eq!(output.status.code(), Some(3));
-    let envelope = parse_json(&output.stdout);
-    let error = assert_failure(&envelope, "not_found", "DOCLI.INPUT_NOT_FOUND");
+    let envelope = parse_envelope(&output.stdout);
+    let error = assert_failure(
+        output.status.code(),
+        &envelope,
+        3,
+        "not_found",
+        "DOCLI.INPUT_NOT_FOUND",
+    );
     assert_eq!(
         error["details"],
         serde_json::json!({ "path": missing.to_string_lossy().as_ref() })
     );
-    assert_suggested_action_contains(error, &[missing.to_string_lossy().as_ref()]);
+    assert_suggested_action_contains(&error, &[missing.to_string_lossy().as_ref()]);
 }
 
 #[test]
@@ -233,6 +212,7 @@ fn generate_json_defaults_html_dir_to_site_cli() {
     assert_eq!(envelope["ok"], true);
     assert_eq!(envelope["error"], Value::Null);
     assert_eq!(envelope["data"]["html_dir"], "site/cli");
+    assert_eq!(envelope["data"]["preview_dir"], Value::Null);
     assert!(dir.join("site/cli/index.html").is_file());
 }
 
@@ -266,10 +246,16 @@ fn show_json_without_paths_is_usage() {
     let output = bin().args(["show", "--json"]).output().expect("run show");
 
     assert_eq!(output.status.code(), Some(2));
-    let envelope = parse_json(&output.stdout);
-    let error = assert_failure(&envelope, "validation", "DOCLI.USAGE");
-    assert_eq!(error["details"], serde_json::json!({}));
-    assert_suggested_action_contains(error, &["--html", "--markdown"]);
+    let envelope = parse_envelope(&output.stdout);
+    let error = assert_failure(
+        output.status.code(),
+        &envelope,
+        2,
+        "validation",
+        "DOCLI.USAGE",
+    );
+    assert_suggested_action_contains(&error, &["--html", "--markdown"]);
+    assert_eq!(error["details"]["cause"], error["suggested_action"]);
 }
 
 #[test]
@@ -394,8 +380,14 @@ fn invalid_model_json_is_input_invalid() {
         .expect("run generate");
 
     assert_eq!(output.status.code(), Some(2));
-    let envelope = parse_json(&output.stdout);
-    let error = assert_failure(&envelope, "validation", "DOCLI.INPUT_INVALID");
+    let envelope = parse_envelope(&output.stdout);
+    let error = assert_failure(
+        output.status.code(),
+        &envelope,
+        2,
+        "validation",
+        "DOCLI.INPUT_INVALID",
+    );
     let cause = error["details"]["cause"]
         .as_str()
         .expect("details.cause must be a string");
@@ -403,7 +395,7 @@ fn invalid_model_json_is_input_invalid() {
         error["details"].as_object().expect("details object").len(),
         1
     );
-    assert_suggested_action_contains(error, &[model.to_string_lossy().as_ref(), cause]);
+    assert_suggested_action_contains(&error, &[model.to_string_lossy().as_ref(), cause]);
 }
 
 #[test]
@@ -417,8 +409,14 @@ fn show_missing_artifact_is_output_not_found() {
         .expect("run show");
 
     assert_eq!(output.status.code(), Some(3));
-    let envelope = parse_json(&output.stdout);
-    let error = assert_failure(&envelope, "not_found", "DOCLI.OUTPUT_NOT_FOUND");
+    let envelope = parse_envelope(&output.stdout);
+    let error = assert_failure(
+        output.status.code(),
+        &envelope,
+        3,
+        "not_found",
+        "DOCLI.OUTPUT_NOT_FOUND",
+    );
     let missing_html = missing.join("index.html");
     assert_eq!(
         error["details"],
@@ -429,7 +427,7 @@ fn show_missing_artifact_is_output_not_found() {
             }]
         })
     );
-    assert_suggested_action_contains(error, &[missing_html.to_string_lossy().as_ref()]);
+    assert_suggested_action_contains(&error, &[missing_html.to_string_lossy().as_ref()]);
 }
 
 #[test]
@@ -441,6 +439,9 @@ fn ops_generate_writes_index_html_in_tmp() {
     let envelope = generate(GenerateRequest {
         input: InputSource::File(model),
         html_dir: Some(tmp.clone()),
+        preview: false,
+        template: None,
+        theme: None,
         markdown: None,
     });
 
@@ -448,6 +449,7 @@ fn ops_generate_writes_index_html_in_tmp() {
     assert!(envelope.error.is_none());
     let data = envelope.data.expect("success data");
     assert_eq!(data.html_dir, tmp);
+    assert!(data.preview_dir.is_none());
     assert!(tmp.join("index.html").is_file());
 }
 
@@ -474,10 +476,16 @@ fn invalid_flag_is_usage_with_and_without_json() {
         .output()
         .expect("run generate --not-a-flag --json");
     assert_eq!(json.status.code(), Some(2));
-    let envelope = parse_json(&json.stdout);
-    let error = assert_failure(&envelope, "validation", "DOCLI.USAGE");
-    assert_eq!(error["details"], serde_json::json!({}));
-    assert_suggested_action_contains(error, &["--not-a-flag"]);
+    let envelope = parse_envelope(&json.stdout);
+    let error = assert_failure(
+        json.status.code(),
+        &envelope,
+        2,
+        "validation",
+        "DOCLI.USAGE",
+    );
+    assert_suggested_action_contains(&error, &["--not-a-flag"]);
+    assert_eq!(error["details"]["cause"], error["suggested_action"]);
 
     let human = bin()
         .args(["generate", "--not-a-flag"])
@@ -496,10 +504,16 @@ fn unknown_command_is_usage_with_and_without_json() {
         .output()
         .expect("run not-a-command --json");
     assert_eq!(json.status.code(), Some(2));
-    let envelope = parse_json(&json.stdout);
-    let error = assert_failure(&envelope, "validation", "DOCLI.USAGE");
-    assert_eq!(error["details"], serde_json::json!({}));
-    assert_suggested_action_contains(error, &["not-a-command"]);
+    let envelope = parse_envelope(&json.stdout);
+    let error = assert_failure(
+        json.status.code(),
+        &envelope,
+        2,
+        "validation",
+        "DOCLI.USAGE",
+    );
+    assert_suggested_action_contains(&error, &["not-a-command"]);
+    assert_eq!(error["details"]["cause"], error["suggested_action"]);
 
     let human = bin()
         .args(["not-a-command"])
@@ -631,7 +645,8 @@ fn license_is_mit() {
         .expect("license string");
     assert_eq!(license, "MIT");
 
-    let license_text = fs::read_to_string("LICENSE").expect("LICENSE");
+    let license_text =
+        fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("LICENSE")).expect("LICENSE");
     assert!(license_text.starts_with("MIT License"));
 }
 
@@ -674,6 +689,14 @@ fn error_kind_and_code_serialize_to_contract_strings() {
         "\"DOCLI.IO\""
     );
     assert_eq!(
+        serde_json::to_string(&docli::contract::ErrorCode::TemplateInvalid).unwrap(),
+        "\"DOCLI.TEMPLATE_INVALID\""
+    );
+    assert_eq!(
+        serde_json::to_string(&docli::contract::ErrorCode::TemplateNotFound).unwrap(),
+        "\"DOCLI.TEMPLATE_NOT_FOUND\""
+    );
+    assert_eq!(
         serde_json::to_string(&docli::contract::ErrorCode::Internal).unwrap(),
         "\"DOCLI.INTERNAL\""
     );
@@ -697,4 +720,189 @@ fn envelope_always_serializes_data_error_and_docs() {
     .unwrap();
     assert_eq!(failure["data"], Value::Null);
     assert_eq!(failure["error"]["docs"], Value::Null);
+}
+
+#[test]
+fn generate_rejects_input_file_with_dotnet_project() {
+    let output = bin()
+        .args([
+            "generate",
+            "--input",
+            "foo.json",
+            "--dotnet-project",
+            "bar.csproj",
+            "--json",
+        ])
+        .output()
+        .expect("run generate");
+
+    assert_eq!(output.status.code(), Some(2));
+    let envelope = parse_envelope(&output.stdout);
+    let error = assert_failure(
+        output.status.code(),
+        &envelope,
+        2,
+        "validation",
+        "DOCLI.USAGE",
+    );
+    assert_suggested_action_contains(&error, &["--input", "--dotnet-project"]);
+    assert_eq!(error["details"]["cause"], error["suggested_action"]);
+}
+
+#[test]
+fn generate_dotnet_project_writes_sample_html_when_tool_is_available() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let tool_csproj = repo.join("dotnet/src/Docli.Tool/Docli.Tool.csproj");
+    let tfm = target_framework(&tool_csproj);
+    let dll = repo
+        .join("dotnet/src/Docli.Tool/bin/Release")
+        .join(&tfm)
+        .join("Docli.Tool.dll");
+    build_release_tool(repo);
+    assert!(
+        dll.is_file(),
+        "Release tool is missing after dotnet build: {}",
+        dll.display()
+    );
+    assert_project_subcommand(&dll);
+
+    let export = repo.join("dotnet/samples/Docli.Sample.Export/Docli.Sample.Export.csproj");
+    let dir = unique_dir();
+    let html_dir = dir.join("html");
+    let started = std::time::SystemTime::now();
+    let output = bin()
+        .args([
+            "generate",
+            "--dotnet-project",
+            export.to_str().expect("utf8 export path"),
+            "--html",
+            html_dir.to_str().expect("utf8 html dir"),
+        ])
+        .current_dir(repo)
+        .env("PATH", path_without_docli_dotnet())
+        .env("MSBUILDDISABLENODEREUSE", "1")
+        .output()
+        .expect("run generate --dotnet-project");
+
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let html_path = html_dir.join("index.html");
+    assert!(html_path.is_file(), "missing {}", html_path.display());
+    let html = fs::read_to_string(&html_path).expect("read index.html");
+    assert!(
+        html.contains("<title>sample CLI Reference</title>"),
+        "index.html did not render the sample command"
+    );
+    let leaked = leaked_dotnet_project_json(started);
+    assert!(
+        leaked.is_empty(),
+        "generate left temp export JSON: {}",
+        leaked
+            .iter()
+            .map(|path| path.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+}
+
+fn build_release_tool(repo: &Path) {
+    let output = Command::new("dotnet")
+        .args([
+            "build",
+            "dotnet/src/Docli.Tool/Docli.Tool.csproj",
+            "-c",
+            "Release",
+            "--nologo",
+        ])
+        .current_dir(repo)
+        .env("MSBUILDDISABLENODEREUSE", "1")
+        .output()
+        .unwrap_or_else(|err| {
+            panic!(
+                "dotnet build of Docli.Tool failed to start ({err}). Install the SDK pinned in global.json. This test does not pass when the Release tool is missing or stale."
+            );
+        });
+    assert!(
+        output.status.success(),
+        "dotnet build -c Release of Docli.Tool failed\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+fn assert_project_subcommand(dll: &Path) {
+    let output = Command::new("dotnet")
+        .arg(dll)
+        .args(["project", "--help"])
+        .env("MSBUILDDISABLENODEREUSE", "1")
+        .output()
+        .unwrap_or_else(|err| {
+            panic!(
+                "failed to start the Release tool at {}: {err}",
+                dll.display()
+            );
+        });
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        output.status.success() && stdout.contains("--project"),
+        "Release Docli.Tool.dll project subcommand is missing or stale\nstdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+}
+
+fn path_without_docli_dotnet() -> std::ffi::OsString {
+    let file_name = if cfg!(windows) {
+        "docli-dotnet.exe"
+    } else {
+        "docli-dotnet"
+    };
+    let dirs = std::env::var_os("PATH")
+        .map(|existing| {
+            std::env::split_paths(&existing)
+                .filter(|dir| !dir.join(file_name).is_file())
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    std::env::join_paths(dirs).expect("join PATH without docli-dotnet")
+}
+
+fn leaked_dotnet_project_json(started: std::time::SystemTime) -> Vec<PathBuf> {
+    let Ok(entries) = fs::read_dir(std::env::temp_dir()) else {
+        return Vec::new();
+    };
+    entries
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| {
+            let name = entry.file_name();
+            let name = name.to_string_lossy();
+            if !name.starts_with("docli-dotnet-project-") {
+                return false;
+            }
+            entry
+                .metadata()
+                .and_then(|metadata| metadata.modified())
+                .is_ok_and(|modified| modified >= started)
+        })
+        .map(|entry| entry.path())
+        .collect()
+}
+
+fn target_framework(csproj: &Path) -> String {
+    let text = fs::read_to_string(csproj).unwrap_or_else(|err| {
+        panic!("read {}: {err}", csproj.display());
+    });
+    let rest = text
+        .split_once("<TargetFramework>")
+        .unwrap_or_else(|| panic!("no TargetFramework in {}", csproj.display()))
+        .1;
+    rest.split_once("</TargetFramework>")
+        .unwrap_or_else(|| panic!("unclosed TargetFramework in {}", csproj.display()))
+        .0
+        .trim()
+        .to_owned()
 }

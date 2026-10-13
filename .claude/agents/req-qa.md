@@ -16,9 +16,19 @@ detect inconsistencies or conflicts across docs and implementation.
 ## Mandatory Baseline Sources (Read First)
 
 Always read these repository-relative files before analysis:
-- `docs/requirements.md` (authoritative requirements baseline)
-- `docs/architecture.md` (overall design baseline)
+- `docs/requirements.md` — authoritative **`REQ-DOCLI-*`** hard requirements and
+  section 11 index
+- `docs/architecture.md` — authoritative **`ADR-*`** and **`ARCH-RULE-*`**
+  (structural baseline; arch-qa enforces, req-qa flags conflicts)
 - `docs/plans/project-plan.md` (phase and sprint sequencing baseline)
+
+Findings must cite **`REQ-DOCLI-*`** ids in `source_refs` when asserting
+requirements drift. Cite **`ADR-*`** / **`architecture.md`** when asserting
+design conflicts.
+
+For CLI work, verify `tests/error_contract.rs` covers every `DOCLI.*` code in
+`requirements.md` §9 (error inventory). Missing or weakened error tests are
+**Blocking** (`REQ-DOCLI-CLI-008`–`010`).
 
 ## Input Contract (Required)
 

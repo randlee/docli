@@ -1,0 +1,26 @@
+# Embedded default pack (ADR-004, REQ-DOCLI-HTML-007).
+# `html::render` uses these theme_schema defaults. Caller overrides arrive
+# later through `ops::generate`; this file documents every key.
+id = "default"
+name = "docli default"
+version = "1"
+description = "Phase A two-pane reference layout, embedded as the default pack."
+min_docli = "0.1.0"
+
+# Each key is an object: type, default, and description (AUTHOR.md).
+# Defaults are the Phase A CSS literals so an empty theme stays byte-identical
+# to fixtures/contract/index.html. style.css.j2 substitutes every default.
+[theme_schema]
+bg = { type = "color", default = "#fff", description = "Page background" }
+fg = { type = "color", default = "#1a1a2e", description = "Primary text" }
+border = { type = "color", default = "#ddd", description = "Hairline borders" }
+hover = { type = "color", default = "#f0f0f0", description = "Hover and table-header fill" }
+accent = { type = "color", default = "#007acc", description = "Primary accent" }
+muted = { type = "color", default = "#666", description = "Secondary text" }
+font_body = { type = "string", default = "16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif", description = "Body font shorthand, including size and line height" }
+bg_dark = { type = "color", default = "#16181d", description = "Dark-scheme background" }
+fg_dark = { type = "color", default = "#e6e6e6", description = "Dark-scheme text" }
+border_dark = { type = "color", default = "#333", description = "Dark-scheme borders" }
+hover_dark = { type = "color", default = "#23262e", description = "Dark-scheme hover fill" }
+accent_dark = { type = "color", default = "#4da3ff", description = "Dark-scheme accent" }
+muted_dark = { type = "color", default = "#999", description = "Dark-scheme secondary text" }

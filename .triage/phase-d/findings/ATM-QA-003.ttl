@@ -1,0 +1,41 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/ATM-QA-003>
+  a triage:Finding ;
+  triage:findingId "ATM-QA-003" ;
+  triage:title "Section 5 lead-in is stated twice in the d.1 deliverable" ;
+  triage:description "d.1 Deliverables bullet for the section 5 lead-in says to replace with one physical line, then repeats the same lead-in prose again outside the backticks, which conflicts with acceptance criteria requiring exactly one physical line." ;
+  triage:phaseId "phase-d" ;
+  triage:triageMode "initial_pass" ;
+  triage:category "requirements" ;
+  triage:severity "minor" ;
+  triage:repeatable false ;
+  triage:sweepScope "file_only" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ATM-QA-003/plan-phase-d/1> ;
+  triage:openOn <urn:atm:triage:worktree/plan-phase-d/93316b0b00dcf5e751a1d24c0274aa653be7fc62> ;
+  triage:promoteTo <urn:atm:triage:worktree/plan-phase-d/93316b0b00dcf5e751a1d24c0274aa653be7fc62> ;
+  triage:triagedAt "2026-10-10T08:05:00Z"^^xsd:dateTime .
+
+<urn:atm:triage:occurrence/ATM-QA-003/plan-phase-d/1>
+  a triage:Occurrence ;
+  triage:file "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:line 34 ;
+  triage:snippet "An adapter emits `CliModel` JSON. Phase D's .NET adapter does not render. HTML and Markdown bytes for that JSON come from the Rust generator." ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:branch "plan/phase-d" ;
+  triage:headSha "93316b0b00dcf5e751a1d24c0274aa653be7fc62" ;
+  triage:occursIn <urn:atm:triage:worktree/plan-phase-d/93316b0b00dcf5e751a1d24c0274aa653be7fc62> .
+
+<urn:atm:triage:worktree/plan-phase-d/93316b0b00dcf5e751a1d24c0274aa653be7fc62>
+  a triage:WorktreeSnapshot ;
+  triage:branch "plan/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/plan/phase-d" ;
+  triage:headSha "93316b0b00dcf5e751a1d24c0274aa653be7fc62" ;
+  triage:orderIndex 0 .

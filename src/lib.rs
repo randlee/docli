@@ -2,7 +2,9 @@
 //!
 //! Consumes a neutral command-tree JSON ([`CliModel`]) and renders a
 //! self-contained two-pane HTML reference and/or a Markdown manual.
-//! [`search_index`] supplies the embedded search JSON. Call
+//! [`search_index`] supplies the embedded search JSON. The HTML page comes
+//! from an embedded template pack. [`render::html::render`] uses `default`.
+//! [`ops::generate`] can also render the embedded `cli-doc` pack. Call
 //! [`ops::generate`] and [`ops::show`] for the same envelope the CLI prints.
 
 pub mod clap_model;
@@ -13,6 +15,7 @@ pub mod ops;
 pub mod render;
 pub mod schema;
 pub mod search;
+pub mod templates;
 
 #[doc(inline)]
 pub use clap_model::from_clap;

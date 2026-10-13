@@ -9,14 +9,18 @@ use serde::{Deserialize, Serialize};
 
 /// Process exit code for a successful command.
 pub const EXIT_SUCCESS: i32 = 0;
-/// Process exit code for validation failures (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`).
+/// Process exit code for validation failures (`DOCLI.USAGE`, `DOCLI.INPUT_INVALID`, `DOCLI.TEMPLATE_INVALID`).
 pub const EXIT_VALIDATION: i32 = 2;
-/// Process exit code for missing paths (`DOCLI.INPUT_NOT_FOUND`, `DOCLI.OUTPUT_NOT_FOUND`).
+/// Process exit code for missing paths (`DOCLI.INPUT_NOT_FOUND`, `DOCLI.OUTPUT_NOT_FOUND`, `DOCLI.TEMPLATE_NOT_FOUND`).
 pub const EXIT_NOT_FOUND: i32 = 3;
 /// Process exit code for I/O dependency failures (`DOCLI.IO`).
 pub const EXIT_DEPENDENCY: i32 = 4;
 /// Process exit code for unexpected failures (`DOCLI.INTERNAL`).
 pub const EXIT_INTERNAL: i32 = 1;
+
+/// Requirements document linked from template-pack errors.
+const REQUIREMENTS_DOCS: &str =
+    "https://github.com/randlee/docli/blob/develop/docs/requirements.md";
 
 /// Version `"1"` success or failure wrapper.
 #[derive(Debug, Serialize)]
@@ -82,6 +86,10 @@ pub enum ErrorCode {
     #[serde(rename = "DOCLI.USAGE")]
     Usage,
     /// Model JSON is missing, empty, or does not match known field types.
+    ///
+    /// Also empty or non-`CliModel` stdout from `docli generate --dotnet-project`,
+    /// including a `docli-dotnet project` exit 2 whose stderr reports an empty
+    /// or invalid JSON export.
     #[serde(rename = "DOCLI.INPUT_INVALID")]
     InputInvalid,
     /// `--input` path does not exist.
@@ -90,9 +98,15 @@ pub enum ErrorCode {
     /// `show` asked for an artifact that is not on disk.
     #[serde(rename = "DOCLI.OUTPUT_NOT_FOUND")]
     OutputNotFound,
-    /// Reading or writing a file failed.
+    /// Reading or writing a file failed, or a `docli-dotnet` / `dotnet` subprocess failed.
     #[serde(rename = "DOCLI.IO")]
     Io,
+    /// A template pack manifest or template failed to compile.
+    #[serde(rename = "DOCLI.TEMPLATE_INVALID")]
+    TemplateInvalid,
+    /// `--template` names a pack id that is not bundled or installed.
+    #[serde(rename = "DOCLI.TEMPLATE_NOT_FOUND")]
+    TemplateNotFound,
     /// An unexpected failure.
     #[serde(rename = "DOCLI.INTERNAL")]
     Internal,
@@ -102,8 +116,8 @@ impl ErrorCode {
     /// Process exit code for this error code.
     pub fn exit_code(self) -> i32 {
         match self {
-            Self::Usage | Self::InputInvalid => EXIT_VALIDATION,
-            Self::InputNotFound | Self::OutputNotFound => EXIT_NOT_FOUND,
+            Self::Usage | Self::InputInvalid | Self::TemplateInvalid => EXIT_VALIDATION,
+            Self::InputNotFound | Self::OutputNotFound | Self::TemplateNotFound => EXIT_NOT_FOUND,
             Self::Io => EXIT_DEPENDENCY,
             Self::Internal => EXIT_INTERNAL,
         }
@@ -153,18 +167,21 @@ impl ErrorBody {
             ErrorCode::InputNotFound => "DOCLI.INPUT_NOT_FOUND",
             ErrorCode::OutputNotFound => "DOCLI.OUTPUT_NOT_FOUND",
             ErrorCode::Io => "DOCLI.IO",
+            ErrorCode::TemplateInvalid => "DOCLI.TEMPLATE_INVALID",
+            ErrorCode::TemplateNotFound => "DOCLI.TEMPLATE_NOT_FOUND",
             ErrorCode::Internal => "DOCLI.INTERNAL",
         }
     }
 
-    /// Usage failure with empty `details`.
+    /// Usage failure. `details.cause` mirrors `suggested_action` for JSON consumers.
     pub fn usage(suggested_action: impl Into<String>) -> Self {
+        let suggested_action = suggested_action.into();
         Self {
             kind: ErrorKind::Validation,
             code: ErrorCode::Usage,
             message: "unknown command or invalid flags".to_owned(),
-            details: serde_json::json!({}),
-            suggested_action: suggested_action.into(),
+            details: serde_json::json!({ "cause": suggested_action }),
+            suggested_action,
             docs: None,
         }
     }
@@ -185,6 +202,26 @@ impl ErrorBody {
             message: "model JSON is missing, empty, or does not match known field types".to_owned(),
             details,
             suggested_action,
+            docs: None,
+        }
+    }
+
+    /// Invalid input with an explicit message. The code stays `DOCLI.INPUT_INVALID`.
+    ///
+    /// `details` is `{ "cause" }`. Use this when the model-JSON sentence would
+    /// name the wrong artifact, such as empty or non-`CliModel` stdout from
+    /// `docli-dotnet project`.
+    pub fn input_invalid_with_action(
+        message: impl Into<String>,
+        cause: impl Into<String>,
+        suggested_action: impl Into<String>,
+    ) -> Self {
+        Self {
+            kind: ErrorKind::Validation,
+            code: ErrorCode::InputInvalid,
+            message: message.into(),
+            details: serde_json::json!({ "cause": cause.into() }),
+            suggested_action: suggested_action.into(),
             docs: None,
         }
     }
@@ -238,15 +275,91 @@ impl ErrorBody {
         }
     }
 
+    /// Dependency failure with an explicit message. The code stays `DOCLI.IO`.
+    ///
+    /// `details` is `{ "cause" }` and omits `outputs_written`. Use this for a
+    /// `docli-dotnet` or `dotnet` subprocess failure. File read and write
+    /// failures stay on [`Self::io`].
+    pub fn io_with_action(
+        message: impl Into<String>,
+        cause: impl Into<String>,
+        suggested_action: impl Into<String>,
+    ) -> Self {
+        Self {
+            kind: ErrorKind::Dependency,
+            code: ErrorCode::Io,
+            message: message.into(),
+            details: serde_json::json!({ "cause": cause.into() }),
+            suggested_action: suggested_action.into(),
+            docs: None,
+        }
+    }
+
+    /// Template pack content failed validation. `cause` becomes `details.cause`.
+    ///
+    /// `suggested_action` is the recovery sentence (for example, re-run
+    /// `docli templates validate` on the pack directory).
+    pub fn template_invalid(cause: impl Into<String>, suggested_action: impl Into<String>) -> Self {
+        let cause = cause.into();
+        Self {
+            kind: ErrorKind::Validation,
+            code: ErrorCode::TemplateInvalid,
+            message: "template pack is invalid".to_owned(),
+            details: serde_json::json!({ "cause": cause }),
+            suggested_action: suggested_action.into(),
+            docs: Some(REQUIREMENTS_DOCS.to_owned()),
+        }
+    }
+
+    /// `--theme` JSON is not an object of strings. The code is `DOCLI.INPUT_INVALID`.
+    pub fn theme_invalid(cause: impl Into<String>) -> Self {
+        let cause = cause.into();
+        Self {
+            kind: ErrorKind::Validation,
+            code: ErrorCode::InputInvalid,
+            message: "theme JSON is not an object of strings".to_owned(),
+            details: serde_json::json!({ "cause": cause }),
+            suggested_action: format!("Fix the --theme JSON: {cause}"),
+            docs: None,
+        }
+    }
+
+    /// Unknown template id. `details` is `{ "template": "<id>" }`.
+    ///
+    /// `suggested_action` is the recovery sentence (for example, run
+    /// `docli templates list`).
+    pub fn template_not_found(
+        template: impl Into<String>,
+        suggested_action: impl Into<String>,
+    ) -> Self {
+        let template = template.into();
+        Self {
+            kind: ErrorKind::NotFound,
+            code: ErrorCode::TemplateNotFound,
+            message: format!("template not found: {template}"),
+            details: serde_json::json!({ "template": template }),
+            suggested_action: suggested_action.into(),
+            docs: Some(REQUIREMENTS_DOCS.to_owned()),
+        }
+    }
+
     /// Unexpected failure.
     pub fn internal(cause: impl Into<String>) -> Self {
         let cause = cause.into();
+        Self::internal_with_action(cause.clone(), format!("Report this cause: {cause}"))
+    }
+
+    /// Unexpected failure with an operator-facing recovery sentence.
+    pub fn internal_with_action(
+        cause: impl Into<String>,
+        suggested_action: impl Into<String>,
+    ) -> Self {
         Self {
             kind: ErrorKind::Internal,
             code: ErrorCode::Internal,
             message: "an unexpected failure occurred".to_owned(),
-            details: serde_json::json!({ "cause": cause }),
-            suggested_action: format!("Report this cause: {cause}"),
+            details: serde_json::json!({ "cause": cause.into() }),
+            suggested_action: suggested_action.into(),
             docs: None,
         }
     }
@@ -282,5 +395,29 @@ mod tests {
         assert!(text.contains("unknown command or invalid flags"));
         assert!(text.contains("Pass --html DIR and/or --markdown FILE"));
         assert!(!text.contains("cause"));
+    }
+
+    #[test]
+    fn explicit_input_and_io_messages_keep_stable_codes() {
+        let input = ErrorBody::input_invalid_with_action(
+            "docli-dotnet project returned empty stdout",
+            "export host stdout was empty",
+            "Make the export host write CliModel JSON to stdout",
+        );
+        assert_eq!(input.code, ErrorCode::InputInvalid);
+        assert_eq!(input.details["cause"], "export host stdout was empty");
+        assert!(input.details.get("outputs_written").is_none());
+        assert!(!input.message.contains("model JSON is missing"));
+
+        let io = ErrorBody::io_with_action(
+            "docli-dotnet project exited 2",
+            "build failed",
+            "Fix the export project and rerun docli generate --dotnet-project",
+        );
+        assert_eq!(io.code, ErrorCode::Io);
+        assert_eq!(io.kind, ErrorKind::Dependency);
+        assert_eq!(io.details.as_object().expect("object").len(), 1);
+        assert_eq!(io.details["cause"], "build failed");
+        assert!(!io.message.contains("failed to read or write"));
     }
 }

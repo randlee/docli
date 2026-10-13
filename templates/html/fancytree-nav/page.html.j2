@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" id="docli-fancytree-nav-pack">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="generator" content="docli">
+<title>{{ title|docli_escape }} – CLI Reference</title>
+<style>{{ style }}</style>
+</head>
+<body class="nav-sidebar docked docli-ft-pack icon-set-svg">
+<header id="quarto-header" class="quarto-header">
+  <nav class="quarto-secondary-nav" aria-label="Page header">
+    <div class="header-inner">
+      <button type="button" id="sidebar-toggle" class="quarto-btn-toggle" aria-label="Toggle sidebar navigation" aria-controls="quarto-sidebar" aria-expanded="true">
+        <span class="toggle-icon" aria-hidden="true"></span>
+      </button>
+      <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><span>{{ title|docli_escape }}</span></li>
+          <li class="breadcrumb-item active" aria-current="page">CLI Reference</li>
+        </ol>
+      </nav>
+      <label class="header-search quarto-search">
+        <span class="search-label">Search</span>
+        <input id="search" type="search" autocomplete="off" placeholder="commands and options">
+      </label>
+    </div>
+  </nav>
+</header>
+<div id="quarto-content" class="quarto-container page-layout-article">
+  <nav id="quarto-sidebar" class="sidebar sidebar-navigation docked" aria-label="Command tree">
+    <div class="sidebar-header">
+      <div class="sidebar-title">
+        <a href="#">{{ title|docli_escape }}</a>
+      </div>
+      {% if version %}<p class="sidebar-version">Version {{ version|docli_escape }}</p>{% endif %}
+    </div>
+    <div class="sidebar-menu-container">
+      <p class="sidebar-section-heading">Commands</p>
+      <div id="tree" class="sidebar-menu docli-fancytree-host"></div>
+      <div class="docli-icon-samples" aria-label="Recommended CLI tree icons">
+        <p class="sidebar-section-heading">Icon examples</p>
+        <ul class="docli-icon-sample-list">
+          <li><span class="docli-ft-icon docli-ft-icon-root" aria-hidden="true"></span><span>Root CLI</span></li>
+          <li><span class="docli-ft-icon docli-ft-icon-group" aria-hidden="true"></span><span>Subcommand group</span></li>
+          <li><span class="docli-ft-icon docli-ft-icon-leaf" aria-hidden="true"></span><span>Command (leaf)</span></li>
+        </ul>
+        <p class="docli-icon-note">Set A: inline SVG via <code>.docli-ft-icon-*</code>. Set B: add class <code>icon-set-glyph</code> on <code>&lt;body&gt;</code> for Unicode glyphs.</p>
+      </div>
+    </div>
+  </nav>
+  <main class="content" id="quarto-document-content">
+    <article id="detail" class="quarto-body" aria-live="polite"></article>
+  </main>
+</div>
+<script id="docli-data" type="application/json">{{ model_json }}</script>
+<script id="docli-search" type="application/json">{{ search_json }}</script>
+<script>
+{{ script }}
+</script>
+</body>
+</html>

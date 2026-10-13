@@ -38,10 +38,14 @@ The detailed contract lives in the reference files below.
 - `references/simulation-and-auditability.md` — simulator, auditability, and mutation/read-pair guidance
 - `references/template-generation.md` — `sc-compose`/MiniJinja template patterns for repeatable CLI scaffolding
 - `references/example-repos.md` — extracted patterns and non-patterns from the example CLIs
+- `references/dotnet.md` — `.NET` implementation patterns
+- `references/dotnet-examples.md` — `.NET` command, adapter, and JSON contract examples
 - `references/rust.md` — Rust implementation patterns
 - `references/rust-examples.md` — Rust command, trait, and JSON contract examples
+- `references/go.md` — Go implementation patterns
+- `references/go-examples.md` — Go command, interface, and JSON contract examples
 
-Read `core-contract.md` first. Then read `error-contracts.md`, `mcp-compatibility.md`, `simulation-and-auditability.md`, `template-generation.md`, and `example-repos.md`. For Rust implementations, also load `rust.md` and `rust-examples.md`. If the work requires deep simulator design, load the separate `designing-cli-simulators` skill as well.
+Read `core-contract.md` first. Then read `error-contracts.md`, `mcp-compatibility.md`, `simulation-and-auditability.md`, `template-generation.md`, and `example-repos.md`. Load only the language reference and language example file that match the implementation language. If the work requires deep simulator design, load the separate `designing-cli-simulators` skill as well.
 
 ## Agent Delegation
 
