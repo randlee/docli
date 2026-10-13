@@ -1,0 +1,27 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Docli", "src\Docli\Docli.csproj", "{D7DF5951-205B-4034-BAD8-74969EED3F4F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Docli.Tests", "tests\Docli.Tests\Docli.Tests.csproj", "{4A76F346-E30A-4286-880F-B68CBDB545A9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D7DF5951-205B-4034-BAD8-74969EED3F4F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7DF5951-205B-4034-BAD8-74969EED3F4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7DF5951-205B-4034-BAD8-74969EED3F4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7DF5951-205B-4034-BAD8-74969EED3F4F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A76F346-E30A-4286-880F-B68CBDB545A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A76F346-E30A-4286-880F-B68CBDB545A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A76F346-E30A-4286-880F-B68CBDB545A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A76F346-E30A-4286-880F-B68CBDB545A9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
