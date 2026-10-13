@@ -1,7 +1,7 @@
 ---
 id: d.1
 title: normative baselines for the JSON boundary
-status: planned
+status: complete
 branch: feature/phase-d-d1-baselines
 worktree: ../docli-worktrees/feature/phase-d-d1-baselines
 target: integrate/phase-d

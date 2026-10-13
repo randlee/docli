@@ -16,6 +16,8 @@ Markdown bytes out. Framework adapters (Rust: `from_clap`) produce the JSON;
 renderers produce bytes; `ops` writes files, hashes artifacts, and returns the
 version `"1"` envelope defined in [`requirements.md`](requirements.md) section 9.
 
+Docli.CommandLineAdapter.FromCommand produces CliModel JSON and does not call html::render or markdown::render.
+
 ```text
   CliModel JSON ──► render (html/markdown) ──► bytes
         ▲                    ▲
@@ -55,6 +57,7 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
 | [ADR-002](#adr-002--search-index-is-embedded-json) | Search index is embedded JSON | Accepted |
 | [ADR-003](#adr-003--cli-contract-is-ai-first-normative) | CLI contract is AI-first normative | Accepted |
 | [ADR-004](#adr-004--bundled-template-packs-are-embedded) | Bundled template packs are embedded | Accepted |
+| [ADR-005](#adr-005--net-emits-climodel-json-rust-renders-html) | .NET emits CliModel JSON; Rust renders HTML | Accepted |
 
 ### ADR-001 — Operations are the library boundary
 
@@ -194,6 +197,30 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
   `fixtures/contract/index.html`, including the pack marker.
 - MiniJinja is the pack renderer. Phase B does not add Askama.
 
+### ADR-005 — .NET emits CliModel JSON; Rust renders HTML
+
+**Status**: Accepted
+**Requirements**: REQ-DOCLI-NET-002, which uses REQ-DOCLI-INPUT-001 through REQ-DOCLI-INPUT-005. Does not close REQ-DOCLI-NET-001, REQ-DOCLI-PRODUCT-004, or REQ-DOCLI-GEN-003.
+
+**Decision**
+
+- Phase D .NET code writes CliModel JSON. It does not render HTML or Markdown and does not port the template engine.
+- The Rust binary remains the HTML and Markdown renderer. `docli generate --input <json>` writes HTML. `--markdown` stays on that command.
+- The dotnet tool command name is `docli`. It emits JSON only for its own tree (`docli model`). It does not implement `generate` or `show`, and it does not walk a third-party app. `FromCommand` is how a host app emits its own tree. This ADR is the only normative pin. Only Docli.csproj (dotnet/src/Docli/Docli.csproj) repeats the System.CommandLine package version. Every project file under dotnet/ repeats the TFM. A pin change edits the ADR first.
+- JSON object keys are the snake_case field names in `src/schema.rs`. Unknown keys are preserved. Same JSON means that schema field set and those snake_case names. It does not mean byte-identical output with `from_clap` for an arbitrary tree. This phase does not add a live clap dump harness.
+- C# types and the serializer are sprint d.2. `Docli.CommandLineAdapter.FromCommand` and its mapping are sprint d.3 (the only signature source). Tool argv is sprint d.4. The sample proof is sprint d.5.
+- Package System.CommandLine version 2.0.12 (stable 2.0 line, not a 3.0 preview). TFM net10.0.
+
+**Alternatives**
+
+- A distinct command name such as `dotnet-docli` or `docli-dotnet` would avoid a PATH collision with the Rust binary. Rejected for this phase. `ToolCommandName` stays `docli`, and the root `Command` name stays `docli`.
+
+**Consequences**
+
+- HTML bytes for adapter JSON come from the Rust `docli generate` path (ADR-001, ADR-004).
+- A global `dotnet tool install` shim named `docli` can shadow the Rust `docli` binary. This phase's tests and proofs invoke the built DLL or a local tool path, not a global install. `REQ-DOCLI-PRODUCT-004` stays later and must reconcile that shim when it is closed.
+- A .NET renderer, a template-engine port, Go, Python, and MCP need a later ADR.
+
 ## Architectural rules (`arch-qa`)
 
 These rules implement the ADRs above. **Severity: BLOCKING** unless noted.
@@ -209,12 +236,21 @@ These rules implement the ADRs above. **Severity: BLOCKING** unless noted.
 | **ARCH-RULE-007** | ADR-003 | CLI envelope and error shape changes require `REQ-DOCLI-CLI-*` and creating-ai-clis alignment. |
 | **ARCH-RULE-008** | ADR-001 | Widening `cli` visibility or moving argv parsing into `ops` requires a new ADR and requirements update. |
 | **ARCH-RULE-009** | ADR-004 | Bundled packs are embedded with `include_dir`. `html::render` takes `&CliModel` only and uses the embedded `default` pack. `src/render/**` does not select a caller template or return an envelope. |
+| **ARCH-RULE-010** | ADR-005 | The `dotnet/` tree may serialize `CliModel` JSON and walk `System.CommandLine`. It must not render HTML or Markdown, embed template packs, or define a second renderer. HTML bytes for that JSON come from the Rust `docli generate` path. arch-qa runs the three ARCH-RULE-010 gate commands listed directly under this table. |
+
+### ARCH-RULE-010 gate
+
+```text
+rg -n 'html::render|markdown::render|MiniJinja|\.j2|<!DOCTYPE|<html|CLI Reference|Scriban|Fluid|Razor' dotnet/src dotnet/samples
+find dotnet -type d -name templates -print
+rg -n 'Include=.*\.(html|md)' dotnet/src dotnet/samples -g '*.csproj'
+```
 
 **Evaluation (arch-qa)**
 
 1. Read this file (ADRs + table above).
 2. Read `authoritative_sprint_doc` when provided.
-3. Inspect `review_targets` against ARCH-RULE-001–009.
+3. Inspect `review_targets` against ARCH-RULE-001–010.
 4. Emit findings with `rule`: `ARCH-RULE-00N`, `adr`: `ADR-00N`, file, line,
    remediation.
 
