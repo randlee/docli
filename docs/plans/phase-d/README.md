@@ -28,9 +28,9 @@ This planning branch does not edit [`docs/requirements.md`](../../requirements.m
 
 ## What Phase D closes
 
-- `REQ-DOCLI-NET-002`: a `System.CommandLine` tree becomes `CliModel` JSON, and Rust `docli generate` renders it. This is an id split of the adapter half of `REQ-DOCLI-NET-001`, not a new feature. Portions: d.2 JSON types and schema field names; d.3 `FromCommand`; d.4 the tool's own `docli model` JSON; d.5 the sample proof; d.6 `docli generate --dotnet-project` orchestrating `docli-dotnet project`. d.1 writes the requirement and `ADR-005` text and does not implement the adapter.
+- `REQ-DOCLI-NET-002`: a `System.CommandLine` tree becomes `CliModel` JSON, and Rust `docli generate` renders it. This is an id split of the adapter half of `REQ-DOCLI-NET-001`, not a new feature. Portions: d.2 JSON types and schema field names; d.3 `FromCommand`; d.4 the tool's own `docli-dotnet model` JSON; d.5 the sample proof; d.6 `docli generate --dotnet-project` orchestrating `docli-dotnet project`. d.1 writes the requirement and `ADR-005` text and does not implement the adapter.
 - The tool's own `docli-dotnet model` JSON, proven when Rust `docli generate --input` writes `index.html` from that file (d.4). Global tool command name is `docli-dotnet`.
-- A sample-library proof: the sample calls `FromCommand`, then Rust `docli generate` writes HTML and still accepts `--markdown` (d.5). d.5 depends on d.4 because it calls `RustDocli.Generate`, which d.4 owns. This proof does not invoke the tool and does not read `docli model` output.
+- A sample-library proof: the sample calls `FromCommand`, then Rust `docli generate` writes HTML and still accepts `--markdown` (d.5). d.5 depends on d.4 because it calls `RustDocli.Generate`, which d.4 owns. This proof does not invoke the tool and does not read `docli-dotnet model` output.
 - d.1 adds the decision record (`ADR-005`) and `ARCH-RULE-010` for that boundary.
 
 ## What Phase D does not close
@@ -43,7 +43,7 @@ This planning branch does not edit [`docs/requirements.md`](../../requirements.m
 - The renderer sentence of `REQ-DOCLI-NET-001` (that id stays later)
 - `REQ-DOCLI-GEN-003`
 - NuGet publish (`dotnet nuget push` or a packed feed)
-- A tool that walks a third-party app (no assembly loader; `docli model` documents only the tool's own tree)
+- A tool that walks a third-party app (no assembly loader; `docli-dotnet model` documents only the tool's own tree)
 - A .NET CI job. `.github/workflows/ci.yml` stays Rust-only. A .NET CI job is a deliberate later item. The host gate below is the only .NET gate
 
 No sprint Closes section marks those items done. [`phase-c/README.md`](../phase-c/README.md) stays a retired bookmark: there is no Phase C release.
@@ -56,7 +56,7 @@ No sprint Closes section marks those items done. [`phase-c/README.md`](../phase-
 | d.1 | [d1-normative-baselines.md](d1-normative-baselines.md) | `ADR-005`, `ARCH-RULE-010` |
 | d.2 | [d2-cli-model-json.md](d2-cli-model-json.md) | `REQ-DOCLI-NET-002` JSON types and schema field names |
 | d.3 | [d3-commandline-walker.md](d3-commandline-walker.md) | `REQ-DOCLI-NET-002` `FromCommand` walker |
-| d.4 | [d4-dotnet-tool-json.md](d4-dotnet-tool-json.md) | `REQ-DOCLI-NET-002` tool `docli model` JSON |
+| d.4 | [d4-dotnet-tool-json.md](d4-dotnet-tool-json.md) | `REQ-DOCLI-NET-002` tool `docli-dotnet model` JSON |
 | d.5 | [d5-sample-rust-html-proof.md](d5-sample-rust-html-proof.md) | `REQ-DOCLI-NET-002` sample tree + Rust HTML proof |
 | d.6 | [d6-generate-docli-dotnet.md](d6-generate-docli-dotnet.md) | `REQ-DOCLI-NET-002` Rust `generate --dotnet-project` + `docli-dotnet project` |
 
@@ -92,12 +92,16 @@ cargo fmt --check
 
 ```text
 cargo build --bin docli
-cargo test --test cli_contract -- --nocapture
 dotnet build dotnet/Docli.sln -c Release
+cargo test --test cli_contract -- --nocapture
 dotnet test dotnet/Docli.sln -c Release --filter "ProjectCommandTests|DotnetGenerateOrchestrationTests"
 git diff --check
 ```
 
 ## Phase-end QA
 
-After **d.5** merges to `integrate/phase-d`, **quality-mgr** re-runs the d.4 and d.5 host gate, including `cargo build --bin docli` before `dotnet test`. A phase-end docs commit then sets the project-plan Phase D status off `Planned` and sets each sprint doc frontmatter off `status: planned`. d.1 does not edit `project-plan.md`. d.5 does not change that status. Then merge **`integrate/phase-d` → `develop`**. d.5 does not depend on QA completing first.
+After **d.6** merges to `integrate/phase-d`, **quality-mgr** re-runs the d.4, d.5, and d.6 host gates. The d.4 and d.5 gate includes `cargo build --bin docli` before `dotnet test`. The d.6 gate runs `dotnet build dotnet/Docli.sln -c Release` before `cargo test --test cli_contract`, so that contract test does not see a missing or stale Release `Docli.Tool.dll`. A phase-end docs commit then sets the project-plan Phase D status off `Planned` and sets each sprint doc frontmatter off `status: planned`, including d.0. d.1 does not edit `project-plan.md`. d.6 does not change that status. Then merge **`integrate/phase-d` → `develop`**. d.6 does not depend on QA completing first.
+
+A GitHub Actions job that runs `dotnet test` stays deferred. The Rust test job installs the SDK pinned by `global.json` so `generate_dotnet_project_writes_sample_html_when_tool_is_available` can build the Release tool and fail, rather than skip, when that build does not produce a working `project` subcommand. That one contract test is not a substitute for the host gate. Develop merge of the .NET suite is honest only when the d.4, d.5, and d.6 host-gate output is on the phase-end PR.
+
+`docli generate --dotnet-project <csproj>` executes that project: `docli-dotnet project` runs `dotnet build` and `dotnet run` on the csproj, then Rust renders the export host's stdout. The temporary JSON file under the system temp directory is removed after `generate` finishes.

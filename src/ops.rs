@@ -259,10 +259,12 @@ const DOTNET_PROJECT_FLAG: &str = "--dotnet-project";
 /// # Errors
 ///
 /// Returns `DOCLI.IO` when `docli-dotnet` or `dotnet` cannot be started, the
-/// repo or Release DLL is missing, or the child exits non-zero. Returns
-/// `DOCLI.INPUT_INVALID` when the child stdout is empty, is not UTF-8, or is
-/// not `CliModel` JSON. Those codes are the section 9 codes; the messages name
-/// the export host or the subprocess.
+/// repo or Release DLL is missing, or the child exits non-zero for a reason
+/// other than bad export JSON. Returns `DOCLI.INPUT_INVALID` when the child
+/// stdout is empty, is not UTF-8, or is not `CliModel` JSON, and when the
+/// child exits 2 and stderr reports an empty or invalid JSON export. Those
+/// codes are the section 9 codes; the messages name the export host or the
+/// subprocess.
 pub fn materialize_dotnet_project(csproj: &Path) -> Result<PathBuf, ErrorBody> {
     let output = run_dotnet_project(csproj)?;
     if !output.status.success() {
@@ -321,6 +323,14 @@ fn export_stdout_error(csproj: &Path, message: &str, cause: impl Into<String>) -
 }
 
 fn project_exit_error(csproj: &Path, code: i32, detail: &str) -> ErrorBody {
+    if code == 2 && stderr_reports_invalid_export(detail) {
+        let message = if detail.to_ascii_lowercase().contains("empty") {
+            "docli-dotnet project returned empty stdout"
+        } else {
+            "docli-dotnet project stdout is not CliModel JSON"
+        };
+        return export_stdout_error(csproj, message, detail);
+    }
     ErrorBody::io_with_action(
         format!("docli-dotnet project exited {code}"),
         detail,
@@ -329,6 +339,19 @@ fn project_exit_error(csproj: &Path, code: i32, detail: &str) -> ErrorBody {
             csproj.display()
         ),
     )
+}
+
+/// Section 9: exit 2 plus an empty or invalid JSON export is `DOCLI.INPUT_INVALID`.
+///
+/// Other non-zero exits stay `DOCLI.IO`. The phrases are the tool's stderr
+/// (`empty export stdout`, `json parse failed`) and the same conditions in prose.
+fn stderr_reports_invalid_export(detail: &str) -> bool {
+    let lower = detail.to_ascii_lowercase();
+    lower.contains("empty export stdout")
+        || lower.contains("json parse failed")
+        || lower.contains("empty stdout")
+        || lower.contains("not climodel")
+        || lower.contains("invalid json")
 }
 
 fn run_dotnet_project(csproj: &Path) -> Result<std::process::Output, ErrorBody> {
@@ -1009,6 +1032,30 @@ mod tests {
         assert_eq!(exited.details["cause"], "build failed");
         assert!(exited.suggested_action.contains("sample.csproj"));
         assert!(exited.details.get("outputs_written").is_none());
+
+        let empty = project_exit_error(
+            csproj,
+            2,
+            "docli-dotnet: empty export stdout: sample.csproj",
+        );
+        assert_eq!(empty.code, ErrorCode::InputInvalid);
+        assert_eq!(empty.message, "docli-dotnet project returned empty stdout");
+        let parsed = project_exit_error(
+            csproj,
+            2,
+            "docli-dotnet: json parse failed: unexpected token",
+        );
+        assert_eq!(parsed.code, ErrorCode::InputInvalid);
+        assert_eq!(
+            parsed.message,
+            "docli-dotnet project stdout is not CliModel JSON"
+        );
+        let other = project_exit_error(
+            csproj,
+            1,
+            "docli-dotnet: json parse failed: unexpected token",
+        );
+        assert_eq!(other.code, ErrorCode::Io);
 
         let mut command = Command::new("dotnet");
         let started = start_failure(&command, std::io::Error::other("no such file"), csproj);

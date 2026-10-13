@@ -274,10 +274,10 @@ prompts.
   | Code | Kind | When |
   |---|---|---|
   | `DOCLI.USAGE` | `validation` | unknown command or invalid flags |
-  | `DOCLI.INPUT_INVALID` | `validation` | model JSON is missing, empty, or does not match the input model; also empty, non-UTF-8, or non-CliModel stdout from `docli generate --dotnet-project` |
+  | `DOCLI.INPUT_INVALID` | `validation` | model JSON is missing, empty, or does not match the input model; also empty, non-UTF-8, or non-CliModel stdout from `docli generate --dotnet-project`, and a `docli-dotnet project` exit 2 whose stderr reports an empty or invalid JSON export |
   | `DOCLI.INPUT_NOT_FOUND` | `not_found` | `--input` path does not exist |
   | `DOCLI.OUTPUT_NOT_FOUND` | `not_found` | `show` was asked for an artifact that is not on disk |
-  | `DOCLI.IO` | `dependency` | reading or writing a file failed; also a missing `docli-dotnet` tool, a failure to start `docli-dotnet` or `dotnet`, or a non-zero `docli-dotnet project` exit |
+  | `DOCLI.IO` | `dependency` | reading or writing a file failed; also a missing `docli-dotnet` tool, a failure to start `docli-dotnet` or `dotnet`, or a non-zero `docli-dotnet project` exit other than exit 2 whose stderr reports an empty or invalid JSON export |
   | `DOCLI.TEMPLATE_INVALID` | `validation` | a template pack manifest or template does not compile |
   | `DOCLI.TEMPLATE_NOT_FOUND` | `not_found` | `--template` names a pack id that is not bundled or installed |
   | `DOCLI.INTERNAL` | `internal` | an unexpected failure |
@@ -309,9 +309,10 @@ prompts.
     that were written.
   - `--dotnet-project` failures reuse section 9 codes and add none. Empty,
     non-UTF-8, or non-CliModel export stdout is `DOCLI.INPUT_INVALID`
-    (`details` is `{ "cause" }`). A missing `docli-dotnet`, a failure to start
-    `docli-dotnet` or `dotnet`, or a non-zero child exit is `DOCLI.IO`
-    (`details` is `{ "cause" }`).
+    (`details` is `{ "cause" }`). The same code applies when `docli-dotnet
+    project` exits 2 and stderr reports an empty or invalid JSON export.
+    A missing `docli-dotnet`, a failure to start `docli-dotnet` or `dotnet`,
+    or any other non-zero child exit is `DOCLI.IO` (`details` is `{ "cause" }`).
 - `REQ-DOCLI-CLI-006`: `show` is the readback for `generate`.
   - Request: at least one of `--html DIR` or `--markdown FILE`.
   - Response `data` includes `operation` (`"show"`) and `artifacts` with the
@@ -392,10 +393,10 @@ prompts.
 | Code | Exit | `kind` | `details` (required keys) | Covered by |
 |------|------|--------|---------------------------|------------|
 | `DOCLI.USAGE` | 2 | `validation` | `{ "cause" }` | `docli_usage_unknown_command_json`, `docli_usage_invalid_flag_json`, `docli_usage_show_without_paths_json`, `docli_usage_show_without_paths_human`, `docli_usage_preview_with_html_json` |
-| `DOCLI.INPUT_INVALID` | 2 | `validation` | `{}` or `{ "cause" }` | `docli_input_invalid_parse_error_json`, `docli_input_invalid_empty_file_json`, `docli_stdin_empty_is_input_invalid`, `docli_input_invalid_human`, `docli_input_invalid_theme_json`, `docli_input_invalid_dotnet_project_stdout_json` |
+| `DOCLI.INPUT_INVALID` | 2 | `validation` | `{}` or `{ "cause" }` | `docli_input_invalid_parse_error_json`, `docli_input_invalid_empty_file_json`, `docli_stdin_empty_is_input_invalid`, `docli_input_invalid_human`, `docli_input_invalid_theme_json`, `docli_input_invalid_dotnet_project_stdout_json`, `docli_input_invalid_dotnet_project_exit_empty_json`, `docli_input_invalid_dotnet_project_exit_parse_json` |
 | `DOCLI.INPUT_NOT_FOUND` | 3 | `not_found` | `{ "path" }` | `docli_input_not_found_json`, `docli_input_not_found_human` |
 | `DOCLI.OUTPUT_NOT_FOUND` | 3 | `not_found` | `{ "artifacts": [{ "path", "exists" }] }` | `docli_output_not_found_single_html_json`, `docli_output_not_found_html_and_markdown_json`, `docli_output_not_found_human` |
-| `DOCLI.IO` | 4 | `dependency` | `{ "cause" }`; optional `{ "outputs_written" }` after partial write | `docli_io_generate_html_dir_not_writable_json`, `docli_io_generate_partial_write_lists_outputs_written_json`, `docli_io_show_unreadable_index_json`, `docli_io_show_unreadable_index_human`, `docli_io_dotnet_project_subprocess_failure_json` |
+| `DOCLI.IO` | 4 | `dependency` | `{ "cause" }`; optional `{ "outputs_written" }` after partial write | `docli_io_generate_html_dir_not_writable_json`, `docli_io_generate_partial_write_lists_outputs_written_json`, `docli_io_show_unreadable_index_json`, `docli_io_show_unreadable_index_human`, `docli_io_dotnet_project_subprocess_failure_json`, `docli_io_dotnet_project_non_validation_exit_stays_io` |
 | `DOCLI.TEMPLATE_INVALID` | 2 | `validation` | `{ "cause" }` | `docli_template_invalid_validate_json`, `docli_template_invalid_validate_human` |
 | `DOCLI.TEMPLATE_NOT_FOUND` | 3 | `not_found` | `{ "template" }` | `docli_template_not_found_unknown_id_json`, `docli_template_not_found_unknown_id_human`, `docli_templates_show_unknown_bundled_id_json` |
 | `DOCLI.INTERNAL` | 1 | `internal` | `{ "cause" }` | `docli_internal_error_body_contract` |

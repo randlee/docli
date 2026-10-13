@@ -102,6 +102,11 @@ jobs:
           path: target
           key: ${{ runner.os }}-test-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
       - name: Run tests
         run: cargo test --all-targets
 
