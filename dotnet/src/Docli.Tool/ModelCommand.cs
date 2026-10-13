@@ -6,6 +6,8 @@ namespace Docli.Tool;
 
 public static class ModelCommand
 {
+    public const string StderrPrefix = "docli-dotnet: ";
+
     public const string Name = "model";
 
     public static readonly Option<string> OutputOption = new("--output")
@@ -25,7 +27,7 @@ public static class ModelCommand
         }
         catch (Exception ex)
         {
-            stderr.WriteLine("docli: serialize failed: " + OneLine(ex.Message));
+            stderr.WriteLine(StderrPrefix + "serialize failed: " + OneLine(ex.Message));
             return 2;
         }
 
@@ -37,14 +39,14 @@ public static class ModelCommand
 
         if (Directory.Exists(outputPath))
         {
-            stderr.WriteLine("docli: output path is a directory: " + outputPath);
+            stderr.WriteLine(StderrPrefix + "output path is a directory: " + outputPath);
             return 2;
         }
 
         var parent = Path.GetDirectoryName(outputPath);
         if (!string.IsNullOrEmpty(parent) && !Directory.Exists(parent))
         {
-            stderr.WriteLine("docli: output parent missing: " + outputPath);
+            stderr.WriteLine(StderrPrefix + "output parent missing: " + outputPath);
             return 2;
         }
 
@@ -55,7 +57,7 @@ public static class ModelCommand
         }
         catch (UnauthorizedAccessException)
         {
-            stderr.WriteLine("docli: output unauthorized: " + outputPath);
+            stderr.WriteLine(StderrPrefix + "output unauthorized: " + outputPath);
             return 2;
         }
     }

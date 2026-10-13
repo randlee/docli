@@ -17,7 +17,7 @@ public sealed class ToolCommandTests
 
         Assert.Equal(0, result.ExitCode);
         var model = CliModelJson.Deserialize(result.Stdout);
-        Assert.Equal("docli", model.Name);
+        Assert.Equal(ToolCommands.RootCommandName, model.Name);
         var modelCommand = Assert.Single(model.Subcommands, subcommand => subcommand.Name == "model");
         Assert.Contains(modelCommand.Options, option => option.Long == "--output");
         Assert.Equal(ToolCommands.ToolVersion(), model.Version);
@@ -36,7 +36,7 @@ public sealed class ToolCommandTests
             Assert.DoesNotContain("\"name\"", result.Stdout, StringComparison.Ordinal);
             Assert.True(File.Exists(path));
             var model = CliModelJson.Deserialize(File.ReadAllText(path));
-            Assert.Equal("docli", model.Name);
+            Assert.Equal(ToolCommands.RootCommandName, model.Name);
             Assert.Contains(model.Subcommands, subcommand => subcommand.Name == "model");
             Assert.Contains(
                 Assert.Single(model.Subcommands, subcommand => subcommand.Name == "model").Options,
@@ -59,7 +59,7 @@ public sealed class ToolCommandTests
             var result = await RunTool("model", "--output", path);
 
             Assert.Equal(2, result.ExitCode);
-            Assert.StartsWith("docli: output parent missing:", SingleLine(result.Stderr), StringComparison.Ordinal);
+            Assert.StartsWith(ModelCommand.StderrPrefix + "output parent missing:", SingleLine(result.Stderr), StringComparison.Ordinal);
             Assert.False(File.Exists(path));
             Assert.False(Directory.Exists(parent));
 
@@ -67,7 +67,7 @@ public sealed class ToolCommandTests
             var recovered = RecoverToFile(path);
             Assert.Equal(0, recovered);
             Assert.True(File.Exists(path));
-            Assert.Equal("docli", CliModelJson.Deserialize(File.ReadAllText(path)).Name);
+            Assert.Equal(ToolCommands.RootCommandName, CliModelJson.Deserialize(File.ReadAllText(path)).Name);
         }
         finally
         {
@@ -92,7 +92,7 @@ public sealed class ToolCommandTests
 
             Assert.Equal(2, result.ExitCode);
             Assert.StartsWith(
-                "docli: output path is a directory:",
+                ModelCommand.StderrPrefix + "output path is a directory:",
                 SingleLine(result.Stderr),
                 StringComparison.Ordinal);
             Assert.DoesNotContain("{", result.Stdout, StringComparison.Ordinal);
@@ -102,7 +102,7 @@ public sealed class ToolCommandTests
             var file = Path.Combine(directory.FullName, "model.json");
             Assert.Equal(0, RecoverToFile(file));
             Assert.True(File.Exists(file));
-            Assert.Equal("docli", CliModelJson.Deserialize(File.ReadAllText(file)).Name);
+            Assert.Equal(ToolCommands.RootCommandName, CliModelJson.Deserialize(File.ReadAllText(file)).Name);
         }
         finally
         {
@@ -121,7 +121,7 @@ public sealed class ToolCommandTests
             var result = await RunTool("model", "--output", path);
 
             Assert.Equal(2, result.ExitCode);
-            Assert.StartsWith("docli: output unauthorized:", SingleLine(result.Stderr), StringComparison.Ordinal);
+            Assert.StartsWith(ModelCommand.StderrPrefix + "output unauthorized:", SingleLine(result.Stderr), StringComparison.Ordinal);
             Assert.DoesNotContain("{", result.Stdout, StringComparison.Ordinal);
             Assert.False(File.Exists(path));
 
@@ -131,7 +131,7 @@ public sealed class ToolCommandTests
             {
                 Assert.Equal(0, RecoverToFile(writable));
                 Assert.True(File.Exists(writable));
-                Assert.Equal("docli", CliModelJson.Deserialize(File.ReadAllText(writable)).Name);
+                Assert.Equal(ToolCommands.RootCommandName, CliModelJson.Deserialize(File.ReadAllText(writable)).Name);
             }
             finally
             {
@@ -163,7 +163,7 @@ public sealed class ToolCommandTests
             var exit = ModelCommand.Write(cyclic, stdout, stderr, path);
 
             Assert.Equal(2, exit);
-            Assert.StartsWith("docli: serialize failed:", SingleLine(stderr.ToString()), StringComparison.Ordinal);
+            Assert.StartsWith(ModelCommand.StderrPrefix + "serialize failed:", SingleLine(stderr.ToString()), StringComparison.Ordinal);
             Assert.DoesNotContain("{", stdout.ToString(), StringComparison.Ordinal);
             Assert.False(File.Exists(path));
 
@@ -214,7 +214,7 @@ public sealed class ToolCommandTests
             var result = await RunTool("model", "--output", modelPath);
             Assert.Equal(0, result.ExitCode);
             var model = CliModelJson.Deserialize(File.ReadAllText(modelPath));
-            Assert.Equal("docli", model.Name);
+            Assert.Equal(ToolCommands.RootCommandName, model.Name);
 
             var generated = RustDocli.Generate(
                 RepoRoot.Find(),
@@ -286,7 +286,7 @@ public sealed class ToolCommandTests
             using (var reader = new StreamReader(settingsEntry.Open()))
             {
                 var settings = reader.ReadToEnd();
-                Assert.Contains("<Command Name=\"docli\"", settings, StringComparison.Ordinal);
+                Assert.Contains("<Command Name=\"docli-dotnet\"", settings, StringComparison.Ordinal);
             }
 
             var nuspec = Assert.Single(

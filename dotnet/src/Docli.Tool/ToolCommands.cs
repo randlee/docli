@@ -7,9 +7,11 @@ namespace Docli.Tool;
 
 public static class ToolCommands
 {
+    public const string RootCommandName = "docli-dotnet";
+
     public static Command Create()
     {
-        var root = new Command("docli", "Emit a System.CommandLine tree as docli JSON");
+        var root = new Command(RootCommandName, "Emit a System.CommandLine tree as docli JSON");
         root.Options.Add(new HelpOption());
 
         var model = new Command(ModelCommand.Name, "Write CliModel JSON for this tool");

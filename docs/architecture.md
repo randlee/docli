@@ -206,14 +206,14 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
 
 - Phase D .NET code writes CliModel JSON. It does not render HTML or Markdown and does not port the template engine.
 - The Rust binary remains the HTML and Markdown renderer. `docli generate --input <json>` writes HTML. `--markdown` stays on that command.
-- The dotnet tool command name is `docli`. It emits JSON only for its own tree (`docli model`). It does not implement `generate` or `show`, and it does not walk a third-party app. `FromCommand` is how a host app emits its own tree. This ADR is the only normative pin. Only Docli.csproj (dotnet/src/Docli/Docli.csproj) repeats the System.CommandLine package version. Every project file under dotnet/ repeats the TFM. A pin change edits the ADR first.
+- The dotnet global tool command name is `docli-dotnet`. It emits JSON only for its own tree (`docli-dotnet model`). It does not implement `generate` or `show`, and it does not walk a third-party app. `FromCommand` is how a host app emits its own tree. The Rust `docli` binary is the user-facing doc product for `generate` and `show`. This ADR is the only normative pin. Only Docli.csproj (dotnet/src/Docli/Docli.csproj) repeats the System.CommandLine package version. Every project file under dotnet/ repeats the TFM. A pin change edits the ADR first.
 - JSON object keys are the snake_case field names in `src/schema.rs`. Unknown keys are preserved. Same JSON means that schema field set and those snake_case names. It does not mean byte-identical output with `from_clap` for an arbitrary tree. This phase does not add a live clap dump harness.
 - C# types and the serializer are sprint d.2. `Docli.CommandLineAdapter.FromCommand` and its mapping are sprint d.3 (the only signature source). Tool argv is sprint d.4. The sample proof is sprint d.5.
 - Package System.CommandLine version 2.0.12 (stable 2.0 line, not a 3.0 preview). TFM net10.0.
 
 **Alternatives**
 
-- A distinct command name such as `dotnet-docli` or `docli-dotnet` would avoid a PATH collision with the Rust binary. Rejected for this phase. `ToolCommandName` stays `docli`, and the root `Command` name stays `docli`.
+- Phase D initially shipped the global tool as `docli`, which collided on PATH with the Rust binary. The tool is now `docli-dotnet` (`ToolCommandName` and root `Command` name).
 
 **Consequences**
 
@@ -221,7 +221,7 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
 - Rust render and `docli generate --input` failures stay on the section 9 `DOCLI.*` contract (ADR-003). This ADR adds no codes.
 - Dotnet adapter and tool human stderr and exit semantics are closed in sprint d.4 (`docs/plans/phase-d/d4-dotnet-tool-json.md`). The dotnet tool is not the Rust version `"1"` envelope.
 - An exception from `DefaultValueFactory` propagates unchanged from `FromCommand`, per sprint d.3 (`docs/plans/phase-d/d3-commandline-walker.md`).
-- A global `dotnet tool install` shim named `docli` can shadow the Rust `docli` binary. This phase's tests and proofs invoke the built DLL or a local tool path, not a global install. `REQ-DOCLI-PRODUCT-004` stays later and must reconcile that shim when it is closed.
+- This phase's tests and proofs invoke the built DLL or a local tool path, not a global install. `REQ-DOCLI-PRODUCT-004` stays later and must document NuGet install alongside `cargo install docli`.
 - A .NET renderer, a template-engine port, Go, Python, and MCP need a later ADR.
 
 ## Architectural rules (`arch-qa`)

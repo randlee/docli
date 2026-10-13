@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>docli</ToolCommandName>
+    <ToolCommandName>docli-dotnet</ToolCommandName>
     <PackageId>Docli.Tool</PackageId>
   </PropertyGroup>
 

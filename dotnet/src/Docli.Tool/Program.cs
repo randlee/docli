@@ -18,7 +18,7 @@ public static class Program
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine("docli: model failed: " + ex.Message);
+            Console.Error.WriteLine(ModelCommand.StderrPrefix + "model failed: " + ex.Message);
             return 2;
         }
     }
