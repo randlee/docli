@@ -1,0 +1,52 @@
+@prefix triage: <urn:atm:triage:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:atm:triage:finding/ARCH-004>
+  a triage:Finding ;
+  triage:findingId "ARCH-004" ;
+  triage:title "arch-qa baseline still stops at ADR-004 and ARCH-RULE-009" ;
+  triage:description "d.1 adds ADR-005 and ARCH-RULE-010 and changes the architecture.md evaluation range to ARCH-RULE-001 through 010. The arch-qa mandatory baseline in .claude/agents/arch-qa.md still caps canonical ADRs at ADR-004 and blocking checks at ARCH-RULE-009. b.1 treats this agent prompt as part of the baseline that is updated with the rule table." ;
+  triage:phaseId "phase-d" ;
+  triage:triageMode "initial_pass" ;
+  triage:category "architecture" ;
+  triage:severity "important" ;
+  triage:repeatable true ;
+  triage:sweepScope "workspace" ;
+  triage:status "open" ;
+  triage:dispatchReady true ;
+  triage:hasOccurrence <urn:atm:triage:occurrence/ARCH-004/d.plan/1> ;
+  triage:openOn <urn:atm:triage:worktree/d.plan/93316b0b> ;
+  triage:promoteTo <urn:atm:triage:worktree/d.plan/93316b0b> ;
+  triage:originatingSprintDoc "docs/plans/phase-d/d1-normative-baselines.md" ;
+  triage:requirementId "REQ-DOCLI-NET-002" ;
+  triage:adrId "ADR-005" ;
+  triage:triagedAt "2026-10-10T08:05:00Z"^^xsd:dateTime .
+
+<urn:atm:triage:occurrence/ARCH-004/d.plan/1>
+  a triage:Occurrence ;
+  triage:file ".claude/agents/arch-qa.md" ;
+  triage:line 21 ;
+  triage:snippet "- **ADRs** (`ADR-001`–`ADR-004`) — canonical architectural decisions" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:headSha "93316b0b00dcf5e751a1d24c0274aa653be7fc62" ;
+  triage:branch "plan/phase-d" ;
+  triage:occursIn <urn:atm:triage:worktree/d.plan/93316b0b> .
+
+<urn:atm:triage:occurrence/ARCH-004/d.plan/2>
+  a triage:Occurrence ;
+  triage:file ".claude/agents/arch-qa.md" ;
+  triage:line 22 ;
+  triage:snippet "- **Architectural rules** (`ARCH-RULE-001`–`ARCH-RULE-009`) — blocking checks" ;
+  triage:status "open" ;
+  triage:closed false ;
+  triage:headSha "93316b0b00dcf5e751a1d24c0274aa653be7fc62" ;
+  triage:branch "plan/phase-d" ;
+  triage:occursIn <urn:atm:triage:worktree/d.plan/93316b0b> .
+
+<urn:atm:triage:worktree/d.plan/93316b0b>
+  a triage:WorktreeSnapshot ;
+  triage:branch "plan/phase-d" ;
+  triage:path "/Users/randlee/github/docli-worktrees/plan/phase-d" ;
+  triage:headSha "93316b0b00dcf5e751a1d24c0274aa653be7fc62" ;
+  triage:orderIndex 0 .
