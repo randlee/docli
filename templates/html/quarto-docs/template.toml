@@ -1,0 +1,20 @@
+# Quarto website (cosmo) inspired layout — optional disk pack (not embedded).
+# Inspired by Quarto bootstrap cosmo + docked sidebar (e.g. rx-comp site).
+id = "quarto-docs"
+name = "Quarto docs (cosmo)"
+version = "1"
+description = "Docked sidebar, top bar, and article-style content like Quarto HTML docs."
+min_docli = "0.1.0"
+
+[theme_schema]
+bg = { type = "color", default = "#ffffff", description = "Main content background" }
+fg = { type = "color", default = "#212529", description = "Body text" }
+sidebar_bg = { type = "color", default = "#f8f9fa", description = "Sidebar background" }
+sidebar_border = { type = "color", default = "#dee2e6", description = "Sidebar and header borders" }
+accent = { type = "color", default = "#2780e3", description = "Cosmo primary blue (links, active nav)" }
+accent_hover = { type = "color", default = "#1967c0", description = "Primary hover" }
+muted = { type = "color", default = "#6c757d", description = "Secondary text" }
+header_bg = { type = "color", default = "#ffffff", description = "Top bar background" }
+code_bg = { type = "color", default = "#f8f9fa", description = "Usage block background" }
+font_body = { type = "string", default = "1rem/1.6 system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif", description = "Body font" }
+font_title = { type = "string", default = "1.75rem/1.2 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", description = "Page title font" }
