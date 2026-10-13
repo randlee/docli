@@ -1,9 +1,9 @@
 ---
 id: d.5
 title: sample command tree and Rust HTML proof
-status: planned
-branch: feature/phase-d-d5-html-proof
-worktree: ../docli-worktrees/feature/phase-d-d5-html-proof
+status: complete
+branch: feature/phase-d-d5-proof
+worktree: ../docli-worktrees/feature/phase-d-d5-proof
 target: integrate/phase-d
 ---
 

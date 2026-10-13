@@ -91,4 +91,4 @@ Phase D authority is [phase-d/README.md](phase-d/README.md).
 | d.2 | [d2-cli-model-json.md](phase-d/d2-cli-model-json.md) | `feature/phase-d-d2-model` | `../docli-worktrees/feature/phase-d-d2-model` |
 | d.3 | [d3-commandline-walker.md](phase-d/d3-commandline-walker.md) | `feature/phase-d-d3-adapter` | `../docli-worktrees/feature/phase-d-d3-adapter` |
 | d.4 | [d4-dotnet-tool-json.md](phase-d/d4-dotnet-tool-json.md) | `feature/phase-d-d4-tool` | `../docli-worktrees/feature/phase-d-d4-tool` |
-| d.5 | [d5-sample-rust-html-proof.md](phase-d/d5-sample-rust-html-proof.md) | `feature/phase-d-d5-html-proof` | `../docli-worktrees/feature/phase-d-d5-html-proof` |
+| d.5 | [d5-sample-rust-html-proof.md](phase-d/d5-sample-rust-html-proof.md) | `feature/phase-d-d5-proof` | `../docli-worktrees/feature/phase-d-d5-proof` |
