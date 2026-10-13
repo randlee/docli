@@ -202,7 +202,12 @@ public sealed class ToolCommandTests
         Assert.DoesNotContain("--markdown", stdout, StringComparison.Ordinal);
     }
 
-    [Fact(Timeout = 180_000)]
+    // Same 10s slack as DotnetGenerateOrchestrationTests (170s inside 180s).
+    private const int ModelHtmlRunToolSeconds = 55;
+    private const int ModelHtmlGenerateSeconds = 150;
+    private const int ModelHtmlTimeoutMarginSeconds = 10;
+
+    [Fact(Timeout = (ModelHtmlRunToolSeconds + ModelHtmlGenerateSeconds + ModelHtmlTimeoutMarginSeconds) * 1_000)]
     public async Task Model_json_generates_html()
     {
         var directory = Directory.CreateTempSubdirectory("docli-d4-html-");
@@ -212,7 +217,7 @@ public sealed class ToolCommandTests
             var htmlDir = Path.Combine(directory.FullName, "html");
             Directory.CreateDirectory(htmlDir);
 
-            var result = await RunTool("model", "--output", modelPath);
+            var result = await RunTool(TimeSpan.FromSeconds(ModelHtmlRunToolSeconds), "model", "--output", modelPath);
             Assert.Equal(0, result.ExitCode);
             var model = CliModelJson.Deserialize(File.ReadAllText(modelPath));
             Assert.Equal(ToolCommands.RootCommandName, model.Name);
@@ -222,7 +227,7 @@ public sealed class ToolCommandTests
                 modelPath,
                 htmlDir,
                 null,
-                TimeSpan.FromSeconds(150));
+                TimeSpan.FromSeconds(ModelHtmlGenerateSeconds));
             Assert.Equal(0, generated.ExitCode);
             Assert.True(File.Exists(Path.Combine(htmlDir, "index.html")));
         }
@@ -334,6 +339,11 @@ public sealed class ToolCommandTests
 
     private static Task<(int ExitCode, string Stdout, string Stderr)> RunTool(params string[] args)
     {
+        return RunTool(TimeSpan.FromSeconds(55), args);
+    }
+
+    private static Task<(int ExitCode, string Stdout, string Stderr)> RunTool(TimeSpan timeout, params string[] args)
+    {
         var repo = RepoRoot.Find();
         var csproj = Path.Combine(repo, "dotnet", "src", "Docli.Tool", "Docli.Tool.csproj");
         var dll = Path.Combine(
@@ -353,7 +363,7 @@ public sealed class ToolCommandTests
 
         var command = new List<string> { dll };
         command.AddRange(args);
-        return RunProcess("dotnet", repo, TimeSpan.FromSeconds(55), command.ToArray());
+        return RunProcess("dotnet", repo, timeout, command.ToArray());
     }
 
     private static async Task<(int ExitCode, string Stdout, string Stderr)> RunProcess(
