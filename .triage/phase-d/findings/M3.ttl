@@ -10,7 +10,9 @@
   triage:triageMode "initial_pass" ;
   triage:repeatable false ;
   triage:sweepScope "file_only" ;
-  triage:status "open" ;
+  triage:status "closed" ;
+  triage:closedAt "2026-10-13T21:00:00Z"^^xsd:dateTime ;
+  triage:resolution "The Rust CI test job records the selected SDK patch with dotnet --version and dotnet --list-sdks after setup-dotnet. No separate dotnet test job was added." ;
   triage:dispatchReady false ;
   triage:category "M" ;
   triage:severity "minor" ;
@@ -19,8 +21,6 @@
   triage:originatingSprintDoc "docs/plans/phase-d/d6-generate-docli-dotnet.md" ;
   triage:hasOccurrence <urn:atm:triage:occurrence/M3/code/1> ;
   triage:openOn <urn:atm:triage:worktree/integrate-phase-d/608c413> ;
-  triage:acceptedDeferralId "NET-CI" ;
-  triage:deferralReason "Phase D explicitly defers .NET CI job; Windows platform-specific SDK patches are acceptable pre-CI constraint" ;
   triage:promoteTo <urn:atm:triage:worktree/integrate-phase-d/608c413> ;
   triage:triagedAt "2026-10-13T08:21:00Z"^^xsd:dateTime .
 
@@ -29,8 +29,8 @@
   triage:file "src/ops.rs" ;
   triage:line 823 ;
   triage:snippet "let file_name = if cfg!(windows) { \"docli-dotnet.exe\" } else { \"docli-dotnet\" };" ;
-  triage:status "open" ;
-  triage:closed false ;
+  triage:status "closed" ;
+  triage:closed true ;
   triage:branch "integrate/phase-d" ;
   triage:headSha "608c413" ;
   triage:occursIn <urn:atm:triage:worktree/integrate-phase-d/608c413> .

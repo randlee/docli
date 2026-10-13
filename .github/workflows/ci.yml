@@ -107,6 +107,11 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Record .NET SDK version
+        run: |
+          dotnet --version
+          dotnet --list-sdks
+
       - name: Run tests
         run: cargo test --all-targets
 

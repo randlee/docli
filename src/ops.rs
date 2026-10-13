@@ -277,8 +277,9 @@ const DIAGNOSTIC_CHARS: usize = 1024;
 /// # Errors
 ///
 /// Returns `DOCLI.IO` when `docli-dotnet` or `dotnet` cannot be started, the
-/// repo or Release DLL is missing, the child exceeds the deadline, or the
-/// child exits non-zero for a reason other than bad export JSON. Returns
+/// repo or Release DLL is missing, the tool `TargetFramework` contains a path
+/// separator or `..`, the child exceeds the deadline, or the child exits
+/// non-zero for a reason other than bad export JSON. Returns
 /// `DOCLI.INPUT_INVALID` when the child stdout is empty, is not UTF-8, or is
 /// not `CliModel` JSON, and when the child exits 2 and stderr reports an empty
 /// or invalid JSON export. Those codes are the section 9 codes; the messages
@@ -671,6 +672,19 @@ fn tool_target_framework(csproj: &Path) -> Result<String, ErrorBody> {
         return Err(ErrorBody::io(
             format!(
                 "docli generate {DOTNET_PROJECT_FLAG} found an empty TargetFramework in {}",
+                csproj.display()
+            ),
+            csproj,
+            None,
+        ));
+    }
+    // The TFM is one path segment under bin/Release. A separator or `..`
+    // would leave that directory when the Release DLL is probed.
+    if tfm.contains(['/', '\\']) || tfm.contains("..") {
+        return Err(ErrorBody::io(
+            format!(
+                "docli generate {DOTNET_PROJECT_FLAG} rejected TargetFramework {tfm:?} in {}: \
+                 a framework moniker cannot contain a path separator or '..'",
                 csproj.display()
             ),
             csproj,
@@ -1267,6 +1281,43 @@ mod tests {
         assert!(tail.contains("error CS1002"), "{tail}");
         assert!(!tail.contains("HEADLINE"), "{tail}");
         assert!(tail.chars().count() <= DIAGNOSTIC_CHARS);
+    }
+
+    #[test]
+    fn target_framework_rejects_path_separators_and_parent_segments() {
+        let scratch = tempfile::tempdir().expect("temp dir");
+        let csproj = scratch.path().join("Docli.Tool.csproj");
+        std::fs::write(
+            &csproj,
+            "<Project><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>",
+        )
+        .expect("csproj");
+        assert_eq!(tool_target_framework(&csproj).expect("tfm"), "net10.0");
+
+        for tfm in [
+            "../net10.0",
+            "net10.0/extra",
+            r"net10.0\extra",
+            "net..10.0",
+            "..",
+        ] {
+            std::fs::write(
+                &csproj,
+                format!(
+                    "<Project><PropertyGroup><TargetFramework>{tfm}</TargetFramework></PropertyGroup></Project>"
+                ),
+            )
+            .expect("csproj");
+            let err = tool_target_framework(&csproj).expect_err(tfm);
+            assert_eq!(err.code, ErrorCode::Io, "{tfm}");
+            let cause = err.details["cause"].as_str().expect("cause");
+            assert!(cause.contains("rejected TargetFramework"), "{tfm}: {cause}");
+            assert!(
+                cause.contains("path separator") && cause.contains("'..'"),
+                "{tfm}: {cause}"
+            );
+            assert!(!cause.contains("Docli.Tool.dll"), "{tfm}: {cause}");
+        }
     }
 
     #[test]

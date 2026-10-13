@@ -10,8 +10,10 @@
   triage:triageMode "initial_pass" ;
   triage:repeatable false ;
   triage:sweepScope "file_only" ;
-  triage:status "open" ;
-  triage:dispatchReady true ;
+  triage:status "closed" ;
+  triage:closedAt "2026-10-13T21:00:00Z"^^xsd:dateTime ;
+  triage:resolution "TargetFramework values that contain a path separator or '..' are rejected as DOCLI.IO before the Release DLL path is probed" ;
+  triage:dispatchReady false ;
   triage:category "M" ;
   triage:severity "minor" ;
   triage:requirementId "REQ-DOCLI-NET-002" ;
@@ -27,8 +29,8 @@
   triage:file "src/ops.rs" ;
   triage:line 854 ;
   triage:snippet "fn release_tool_dll(repo: &Path) -> Result<PathBuf, ErrorBody> { let csproj = repo.join(\"dotnet/src/Docli.Tool/Docli.Tool.csproj\"); let tfm = tool_target_framework(&csproj)?; Ok(repo.join(\"dotnet/src/Docli.Tool/bin/Release\").join(tfm).join(\"Docli.Tool.dll\")) }" ;
-  triage:status "open" ;
-  triage:closed false ;
+  triage:status "closed" ;
+  triage:closed true ;
   triage:branch "integrate/phase-d" ;
   triage:headSha "608c413" ;
   triage:occursIn <urn:atm:triage:worktree/integrate-phase-d/608c413> .

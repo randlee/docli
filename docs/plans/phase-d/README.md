@@ -106,8 +106,8 @@ A GitHub Actions job that runs `dotnet test` stays deferred. The Rust test job i
 
 `docli generate --dotnet-project <csproj>` executes that project: `docli-dotnet project` runs `dotnet build` and `dotnet run` on the csproj, then Rust renders the export host's stdout. The temporary JSON file under the system temp directory is removed after `generate` finishes.
 
-Accepted deferrals, aligned with the deliberate later .NET CI job (NET-CI):
+NET-CI minors. M1 and M3 are closed below. M2 is unchanged: still Release-only, with no Debug switch in this change. A separate GitHub Actions job that runs `dotnet test` stays deferred.
 
-- **M1.** The Release DLL path uses the `TargetFramework` text from `dotnet/src/Docli.Tool/Docli.Tool.csproj` as a path segment. That element is the TFM source of truth (ADR-005). Recording expected-versus-built TFM belongs to the later .NET CI job.
-- **M2.** `docli-dotnet project` always builds and runs `-c Release`. There is no Debug or `--framework` override. The d.4, d.5, and d.6 host gates are Release-only. A configuration switch waits on that same later CI job.
-- **M3.** PATH lookup is `docli-dotnet.exe` on Windows and `docli-dotnet` elsewhere. `global.json` allows `latestPatch` on the pinned SDK. Which patch a Windows agent selected is not recorded, because this phase does not add a .NET CI job.
+- **M1 (closed).** The Release DLL path still uses the `TargetFramework` text from `dotnet/src/Docli.Tool/Docli.Tool.csproj` as one path segment (ADR-005). A value that contains a path separator (`/` or `\`) or `..` is rejected as `DOCLI.IO` before that Release DLL is probed.
+- **M2 (unchanged).** `docli-dotnet project` always builds and runs `-c Release`. There is no Debug or `--framework` override in this change. The d.4, d.5, and d.6 host gates stay Release-only.
+- **M3 (closed).** PATH lookup is `docli-dotnet.exe` on Windows and `docli-dotnet` elsewhere. After `actions/setup-dotnet`, the Rust test job runs `dotnet --version` and `dotnet --list-sdks`, so the CI log records the SDK patch selected under `global.json` `latestPatch`. That step is not a separate `dotnet test` job.
