@@ -130,7 +130,7 @@ Each language adapter walks its native command definition and emits CliModel JSO
   command tree, and the Go generator renders that JSON to the shared HTML and
   Markdown.
 - `REQ-DOCLI-NET-001` (later): a .NET generator renders the neutral JSON to the shared HTML and Markdown. Phase D does not implement this sentence and does not close this id.
-- `REQ-DOCLI-NET-002`: a library under `dotnet/` walks a `System.CommandLine.Command` and writes the snake_case JSON documented by `REQ-DOCLI-INPUT-001` through `REQ-DOCLI-INPUT-005` and `src/schema.rs` (`CliModel`, `OptionSpec`, `ArgumentSpec`, unknown fields preserved). Same JSON means the schema field set and snake_case names, not byte-identical output with `from_clap` for an arbitrary tree. A host app emits its own tree by calling `Docli.CommandLineAdapter.FromCommand`. The Rust command `docli generate --input <that-json>` writes the HTML. `--markdown` remains a flag on that same Rust command. The dotnet global tool command name is `docli-dotnet`. It emits JSON only for the command tree it owns (`docli-dotnet model`). It does not walk a third-party app and does not render HTML or Markdown. The Rust `docli` binary is the user-facing doc product for `generate` and `show`. This phase's tests and proofs invoke the built DLL or a local tool path, not a global install. `REQ-DOCLI-PRODUCT-004` stays later and must document NuGet install alongside `cargo install docli`. Error ownership for this id: Rust `docli generate --input` failures use the existing section 9 `DOCLI.*` codes (ADR-003) and this requirement adds no codes. The dotnet tool is not the Rust version `"1"` envelope. Host `FromCommand` and library errors, including an exception from `DefaultValueFactory`, propagate unchanged from the adapter as specified in `docs/plans/phase-d/d3-commandline-walker.md`. Tool `Write` failures use the human stderr and exit semantics in the normative failure-mode table in `docs/plans/phase-d/d4-dotnet-tool-json.md` (sprint d.4); this baseline does not copy that table.
+- `REQ-DOCLI-NET-002`: a library under `dotnet/` walks a `System.CommandLine.Command` and writes the snake_case JSON documented by `REQ-DOCLI-INPUT-001` through `REQ-DOCLI-INPUT-005` and `src/schema.rs` (`CliModel`, `OptionSpec`, `ArgumentSpec`, unknown fields preserved). Same JSON means the schema field set and snake_case names, not byte-identical output with `from_clap` for an arbitrary tree. A host app emits its own tree by calling `Docli.CommandLineAdapter.FromCommand`. The Rust command `docli generate --input <that-json>` writes the HTML. `--markdown` remains a flag on that same Rust command. The dotnet global tool command name is `docli-dotnet`. `docli-dotnet model` emits JSON for the command tree the tool owns. `docli-dotnet project` is an allowed JSON-only export-host command: it runs the .NET project named by `--project` and writes that host's CliModel JSON. It does not walk a third-party app without an export host and does not render HTML or Markdown. The Rust `docli` binary is the user-facing doc product for `generate` and `show`. This phase's tests and proofs invoke the built DLL or a local tool path, not a global install. `REQ-DOCLI-PRODUCT-004` stays later and must document NuGet install alongside `cargo install docli`. Error ownership for this id: Rust `docli generate --input` and `docli generate --dotnet-project` failures use the existing section 9 `DOCLI.*` codes (ADR-003), including `DOCLI.USAGE`, `DOCLI.IO`, and `DOCLI.INPUT_INVALID`, and this requirement adds no codes. The dotnet tool is not the Rust version `"1"` envelope. Host `FromCommand` and library errors, including an exception from `DefaultValueFactory`, propagate unchanged from the adapter as specified in `docs/plans/phase-d/d3-commandline-walker.md`. Tool `Write` failures use the human stderr and exit semantics in the normative failure-mode table in `docs/plans/phase-d/d4-dotnet-tool-json.md` (sprint d.4); this baseline does not copy that table. `docli generate --dotnet-project` orchestrates `docli-dotnet project` to obtain CliModel JSON from a .NET export host; Rust `docli` remains the user-facing generate product.
 - `REQ-DOCLI-PY-001` (later): a Python adapter emits the same JSON from the project's Python CLI definition (argparse, Typer, or click), and the Python generator renders that JSON to the shared HTML and Markdown.
 
 ## 6. HTML Output
@@ -274,10 +274,10 @@ prompts.
   | Code | Kind | When |
   |---|---|---|
   | `DOCLI.USAGE` | `validation` | unknown command or invalid flags |
-  | `DOCLI.INPUT_INVALID` | `validation` | model JSON is missing, empty, or does not match the input model |
+  | `DOCLI.INPUT_INVALID` | `validation` | model JSON is missing, empty, or does not match the input model; also empty, non-UTF-8, or non-CliModel stdout from `docli generate --dotnet-project` |
   | `DOCLI.INPUT_NOT_FOUND` | `not_found` | `--input` path does not exist |
   | `DOCLI.OUTPUT_NOT_FOUND` | `not_found` | `show` was asked for an artifact that is not on disk |
-  | `DOCLI.IO` | `dependency` | reading or writing a file failed |
+  | `DOCLI.IO` | `dependency` | reading or writing a file failed; also a missing `docli-dotnet` tool, a failure to start `docli-dotnet` or `dotnet`, or a non-zero `docli-dotnet project` exit |
   | `DOCLI.TEMPLATE_INVALID` | `validation` | a template pack manifest or template does not compile |
   | `DOCLI.TEMPLATE_NOT_FOUND` | `not_found` | `--template` names a pack id that is not bundled or installed |
   | `DOCLI.INTERNAL` | `internal` | an unexpected failure |
@@ -286,10 +286,14 @@ prompts.
   found, `4` dependency, `1` internal. `--help` and `--version` exit `0` and
   stay human-readable.
 - `REQ-DOCLI-CLI-005`: `generate` is the mutating build operation.
-  - Request: `--input` (path or `-`, default `-`), `--html DIR` (default
-    `site/cli` when `--preview` is omitted), optional `--markdown FILE` (no
-    default; omitted means no Markdown file). `--template`, `--theme`, and
-    `--preview` are `REQ-DOCLI-CLI-012`.
+  - Request: exactly one model source. `--input` is a file path or `-`
+    (default `-`, which reads stdin). `--dotnet-project CSPROJ` is the other
+    source: Rust runs `docli-dotnet project` and renders that export host's
+    CliModel JSON. Passing a non-stdin `--input` together with
+    `--dotnet-project` is `DOCLI.USAGE`. `--html DIR` (default `site/cli` when
+    `--preview` is omitted), optional `--markdown FILE` (no default; omitted
+    means no Markdown file). `--template`, `--theme`, and `--preview` are
+    `REQ-DOCLI-CLI-012`.
   - It renders HTML from the model and writes `DIR/index.html`. It renders
     Markdown only when `--markdown` is set, and writes that file. Parent
     directories are created as needed.
@@ -303,6 +307,11 @@ prompts.
   - A failed write after another output was already written is `ok: false`
     with `DOCLI.IO`. `error.details.outputs_written` lists the artifacts
     that were written.
+  - `--dotnet-project` failures reuse section 9 codes and add none. Empty,
+    non-UTF-8, or non-CliModel export stdout is `DOCLI.INPUT_INVALID`
+    (`details` is `{ "cause" }`). A missing `docli-dotnet`, a failure to start
+    `docli-dotnet` or `dotnet`, or a non-zero child exit is `DOCLI.IO`
+    (`details` is `{ "cause" }`).
 - `REQ-DOCLI-CLI-006`: `show` is the readback for `generate`.
   - Request: at least one of `--html DIR` or `--markdown FILE`.
   - Response `data` includes `operation` (`"show"`) and `artifacts` with the
@@ -383,10 +392,10 @@ prompts.
 | Code | Exit | `kind` | `details` (required keys) | Covered by |
 |------|------|--------|---------------------------|------------|
 | `DOCLI.USAGE` | 2 | `validation` | `{ "cause" }` | `docli_usage_unknown_command_json`, `docli_usage_invalid_flag_json`, `docli_usage_show_without_paths_json`, `docli_usage_show_without_paths_human`, `docli_usage_preview_with_html_json` |
-| `DOCLI.INPUT_INVALID` | 2 | `validation` | `{}` or `{ "cause" }` | `docli_input_invalid_parse_error_json`, `docli_input_invalid_empty_file_json`, `docli_stdin_empty_is_input_invalid`, `docli_input_invalid_human`, `docli_input_invalid_theme_json` |
+| `DOCLI.INPUT_INVALID` | 2 | `validation` | `{}` or `{ "cause" }` | `docli_input_invalid_parse_error_json`, `docli_input_invalid_empty_file_json`, `docli_stdin_empty_is_input_invalid`, `docli_input_invalid_human`, `docli_input_invalid_theme_json`, `docli_input_invalid_dotnet_project_stdout_json` |
 | `DOCLI.INPUT_NOT_FOUND` | 3 | `not_found` | `{ "path" }` | `docli_input_not_found_json`, `docli_input_not_found_human` |
 | `DOCLI.OUTPUT_NOT_FOUND` | 3 | `not_found` | `{ "artifacts": [{ "path", "exists" }] }` | `docli_output_not_found_single_html_json`, `docli_output_not_found_html_and_markdown_json`, `docli_output_not_found_human` |
-| `DOCLI.IO` | 4 | `dependency` | `{ "cause" }`; optional `{ "outputs_written" }` after partial write | `docli_io_generate_html_dir_not_writable_json`, `docli_io_generate_partial_write_lists_outputs_written_json`, `docli_io_show_unreadable_index_json`, `docli_io_show_unreadable_index_human` |
+| `DOCLI.IO` | 4 | `dependency` | `{ "cause" }`; optional `{ "outputs_written" }` after partial write | `docli_io_generate_html_dir_not_writable_json`, `docli_io_generate_partial_write_lists_outputs_written_json`, `docli_io_show_unreadable_index_json`, `docli_io_show_unreadable_index_human`, `docli_io_dotnet_project_subprocess_failure_json` |
 | `DOCLI.TEMPLATE_INVALID` | 2 | `validation` | `{ "cause" }` | `docli_template_invalid_validate_json`, `docli_template_invalid_validate_human` |
 | `DOCLI.TEMPLATE_NOT_FOUND` | 3 | `not_found` | `{ "template" }` | `docli_template_not_found_unknown_id_json`, `docli_template_not_found_unknown_id_human`, `docli_templates_show_unknown_bundled_id_json` |
 | `DOCLI.INTERNAL` | 1 | `internal` | `{ "cause" }` | `docli_internal_error_body_contract` |

@@ -6,6 +6,7 @@
 use std::collections::BTreeMap;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::Serialize;
@@ -241,6 +242,268 @@ pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
         preview_dir,
         outputs,
     })
+}
+
+/// Flag name for `docli generate --dotnet-project`.
+const DOTNET_PROJECT_FLAG: &str = "--dotnet-project";
+
+/// Run `docli-dotnet project` for [`DOTNET_PROJECT_FLAG`] and return a temp JSON path.
+///
+/// Resolution uses `docli-dotnet` on `PATH` when that file exists. Otherwise it
+/// runs `dotnet` on `dotnet/src/Docli.Tool/bin/Release/<tfm>/Docli.Tool.dll`,
+/// where `<tfm>` is the `TargetFramework` in that tool project (the ADR-005 pin)
+/// and the repo root is the nearest ancestor of the current directory or the
+/// running binary that contains both `Cargo.toml` and the tool project.
+/// The returned file is the child stdout. [`generate`] reads it as [`InputSource::File`].
+///
+/// # Errors
+///
+/// Returns `DOCLI.IO` when `docli-dotnet` or `dotnet` cannot be started, the
+/// repo or Release DLL is missing, or the child exits non-zero. Returns
+/// `DOCLI.INPUT_INVALID` when the child stdout is empty, is not UTF-8, or is
+/// not `CliModel` JSON. Those codes are the section 9 codes; the messages name
+/// the export host or the subprocess.
+pub fn materialize_dotnet_project(csproj: &Path) -> Result<PathBuf, ErrorBody> {
+    let output = run_dotnet_project(csproj)?;
+    if !output.status.success() {
+        let code = output.status.code().unwrap_or(-1);
+        let detail = one_line(&String::from_utf8_lossy(&output.stderr));
+        let detail = if detail.is_empty() {
+            "no stderr".to_owned()
+        } else {
+            detail
+        };
+        return Err(project_exit_error(csproj, code, &detail));
+    }
+
+    let stdout = String::from_utf8(output.stdout).map_err(|err| {
+        export_stdout_error(
+            csproj,
+            "docli-dotnet project stdout was not UTF-8",
+            err.to_string(),
+        )
+    })?;
+    reject_export_stdout(csproj, &stdout)?;
+
+    let path = dotnet_project_temp_json();
+    std::fs::write(&path, stdout.as_bytes())
+        .map_err(|err| ErrorBody::io(err.to_string(), &path, None))?;
+    Ok(path)
+}
+
+fn reject_export_stdout(csproj: &Path, stdout: &str) -> Result<(), ErrorBody> {
+    if stdout.trim().is_empty() {
+        return Err(export_stdout_error(
+            csproj,
+            "docli-dotnet project returned empty stdout",
+            "export host stdout was empty",
+        ));
+    }
+    if let Err(err) = serde_json::from_str::<CliModel>(stdout) {
+        return Err(export_stdout_error(
+            csproj,
+            "docli-dotnet project stdout is not CliModel JSON",
+            err.to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn export_stdout_error(csproj: &Path, message: &str, cause: impl Into<String>) -> ErrorBody {
+    ErrorBody::input_invalid_with_action(
+        message,
+        cause,
+        format!(
+            "Make {} write one UTF-8 CliModel JSON document to stdout and rerun docli generate {DOTNET_PROJECT_FLAG}",
+            csproj.display()
+        ),
+    )
+}
+
+fn project_exit_error(csproj: &Path, code: i32, detail: &str) -> ErrorBody {
+    ErrorBody::io_with_action(
+        format!("docli-dotnet project exited {code}"),
+        detail,
+        format!(
+            "Fix the export project {} and rerun docli generate {DOTNET_PROJECT_FLAG}",
+            csproj.display()
+        ),
+    )
+}
+
+fn run_dotnet_project(csproj: &Path) -> Result<std::process::Output, ErrorBody> {
+    let mut command = command_for_dotnet_project(csproj)?;
+    command
+        .arg("--project")
+        .arg(csproj)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    command
+        .output()
+        .map_err(|err| start_failure(&command, err, csproj))
+}
+
+fn start_failure(command: &Command, err: std::io::Error, csproj: &Path) -> ErrorBody {
+    let program = command.get_program().to_string_lossy();
+    ErrorBody::io_with_action(
+        format!("failed to start {program}"),
+        err.to_string(),
+        format!(
+            "Install docli-dotnet on PATH, or install the .NET SDK and build with `dotnet build dotnet/Docli.sln -c Release`, then rerun docli generate {DOTNET_PROJECT_FLAG} for {}",
+            csproj.display()
+        ),
+    )
+}
+
+fn command_for_dotnet_project(csproj: &Path) -> Result<Command, ErrorBody> {
+    if let Some(tool) = docli_dotnet_on_path() {
+        let mut command = Command::new(tool);
+        command.arg("project");
+        return Ok(command);
+    }
+
+    let Some(repo) = find_repo_root() else {
+        return Err(missing_dotnet_tool(csproj, None));
+    };
+    let dll = release_tool_dll(&repo)?;
+    if !dll.is_file() {
+        return Err(missing_dotnet_tool(csproj, Some(dll)));
+    }
+    let mut command = Command::new("dotnet");
+    command.arg(&dll).arg("project");
+    Ok(command)
+}
+
+fn missing_dotnet_tool(csproj: &Path, expected_dll: Option<PathBuf>) -> ErrorBody {
+    let location = match &expected_dll {
+        Some(dll) => format!(
+            "docli-dotnet was not on PATH and {} was not found",
+            dll.display()
+        ),
+        None => "docli-dotnet was not on PATH and the repo root could not be resolved".to_owned(),
+    };
+    ErrorBody::io_with_action(
+        "docli-dotnet was not found",
+        location,
+        format!(
+            "Build with `dotnet build dotnet/Docli.sln -c Release` or install docli-dotnet on PATH, then rerun docli generate {DOTNET_PROJECT_FLAG} for {}",
+            csproj.display()
+        ),
+    )
+}
+
+fn docli_dotnet_on_path() -> Option<PathBuf> {
+    let path_var = std::env::var_os("PATH")?;
+    let file_name = if cfg!(windows) {
+        "docli-dotnet.exe"
+    } else {
+        "docli-dotnet"
+    };
+    std::env::split_paths(&path_var)
+        .map(|dir| dir.join(file_name))
+        .find(|candidate| candidate.is_file())
+}
+
+fn find_repo_root() -> Option<PathBuf> {
+    let mut starts = Vec::new();
+    if let Ok(cwd) = std::env::current_dir() {
+        starts.push(cwd);
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            starts.push(parent.to_path_buf());
+        }
+    }
+    for start in starts {
+        for ancestor in start.ancestors() {
+            if ancestor.join("Cargo.toml").is_file()
+                && ancestor
+                    .join("dotnet/src/Docli.Tool/Docli.Tool.csproj")
+                    .is_file()
+            {
+                return Some(ancestor.to_path_buf());
+            }
+        }
+    }
+    None
+}
+
+fn release_tool_dll(repo: &Path) -> Result<PathBuf, ErrorBody> {
+    let csproj = repo.join("dotnet/src/Docli.Tool/Docli.Tool.csproj");
+    let tfm = tool_target_framework(&csproj)?;
+    Ok(repo
+        .join("dotnet/src/Docli.Tool/bin/Release")
+        .join(tfm)
+        .join("Docli.Tool.dll"))
+}
+
+fn tool_target_framework(csproj: &Path) -> Result<String, ErrorBody> {
+    let text = std::fs::read_to_string(csproj).map_err(|err| {
+        ErrorBody::io(
+            format!(
+                "docli generate {DOTNET_PROJECT_FLAG} could not read {}: {err}",
+                csproj.display()
+            ),
+            csproj,
+            None,
+        )
+    })?;
+    let Some(rest) = text.split_once("<TargetFramework>") else {
+        return Err(ErrorBody::io(
+            format!(
+                "docli generate {DOTNET_PROJECT_FLAG} found no TargetFramework in {}",
+                csproj.display()
+            ),
+            csproj,
+            None,
+        ));
+    };
+    let Some(tfm) = rest.1.split_once("</TargetFramework>") else {
+        return Err(ErrorBody::io(
+            format!(
+                "docli generate {DOTNET_PROJECT_FLAG} found an unclosed TargetFramework in {}",
+                csproj.display()
+            ),
+            csproj,
+            None,
+        ));
+    };
+    let tfm = tfm.0.trim();
+    if tfm.is_empty() {
+        return Err(ErrorBody::io(
+            format!(
+                "docli generate {DOTNET_PROJECT_FLAG} found an empty TargetFramework in {}",
+                csproj.display()
+            ),
+            csproj,
+            None,
+        ));
+    }
+    Ok(tfm.to_owned())
+}
+
+fn dotnet_project_temp_json() -> PathBuf {
+    static NEXT_MODEL: AtomicU64 = AtomicU64::new(0);
+    let seq = NEXT_MODEL.fetch_add(1, Ordering::Relaxed);
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0);
+    std::env::temp_dir().join(format!(
+        "docli-dotnet-project-{}-{nanos}-{seq}.json",
+        std::process::id()
+    ))
+}
+
+fn one_line(text: &str) -> String {
+    const MAX: usize = 240;
+    let collapsed = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if collapsed.len() <= MAX {
+        collapsed
+    } else {
+        collapsed.chars().take(MAX).collect()
+    }
 }
 
 /// Hash requested artifacts that already exist on disk.
@@ -691,6 +954,69 @@ mod tests {
             assert!(nanos.chars().all(|ch| ch.is_ascii_digit()) && !nanos.is_empty());
             assert!(seq.chars().all(|ch| ch.is_ascii_digit()) && !seq.is_empty());
         }
+    }
+
+    #[test]
+    fn export_stdout_errors_name_the_host_output() {
+        let csproj = Path::new("sample.csproj");
+        let empty = reject_export_stdout(csproj, " \n").expect_err("empty");
+        assert_eq!(empty.code, ErrorCode::InputInvalid);
+        assert_eq!(empty.message, "docli-dotnet project returned empty stdout");
+        assert_eq!(empty.details["cause"], "export host stdout was empty");
+        assert!(empty.suggested_action.contains("sample.csproj"));
+        assert!(!empty.suggested_action.contains("Fix the model JSON"));
+        assert!(!empty.message.contains("failed to read or write"));
+
+        let bad = reject_export_stdout(csproj, "not-json").expect_err("bad json");
+        assert_eq!(bad.code, ErrorCode::InputInvalid);
+        assert_eq!(
+            bad.message,
+            "docli-dotnet project stdout is not CliModel JSON"
+        );
+        assert!(bad.details["cause"].as_str().unwrap().contains("expected"));
+
+        let utf8 = export_stdout_error(
+            csproj,
+            "docli-dotnet project stdout was not UTF-8",
+            "bad bytes".to_owned(),
+        );
+        assert_eq!(utf8.code, ErrorCode::InputInvalid);
+        assert_eq!(utf8.message, "docli-dotnet project stdout was not UTF-8");
+
+        reject_export_stdout(csproj, r#"{"name":"sample"}"#).expect("model json");
+    }
+
+    #[test]
+    fn subprocess_failures_name_docli_dotnet() {
+        let csproj = Path::new("sample.csproj");
+        let missing = missing_dotnet_tool(csproj, None);
+        assert_eq!(missing.code, ErrorCode::Io);
+        assert_eq!(missing.message, "docli-dotnet was not found");
+        assert!(missing.suggested_action.contains("dotnet build"));
+        assert!(!missing.message.contains("failed to read or write"));
+        assert!(!missing.suggested_action.contains("fixing access"));
+
+        let dll = Path::new("dotnet/src/Docli.Tool/bin/Release/net10.0/Docli.Tool.dll");
+        let missing_dll = missing_dotnet_tool(csproj, Some(dll.to_path_buf()));
+        assert!(missing_dll.details["cause"]
+            .as_str()
+            .unwrap()
+            .contains("Docli.Tool.dll"));
+
+        let exited = project_exit_error(csproj, 2, "build failed");
+        assert_eq!(exited.code, ErrorCode::Io);
+        assert_eq!(exited.message, "docli-dotnet project exited 2");
+        assert_eq!(exited.details["cause"], "build failed");
+        assert!(exited.suggested_action.contains("sample.csproj"));
+        assert!(exited.details.get("outputs_written").is_none());
+
+        let mut command = Command::new("dotnet");
+        let started = start_failure(&command, std::io::Error::other("no such file"), csproj);
+        assert_eq!(started.message, "failed to start dotnet");
+        assert_eq!(started.code, ErrorCode::Io);
+        command = Command::new("docli-dotnet");
+        let started = start_failure(&command, std::io::Error::other("denied"), csproj);
+        assert_eq!(started.message, "failed to start docli-dotnet");
     }
 
     #[test]

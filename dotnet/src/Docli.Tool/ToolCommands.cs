@@ -23,6 +23,23 @@ public static class ToolCommands
             return ModelCommand.Write(tree, Console.Out, Console.Error, outputPath);
         });
         root.Subcommands.Add(model);
+
+        var project = new Command(ProjectCommand.Name, "Run a .NET export host and write CliModel JSON");
+        project.Options.Add(ProjectCommand.ProjectOption);
+        project.Options.Add(ProjectCommand.OutputOption);
+        project.SetAction((ParseResult parseResult) =>
+        {
+            var projectPath = parseResult.GetValue(ProjectCommand.ProjectOption);
+            var outputPath = parseResult.GetValue(ProjectCommand.OutputOption);
+            if (string.IsNullOrWhiteSpace(projectPath))
+            {
+                Console.Error.WriteLine(ModelCommand.StderrPrefix + "project file not found: " + projectPath);
+                return 2;
+            }
+
+            return ProjectCommand.Run(projectPath, Console.Out, Console.Error, outputPath);
+        });
+        root.Subcommands.Add(project);
         return root;
     }
 

@@ -721,3 +721,105 @@ fn envelope_always_serializes_data_error_and_docs() {
     assert_eq!(failure["data"], Value::Null);
     assert_eq!(failure["error"]["docs"], Value::Null);
 }
+
+#[test]
+fn generate_rejects_input_file_with_dotnet_project() {
+    let output = bin()
+        .args([
+            "generate",
+            "--input",
+            "foo.json",
+            "--dotnet-project",
+            "bar.csproj",
+            "--json",
+        ])
+        .output()
+        .expect("run generate");
+
+    assert_eq!(output.status.code(), Some(2));
+    let envelope = parse_envelope(&output.stdout);
+    let error = assert_failure(
+        output.status.code(),
+        &envelope,
+        2,
+        "validation",
+        "DOCLI.USAGE",
+    );
+    assert_suggested_action_contains(&error, &["--input", "--dotnet-project"]);
+    assert_eq!(error["details"]["cause"], error["suggested_action"]);
+}
+
+#[test]
+fn generate_dotnet_project_writes_sample_html_when_tool_is_available() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let tool_csproj = repo.join("dotnet/src/Docli.Tool/Docli.Tool.csproj");
+    let tfm = target_framework(&tool_csproj);
+    let dll = repo
+        .join("dotnet/src/Docli.Tool/bin/Release")
+        .join(&tfm)
+        .join("Docli.Tool.dll");
+    if !dll.is_file() && docli_dotnet_on_path().is_none() {
+        eprintln!(
+            "skipped: docli-dotnet is not on PATH and {dll} does not exist. Prerequisite: dotnet build dotnet/Docli.sln -c Release",
+            dll = dll.display()
+        );
+        return;
+    }
+
+    let export = repo.join("dotnet/samples/Docli.Sample.Export/Docli.Sample.Export.csproj");
+    let dir = unique_dir();
+    let html_dir = dir.join("html");
+    let output = bin()
+        .args([
+            "generate",
+            "--dotnet-project",
+            export.to_str().expect("utf8 export path"),
+            "--html",
+            html_dir.to_str().expect("utf8 html dir"),
+        ])
+        .current_dir(repo)
+        .output()
+        .expect("run generate --dotnet-project");
+
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let html_path = html_dir.join("index.html");
+    assert!(html_path.is_file(), "missing {}", html_path.display());
+    let html = fs::read_to_string(&html_path).expect("read index.html");
+    assert!(
+        html.contains("<title>sample CLI Reference</title>"),
+        "index.html did not render the sample command"
+    );
+}
+
+fn target_framework(csproj: &Path) -> String {
+    let text = fs::read_to_string(csproj).unwrap_or_else(|err| {
+        panic!("read {}: {err}", csproj.display());
+    });
+    let rest = text
+        .split_once("<TargetFramework>")
+        .unwrap_or_else(|| panic!("no TargetFramework in {}", csproj.display()))
+        .1;
+    rest.split_once("</TargetFramework>")
+        .unwrap_or_else(|| panic!("unclosed TargetFramework in {}", csproj.display()))
+        .0
+        .trim()
+        .to_owned()
+}
+
+fn docli_dotnet_on_path() -> Option<PathBuf> {
+    let path_var = std::env::var_os("PATH")?;
+    let file_name = if cfg!(windows) {
+        "docli-dotnet.exe"
+    } else {
+        "docli-dotnet"
+    };
+    std::env::split_paths(&path_var)
+        .map(|dir| dir.join(file_name))
+        .find(|candidate| candidate.is_file())
+}

@@ -16,7 +16,7 @@ Markdown bytes out. Framework adapters (Rust: `from_clap`) produce the JSON;
 renderers produce bytes; `ops` writes files, hashes artifacts, and returns the
 version `"1"` envelope defined in [`requirements.md`](requirements.md) section 9.
 
-Docli.CommandLineAdapter.FromCommand produces CliModel JSON and does not call html::render or markdown::render.
+Docli.CommandLineAdapter.FromCommand produces CliModel JSON and does not call html::render or markdown::render. Rust `docli generate --dotnet-project` runs `docli-dotnet project` to obtain that JSON from an export host and then renders it; the .NET tool does not render.
 
 ```text
   CliModel JSON ──► render (html/markdown) ──► bytes
@@ -205,8 +205,8 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
 **Decision**
 
 - Phase D .NET code writes CliModel JSON. It does not render HTML or Markdown and does not port the template engine.
-- The Rust binary remains the HTML and Markdown renderer. `docli generate --input <json>` writes HTML. `--markdown` stays on that command.
-- The dotnet global tool command name is `docli-dotnet`. It emits JSON only for its own tree (`docli-dotnet model`). It does not implement `generate` or `show`, and it does not walk a third-party app. `FromCommand` is how a host app emits its own tree. The Rust `docli` binary is the user-facing doc product for `generate` and `show`. This ADR is the only normative pin. Only Docli.csproj (dotnet/src/Docli/Docli.csproj) repeats the System.CommandLine package version. Every project file under dotnet/ repeats the TFM. A pin change edits the ADR first.
+- The Rust binary remains the HTML and Markdown renderer. `docli generate --input <json>` writes HTML. `docli generate --dotnet-project <csproj>` obtains JSON by running `docli-dotnet project` and then uses that same renderer. `--markdown` stays on that command. There is no .NET renderer.
+- The dotnet global tool command name is `docli-dotnet`. `docli-dotnet model` emits JSON for the tool's own tree. `docli-dotnet project` is an allowed JSON-only export-host command: it runs the .NET project named by `--project` and writes that host's CliModel JSON. It does not implement `generate` or `show`, it does not render HTML or Markdown, and it does not walk a third-party app without an export host. `FromCommand` is how a host app emits its own tree. The Rust `docli` binary is the user-facing doc product for `generate` and `show`. This ADR is the only normative pin. Only Docli.csproj (dotnet/src/Docli/Docli.csproj) repeats the System.CommandLine package version. Every project file under dotnet/ repeats the TFM. A pin change edits the ADR first.
 - JSON object keys are the snake_case field names in `src/schema.rs`. Unknown keys are preserved. Same JSON means that schema field set and those snake_case names. It does not mean byte-identical output with `from_clap` for an arbitrary tree. This phase does not add a live clap dump harness.
 - C# types and the serializer are sprint d.2. `Docli.CommandLineAdapter.FromCommand` and its mapping are sprint d.3 (the only signature source). Tool argv is sprint d.4. The sample proof is sprint d.5.
 - Package System.CommandLine version 2.0.12 (stable 2.0 line, not a 3.0 preview). TFM net10.0.
@@ -218,7 +218,7 @@ historical sprint artifacts; **do not** treat them as a second source of truth.
 **Consequences**
 
 - HTML bytes for adapter JSON come from the Rust `docli generate` path (ADR-001, ADR-004).
-- Rust render and `docli generate --input` failures stay on the section 9 `DOCLI.*` contract (ADR-003). This ADR adds no codes.
+- Rust render, `docli generate --input`, and `docli generate --dotnet-project` failures stay on the section 9 `DOCLI.*` contract (ADR-003). Export stdout that is empty, not UTF-8, or not CliModel JSON is `DOCLI.INPUT_INVALID`. A missing `docli-dotnet`, a failure to start `docli-dotnet` or `dotnet`, or a non-zero `docli-dotnet project` exit is `DOCLI.IO`. This ADR adds no codes.
 - Dotnet adapter and tool human stderr and exit semantics are closed in sprint d.4 (`docs/plans/phase-d/d4-dotnet-tool-json.md`). The dotnet tool is not the Rust version `"1"` envelope.
 - An exception from `DefaultValueFactory` propagates unchanged from `FromCommand`, per sprint d.3 (`docs/plans/phase-d/d3-commandline-walker.md`).
 - This phase's tests and proofs invoke the built DLL or a local tool path, not a global install. `REQ-DOCLI-PRODUCT-004` stays later and must document NuGet install alongside `cargo install docli`.

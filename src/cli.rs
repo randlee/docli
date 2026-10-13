@@ -8,9 +8,10 @@ use serde::Serialize;
 
 use crate::contract::{Envelope, ErrorBody};
 use crate::ops::{
-    generate, parse_template_selector, parse_theme_json, show, templates_list, templates_show,
-    templates_validate, ArtifactReport, GenerateRequest, InputSource, ShowRequest,
-    TemplatesListResponse, TemplatesShowResponse, TemplatesValidateResponse,
+    generate, materialize_dotnet_project, parse_template_selector, parse_theme_json, show,
+    templates_list, templates_show, templates_validate, ArtifactReport, GenerateRequest,
+    InputSource, ShowRequest, TemplatesListResponse, TemplatesShowResponse,
+    TemplatesValidateResponse,
 };
 
 #[derive(Parser)]
@@ -28,8 +29,13 @@ pub enum Command {
     /// Render a neutral CLI model (JSON) to HTML and optional Markdown.
     Generate {
         /// Input CLI-model JSON. Pass `-` to read stdin.
+        ///
+        /// Mutually exclusive with a non-stdin file when `--dotnet-project` is set.
         #[arg(long, value_name = "FILE", default_value = "-")]
         input: String,
+        /// .NET export project. Rust runs `docli-dotnet project` and renders that JSON.
+        #[arg(long = "dotnet-project", value_name = "CSPROJ")]
+        dotnet_project: Option<PathBuf>,
         /// Output directory for the self-contained HTML reference (writes <dir>/index.html).
         #[arg(long, value_name = "DIR")]
         html: Option<PathBuf>,
@@ -96,12 +102,22 @@ pub fn run_with_name(app_name: &'static str) {
     match cli.command {
         Command::Generate {
             input,
+            dotnet_project,
             html,
             preview,
             template,
             theme,
             markdown,
         } => {
+            if dotnet_project.is_some() && input != "-" {
+                finish(
+                    cli.json,
+                    Envelope::<()>::failure(ErrorBody::usage(
+                        "Pass either --input FILE or --dotnet-project CSPROJ, not both",
+                    )),
+                    |_| {},
+                );
+            }
             let template = match template.as_deref() {
                 Some(selector) => match parse_template_selector(selector) {
                     Ok(template) => Some(template),
@@ -116,12 +132,18 @@ pub fn run_with_name(app_name: &'static str) {
                 },
                 None => None,
             };
+            let input = if let Some(csproj) = dotnet_project {
+                match materialize_dotnet_project(&csproj) {
+                    Ok(path) => InputSource::File(path),
+                    Err(error) => finish(cli.json, Envelope::<()>::failure(error), |_| {}),
+                }
+            } else if input == "-" {
+                InputSource::Stdin
+            } else {
+                InputSource::File(PathBuf::from(input))
+            };
             let request = GenerateRequest {
-                input: if input == "-" {
-                    InputSource::Stdin
-                } else {
-                    InputSource::File(PathBuf::from(input))
-                },
+                input,
                 html_dir: html,
                 preview,
                 template,
