@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "project": {
+    "name": "docli",
+    "archive_prefix": "docli",
+    "description": "Language-agnostic CLI documentation generator: HTML + Markdown from a neutral command-tree JSON",
+    "homepage": "https://github.com/randlee/docli",
+    "license": "MIT",
+    "readme_dependency_crate": "docli",
+    "workspace_toml": "Cargo.toml",
+    "rust_toolchain": "1.94.1",
+    "renderer_archive_path": "bin/docli"
+  },
+  "release_targets": [
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "os": "ubuntu-latest",
+      "archive": "tar.gz"
+    },
+    {
+      "target": "aarch64-unknown-linux-gnu",
+      "os": "ubuntu-24.04-arm",
+      "archive": "tar.gz"
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "os": "macos-latest",
+      "archive": "tar.gz"
+    },
+    {
+      "target": "aarch64-apple-darwin",
+      "os": "macos-latest",
+      "archive": "tar.gz"
+    },
+    {
+      "target": "x86_64-pc-windows-msvc",
+      "os": "windows-latest",
+      "archive": "zip"
+    }
+  ],
+  "crates": [
+    {
+      "artifact": "docli",
+      "package": "docli",
+      "cargo_toml": "Cargo.toml",
+      "required": true,
+      "publish": true,
+      "publish_order": 1,
+      "preflight_check": "locked",
+      "wait_after_publish_seconds": 0,
+      "verify_install": true
+    }
+  ],
+  "release_binaries": [
+    {
+      "name": "docli"
+    },
+    {
+      "name": "cargo-docli"
+    }
+  ],
+  "python_packages": [],
+  "python_distributions": [],
+  "npm_packages": [],
+  "channels": {
+    "homebrew": {
+      "workflow": "homebrew-publish.yml",
+      "dispatch_inputs": {},
+      "tap_repository": "randlee/homebrew-tap",
+      "renderer_target": "x86_64-unknown-linux-gnu",
+      "formulas": [
+        {
+          "path": "Formula/docli.rb",
+          "template": "release/homebrew/formula.rb.j2",
+          "class": "Docli",
+          "binaries": ["docli", "cargo-docli"],
+          "test_binary": "docli",
+          "test_command": "--help",
+          "test_output": "Language-agnostic CLI documentation generator",
+          "release_track": "stable"
+        }
+      ],
+      "assets": [
+        {
+          "key": "macos_arm",
+          "target": "aarch64-apple-darwin"
+        },
+        {
+          "key": "macos_intel",
+          "target": "x86_64-apple-darwin"
+        },
+        {
+          "key": "linux",
+          "target": "x86_64-unknown-linux-gnu"
+        }
+      ]
+    },
+    "winget": {
+      "workflow": "winget-publish.yml",
+      "dispatch_inputs": {},
+      "identifier": "randlee.docli",
+      "installer_target": "x86_64-pc-windows-msvc"
+    },
+    "scoop": {
+      "workflow": "scoop-publish.yml",
+      "dispatch_inputs": {},
+      "bucket_repository": "randlee/scoop-bucket",
+      "manifest_path": "bucket/docli.json",
+      "manifest_template": "release/scoop/manifest.json.j2",
+      "installer_target": "x86_64-pc-windows-msvc",
+      "binary": "bin/docli.exe",
+      "renderer_target": "x86_64-unknown-linux-gnu"
+    }
+  }
+}
