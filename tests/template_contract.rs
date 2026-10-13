@@ -244,6 +244,100 @@ fn templates_validate_skeleton_succeeds() {
 }
 
 #[test]
+fn templates_validate_every_repo_html_pack() {
+    let html_root = workspace_fixture("templates/html");
+    let mut pack_dirs = Vec::new();
+    for entry in fs::read_dir(&html_root).expect("read templates/html") {
+        let entry = entry.expect("dirent");
+        if !entry.file_type().expect("file type").is_dir() {
+            continue;
+        }
+        let path = entry.path();
+        if path.join("template.toml").is_file() {
+            pack_dirs.push(path);
+        }
+    }
+    pack_dirs.sort_by_cached_key(|path| path.file_name().unwrap().to_owned());
+    let ids: Vec<_> = pack_dirs
+        .iter()
+        .map(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .expect("pack dir name")
+                .to_owned()
+        })
+        .collect();
+    assert_eq!(
+        ids,
+        [
+            "_skeleton",
+            "cli-doc",
+            "default",
+            "fancytree-nav",
+            "quarto-docs"
+        ],
+        "update this test when adding or removing templates/html packs"
+    );
+    for pack in pack_dirs {
+        let output = run(
+            &mut docli_bin(),
+            &[
+                "templates",
+                "validate",
+                pack.to_str().expect("utf8"),
+                "--json",
+            ],
+        );
+        assert_eq!(
+            output.status.code(),
+            Some(0),
+            "pack {} stderr={}",
+            pack.display(),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let envelope = parse_envelope(&output.stdout);
+        assert_success(&envelope);
+        let data = &envelope["data"];
+        assert_eq!(data["operation"], "templates_validate");
+        assert_eq!(data["valid"], true);
+        assert_eq!(data["path"], pack.to_string_lossy().as_ref());
+        let id = pack
+            .file_name()
+            .and_then(|name| name.to_str())
+            .expect("pack id");
+        assert_eq!(data["id"], id);
+        assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+    }
+}
+
+#[test]
+fn generate_disk_extra_packs_render_with_pack_markers() {
+    let dir = unique_dir();
+    let model = workspace_fixture("fixtures/repos/docli.json");
+    for (pack_rel, marker) in [
+        (
+            "templates/html/fancytree-nav",
+            "id=\"docli-fancytree-nav-pack\"",
+        ),
+        (
+            "templates/html/quarto-docs",
+            "id=\"docli-quarto-docs-pack\"",
+        ),
+    ] {
+        let pack = workspace_fixture(pack_rel);
+        let html_dir = dir.join(pack.file_name().expect("pack name"));
+        let html = render_template(&dir, &model, pack.to_str().expect("utf8"), &html_dir);
+        assert!(
+            html.contains(marker),
+            "pack {} missing {marker}",
+            pack.display()
+        );
+        assert!(html.contains("id=\"docli-data\""));
+        assert!(html.contains("id=\"docli-search\""));
+    }
+}
+
+#[test]
 fn generate_cli_doc_docli_repo_fixture_has_layout_markers() {
     let dir = unique_dir();
     let model = workspace_fixture("fixtures/repos/docli.json");
