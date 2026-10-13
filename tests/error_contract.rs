@@ -819,13 +819,102 @@ fn docli_input_invalid_dotnet_project_stdout_json() {
     assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
 }
 
+#[test]
+fn docli_io_dotnet_project_timeout_json() {
+    let dir = unique_dir();
+    install_fake_docli_dotnet(&dir);
+    let csproj = dir.join("export-host.csproj");
+    let banner = format!("HEADLINE {} error CS9999: hung", "x".repeat(1100));
+    let started = std::time::Instant::now();
+    let output = run_generate_dotnet_project(
+        &dir,
+        &[
+            ("DOCLI_DOTNET_PROJECT_TIMEOUT_SECS", "1"),
+            ("DOCLI_FAKE_SLEEP", "30"),
+            ("DOCLI_FAKE_STDERR", &banner),
+        ],
+        &csproj,
+    );
+    assert!(
+        started.elapsed() < std::time::Duration::from_secs(15),
+        "deadline did not fire; elapsed {:?}",
+        started.elapsed()
+    );
+    assert_exit(&output, 4);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        4,
+        "dependency",
+        "DOCLI.IO",
+    );
+    assert_eq!(error["message"], "docli-dotnet project timed out after 1s");
+    let cause = error["details"]["cause"].as_str().expect("cause");
+    assert!(cause.contains("error CS9999"), "{cause}");
+    assert!(!cause.contains("HEADLINE"), "{cause}");
+    assert!(error["details"].get("outputs_written").is_none());
+    let action = error["suggested_action"].as_str().unwrap();
+    assert!(
+        action.contains("DOCLI_DOTNET_PROJECT_TIMEOUT_SECS"),
+        "{action}"
+    );
+    assert!(action.contains(csproj.to_str().unwrap()), "{action}");
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
+#[cfg(unix)]
+#[test]
+fn docli_io_dotnet_project_skips_non_executable_on_path() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = unique_dir();
+    let stale = dir.join("stale");
+    fs::create_dir(&stale).expect("stale dir");
+    let stale_bin = stale.join("docli-dotnet");
+    fs::write(&stale_bin, "not-a-tool").expect("stale file");
+    let mut mode = fs::metadata(&stale_bin).expect("meta").permissions();
+    mode.set_mode(0o644);
+    fs::set_permissions(&stale_bin, mode).expect("chmod");
+    install_fake_docli_dotnet(&dir);
+    let csproj = dir.join("export-host.csproj");
+    let output = run_generate_dotnet_project_from(
+        &[stale, dir.clone()],
+        &[
+            ("DOCLI_FAKE_EXIT", "2"),
+            ("DOCLI_FAKE_STDERR", "export host failed"),
+        ],
+        &csproj,
+    );
+    assert_exit(&output, 4);
+    let error = assert_failure(
+        output.status.code(),
+        &parse_envelope(&output.stdout),
+        4,
+        "dependency",
+        "DOCLI.IO",
+    );
+    assert_eq!(error["message"], "docli-dotnet project exited 2");
+    assert_eq!(error["details"]["cause"], "export host failed");
+    assert_ne!(error["message"], "failed to start docli-dotnet");
+    assert_json_mode_stdout_only_envelope(&output.stdout, &output.stderr);
+}
+
 fn run_generate_dotnet_project(
     fake_dir: &std::path::Path,
     env: &[(&str, &str)],
     csproj: &std::path::Path,
 ) -> std::process::Output {
+    let paths = vec![fake_dir.to_path_buf()];
+    run_generate_dotnet_project_from(&paths, env, csproj)
+}
+
+fn run_generate_dotnet_project_from(
+    path_dirs: &[std::path::PathBuf],
+    env: &[(&str, &str)],
+    csproj: &std::path::Path,
+) -> std::process::Output {
     let mut command = docli_bin();
-    let mut paths = vec![fake_dir.to_path_buf()];
+    let mut paths = path_dirs.to_vec();
     if let Some(existing) = std::env::var_os("PATH") {
         paths.extend(std::env::split_paths(&existing));
     }
@@ -861,6 +950,9 @@ fn install_fake_docli_dotnet(dir: &std::path::Path) {
              if [ -n \"${DOCLI_FAKE_STDOUT:-}\" ]; then\n\
                printf '%s' \"$DOCLI_FAKE_STDOUT\"\n\
              fi\n\
+             if [ -n \"${DOCLI_FAKE_SLEEP:-}\" ]; then\n\
+               sleep \"$DOCLI_FAKE_SLEEP\"\n\
+             fi\n\
              exit \"${DOCLI_FAKE_EXIT:-0}\"\n",
         )
         .expect("write fake docli-dotnet");
@@ -879,6 +971,11 @@ fn install_fake_docli_dotnet(dir: &std::path::Path) {
              }\n\
              if let Ok(text) = std::env::var(\"DOCLI_FAKE_STDOUT\") {\n\
              print!(\"{text}\");\n\
+             }\n\
+             if let Ok(text) = std::env::var(\"DOCLI_FAKE_SLEEP\") {\n\
+             if let Ok(seconds) = text.parse::<u64>() {\n\
+             std::thread::sleep(std::time::Duration::from_secs(seconds));\n\
+             }\n\
              }\n\
              let code = std::env::var(\"DOCLI_FAKE_EXIT\")\n\
              .ok()\n\

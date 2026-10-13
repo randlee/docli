@@ -105,3 +105,9 @@ After **d.6** merges to `integrate/phase-d`, **quality-mgr** re-runs the d.4, d.
 A GitHub Actions job that runs `dotnet test` stays deferred. The Rust test job installs the SDK pinned by `global.json` so `generate_dotnet_project_writes_sample_html_when_tool_is_available` can build the Release tool and fail, rather than skip, when that build does not produce a working `project` subcommand. That one contract test is not a substitute for the host gate. Develop merge of the .NET suite is honest only when the d.4, d.5, and d.6 host-gate output is on the phase-end PR.
 
 `docli generate --dotnet-project <csproj>` executes that project: `docli-dotnet project` runs `dotnet build` and `dotnet run` on the csproj, then Rust renders the export host's stdout. The temporary JSON file under the system temp directory is removed after `generate` finishes.
+
+Accepted deferrals, aligned with the deliberate later .NET CI job (NET-CI):
+
+- **M1.** The Release DLL path uses the `TargetFramework` text from `dotnet/src/Docli.Tool/Docli.Tool.csproj` as a path segment. That element is the TFM source of truth (ADR-005). Recording expected-versus-built TFM belongs to the later .NET CI job.
+- **M2.** `docli-dotnet project` always builds and runs `-c Release`. There is no Debug or `--framework` override. The d.4, d.5, and d.6 host gates are Release-only. A configuration switch waits on that same later CI job.
+- **M3.** PATH lookup is `docli-dotnet.exe` on Windows and `docli-dotnet` elsewhere. `global.json` allows `latestPatch` on the pinned SDK. Which patch a Windows agent selected is not recorded, because this phase does not add a .NET CI job.

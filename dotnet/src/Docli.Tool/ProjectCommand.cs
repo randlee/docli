@@ -46,17 +46,31 @@ public static class ProjectCommand
             return 2;
         }
 
-        var build = RunDotnet(workDir, "build", fullPath, "-c", "Release");
-        if (build.ExitCode != 0)
+        var budget = ProjectTimeout();
+        var clock = Stopwatch.StartNew();
+        var build = RunDotnet(workDir, Remaining(budget, clock), "build", fullPath, "-c", "Release");
+        if (build.TimedOut)
         {
-            stderr.WriteLine(ModelCommand.StderrPrefix + Detail("build failed: " + projectPath, build.Stderr));
+            stderr.WriteLine(ModelCommand.StderrPrefix + Detail("build timed out: " + projectPath, build.Stdout, build.Stderr));
             return 2;
         }
 
-        var run = RunDotnet(workDir, "run", "--project", fullPath, "-c", "Release", "--no-build");
+        if (build.ExitCode != 0)
+        {
+            stderr.WriteLine(ModelCommand.StderrPrefix + Detail("build failed: " + projectPath, build.Stdout, build.Stderr));
+            return 2;
+        }
+
+        var run = RunDotnet(workDir, Remaining(budget, clock), "run", "--project", fullPath, "-c", "Release", "--no-build");
+        if (run.TimedOut)
+        {
+            stderr.WriteLine(ModelCommand.StderrPrefix + Detail("run timed out: " + projectPath, run.Stdout, run.Stderr));
+            return 2;
+        }
+
         if (run.ExitCode != 0)
         {
-            stderr.WriteLine(ModelCommand.StderrPrefix + Detail("run failed: " + projectPath, run.Stderr));
+            stderr.WriteLine(ModelCommand.StderrPrefix + Detail("run failed: " + projectPath, run.Stdout, run.Stderr));
             return 2;
         }
 
@@ -80,35 +94,88 @@ public static class ProjectCommand
         return ModelCommand.Write(model, stdout, stderr, outputPath);
     }
 
-    private static string Detail(string message, string childStderr)
+    /// Characters kept from the end of a collapsed child diagnostic.
+    /// The build banner is at the start; the compiler error is at the end.
+    private const int MaxDetailChars = 1024;
+
+    private const int DefaultTimeoutSeconds = 180;
+
+    private static TimeSpan ProjectTimeout()
     {
-        var detail = OneLine(childStderr);
+        var raw = Environment.GetEnvironmentVariable("DOCLI_DOTNET_PROJECT_TIMEOUT_SECS");
+        if (raw is not null
+            && int.TryParse(raw.Trim(), out var seconds)
+            && seconds is > 0 and <= 86_400)
+        {
+            return TimeSpan.FromSeconds(seconds);
+        }
+
+        return TimeSpan.FromSeconds(DefaultTimeoutSeconds);
+    }
+
+    private static TimeSpan Remaining(TimeSpan budget, Stopwatch clock)
+    {
+        var left = budget - clock.Elapsed;
+        return left > TimeSpan.Zero ? left : TimeSpan.Zero;
+    }
+
+    private static string Detail(string message, string stdout, string stderr)
+    {
+        var detail = OneLine(DiagnosticText(stdout, stderr));
         if (detail.Length == 0)
         {
             return message;
         }
 
-        const int maxDetail = 240;
-        if (detail.Length > maxDetail)
+        if (detail.Length > MaxDetailChars)
         {
-            detail = detail[..maxDetail];
+            detail = detail[^MaxDetailChars..];
         }
 
         return message + ": " + detail;
     }
 
-    private static string OneLine(string message)
+    /// `dotnet build` writes compiler errors on stdout and leaves stderr empty.
+    private static string DiagnosticText(string stdout, string stderr)
     {
-        return message.Replace("\r\n", " ", StringComparison.Ordinal)
-            .Replace('\n', ' ')
-            .Replace('\r', ' ')
-            .Trim();
+        var outHasError = stdout.Contains("error", StringComparison.OrdinalIgnoreCase);
+        var errHasError = stderr.Contains("error", StringComparison.OrdinalIgnoreCase);
+        if (errHasError && !outHasError)
+        {
+            return stderr;
+        }
+
+        if (!string.IsNullOrWhiteSpace(stdout) && (outHasError || string.IsNullOrWhiteSpace(stderr)))
+        {
+            return stdout;
+        }
+
+        return stderr;
     }
 
-    private static (int ExitCode, string Stdout, string Stderr) RunDotnet(
+    private static string OneLine(string message)
+    {
+        var collapsed = string.Join(
+            ' ',
+            message.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        if (collapsed.Length <= MaxDetailChars)
+        {
+            return collapsed;
+        }
+
+        return collapsed[^MaxDetailChars..];
+    }
+
+    private static (int ExitCode, string Stdout, string Stderr, bool TimedOut) RunDotnet(
         string workingDirectory,
+        TimeSpan timeout,
         params string[] args)
     {
+        if (timeout <= TimeSpan.Zero)
+        {
+            return (-1, "", "", true);
+        }
+
         var start = new ProcessStartInfo
         {
             FileName = "dotnet",
@@ -135,7 +202,7 @@ public static class ProjectCommand
         }
         catch (Exception ex)
         {
-            return (-1, "", ex.Message);
+            return (-1, "", ex.Message, false);
         }
 
         using (process)
@@ -143,11 +210,30 @@ public static class ProjectCommand
             process.StandardInput.Close();
             var stdoutTask = process.StandardOutput.ReadToEndAsync();
             var stderrTask = process.StandardError.ReadToEndAsync();
-            process.WaitForExit();
+            var milliseconds = (int)Math.Clamp(timeout.TotalMilliseconds, 1, int.MaxValue);
+            if (!process.WaitForExit(milliseconds))
+            {
+                try
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+                {
+                }
+
+                process.WaitForExit();
+                return (
+                    -1,
+                    stdoutTask.GetAwaiter().GetResult(),
+                    stderrTask.GetAwaiter().GetResult(),
+                    true);
+            }
+
             return (
                 process.ExitCode,
                 stdoutTask.GetAwaiter().GetResult(),
-                stderrTask.GetAwaiter().GetResult());
+                stderrTask.GetAwaiter().GetResult(),
+                false);
         }
     }
 }

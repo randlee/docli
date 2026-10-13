@@ -6,8 +6,9 @@
 use std::collections::BTreeMap;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, Instant};
 
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -247,35 +248,50 @@ pub fn generate(req: GenerateRequest) -> Envelope<GenerateResponse> {
 /// Flag name for `docli generate --dotnet-project`.
 const DOTNET_PROJECT_FLAG: &str = "--dotnet-project";
 
+/// Deadline for one `docli-dotnet project` invocation (its build and run).
+const DOTNET_PROJECT_TIMEOUT: Duration = Duration::from_secs(180);
+
+/// Positive seconds, at most one day, override [`DOTNET_PROJECT_TIMEOUT`].
+const DOTNET_PROJECT_TIMEOUT_ENV: &str = "DOCLI_DOTNET_PROJECT_TIMEOUT_SECS";
+
+/// Characters kept from the end of a collapsed child diagnostic.
+///
+/// `dotnet build` writes the banner first and the compiler error last. A
+/// 240-character head keeps the banner. 1024 from the tail still fits an
+/// error line whose project path is long, plus the build summary.
+const DIAGNOSTIC_CHARS: usize = 1024;
+
 /// Run `docli-dotnet project` for [`DOTNET_PROJECT_FLAG`] and return a temp JSON path.
 ///
-/// Resolution uses `docli-dotnet` on `PATH` when that file exists. Otherwise it
-/// runs `dotnet` on `dotnet/src/Docli.Tool/bin/Release/<tfm>/Docli.Tool.dll`,
-/// where `<tfm>` is the `TargetFramework` in that tool project (the ADR-005 pin)
-/// and the repo root is the nearest ancestor of the current directory or the
-/// running binary that contains both `Cargo.toml` and the tool project.
-/// The returned file is the child stdout. [`generate`] reads it as [`InputSource::File`].
+/// Resolution uses an executable `docli-dotnet` on `PATH` when that file
+/// exists. A non-executable file of that name does not block the repo DLL.
+/// Otherwise it runs `dotnet` on
+/// `dotnet/src/Docli.Tool/bin/Release/<tfm>/Docli.Tool.dll`, where `<tfm>` is
+/// the `TargetFramework` in that tool project (the ADR-005 pin). The repo root
+/// is the nearest ancestor of the running binary, then of the current
+/// directory, that contains both `Cargo.toml` and the tool project. The child
+/// is killed if it exceeds [`DOTNET_PROJECT_TIMEOUT`] (`DOCLI_DOTNET_PROJECT_TIMEOUT_SECS`
+/// overrides that deadline). The returned file is the child stdout.
+/// [`generate`] reads it as [`InputSource::File`].
 ///
 /// # Errors
 ///
 /// Returns `DOCLI.IO` when `docli-dotnet` or `dotnet` cannot be started, the
-/// repo or Release DLL is missing, or the child exits non-zero for a reason
-/// other than bad export JSON. Returns `DOCLI.INPUT_INVALID` when the child
-/// stdout is empty, is not UTF-8, or is not `CliModel` JSON, and when the
-/// child exits 2 and stderr reports an empty or invalid JSON export. Those
-/// codes are the section 9 codes; the messages name the export host or the
-/// subprocess.
+/// repo or Release DLL is missing, the child exceeds the deadline, or the
+/// child exits non-zero for a reason other than bad export JSON. Returns
+/// `DOCLI.INPUT_INVALID` when the child stdout is empty, is not UTF-8, or is
+/// not `CliModel` JSON, and when the child exits 2 and stderr reports an empty
+/// or invalid JSON export. Those codes are the section 9 codes; the messages
+/// name the export host or the subprocess.
 pub fn materialize_dotnet_project(csproj: &Path) -> Result<PathBuf, ErrorBody> {
     let output = run_dotnet_project(csproj)?;
     if !output.status.success() {
         let code = output.status.code().unwrap_or(-1);
-        let detail = one_line(&String::from_utf8_lossy(&output.stderr));
-        let detail = if detail.is_empty() {
-            "no stderr".to_owned()
-        } else {
-            detail
-        };
-        return Err(project_exit_error(csproj, code, &detail));
+        return Err(project_exit_error(
+            csproj,
+            code,
+            &String::from_utf8_lossy(&output.stderr),
+        ));
     }
 
     let stdout = String::from_utf8(output.stdout).map_err(|err| {
@@ -322,9 +338,17 @@ fn export_stdout_error(csproj: &Path, message: &str, cause: impl Into<String>) -
     )
 }
 
-fn project_exit_error(csproj: &Path, code: i32, detail: &str) -> ErrorBody {
-    if code == 2 && stderr_reports_invalid_export(detail) {
-        let message = if detail.to_ascii_lowercase().contains("empty") {
+fn project_exit_error(csproj: &Path, code: i32, stderr: &str) -> ErrorBody {
+    let detail = one_line(stderr);
+    let detail = if detail.is_empty() {
+        "no stderr".to_owned()
+    } else {
+        detail
+    };
+    // Classify on the full stderr. The stored cause is the tail, which can
+    // drop a leading `json parse failed` once the compiler text is long.
+    if code == 2 && stderr_reports_invalid_export(stderr) {
+        let message = if stderr.to_ascii_lowercase().contains("empty") {
             "docli-dotnet project returned empty stdout"
         } else {
             "docli-dotnet project stdout is not CliModel JSON"
@@ -362,9 +386,127 @@ fn run_dotnet_project(csproj: &Path) -> Result<std::process::Output, ErrorBody> 
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    command
-        .output()
-        .map_err(|err| start_failure(&command, err, csproj))
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    let mut child = command
+        .spawn()
+        .map_err(|err| start_failure(&command, err, csproj))?;
+    let stdout_thread = std::thread::spawn({
+        let pipe = child.stdout.take();
+        move || read_pipe(pipe)
+    });
+    let stderr_thread = std::thread::spawn({
+        let pipe = child.stderr.take();
+        move || read_pipe(pipe)
+    });
+    let timeout = project_timeout();
+    let deadline = Instant::now() + timeout;
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) if Instant::now() >= deadline => {
+                kill_child_tree(&mut child);
+                let _ = child.wait();
+                let stderr = join_bytes(stderr_thread);
+                let _stdout = join_bytes(stdout_thread);
+                return Err(project_timeout_error(csproj, timeout, &stderr));
+            }
+            Ok(None) => std::thread::sleep(Duration::from_millis(20)),
+            Err(err) => {
+                kill_child_tree(&mut child);
+                let _ = child.wait();
+                let _ = join_bytes(stdout_thread);
+                let _ = join_bytes(stderr_thread);
+                return Err(ErrorBody::io_with_action(
+                    "failed to wait for docli-dotnet",
+                    err.to_string(),
+                    format!(
+                        "Rerun docli generate {DOTNET_PROJECT_FLAG} for {}",
+                        csproj.display()
+                    ),
+                ));
+            }
+        }
+    };
+    Ok(std::process::Output {
+        status,
+        stdout: join_bytes(stdout_thread),
+        stderr: join_bytes(stderr_thread),
+    })
+}
+
+fn read_pipe(pipe: Option<impl Read>) -> Vec<u8> {
+    let mut buf = Vec::new();
+    if let Some(mut pipe) = pipe {
+        let _ = pipe.read_to_end(&mut buf);
+    }
+    buf
+}
+
+fn join_bytes(handle: std::thread::JoinHandle<Vec<u8>>) -> Vec<u8> {
+    handle.join().unwrap_or_default()
+}
+
+fn project_timeout() -> Duration {
+    timeout_from_env(std::env::var(DOTNET_PROJECT_TIMEOUT_ENV).ok().as_deref())
+}
+
+fn timeout_from_env(raw: Option<&str>) -> Duration {
+    let Some(seconds) = raw.map(str::trim).and_then(|text| text.parse::<u64>().ok()) else {
+        return DOTNET_PROJECT_TIMEOUT;
+    };
+    if seconds == 0 || seconds > 24 * 60 * 60 {
+        return DOTNET_PROJECT_TIMEOUT;
+    }
+    Duration::from_secs(seconds)
+}
+
+fn project_timeout_error(csproj: &Path, timeout: Duration, stderr: &[u8]) -> ErrorBody {
+    let detail = one_line(&String::from_utf8_lossy(stderr));
+    let detail = if detail.is_empty() {
+        format!("no stderr after {}s", timeout.as_secs())
+    } else {
+        detail
+    };
+    ErrorBody::io_with_action(
+        format!("docli-dotnet project timed out after {}s", timeout.as_secs()),
+        detail,
+        format!(
+            "The export project {} did not finish within {}s. Fix the project or raise {DOTNET_PROJECT_TIMEOUT_ENV}, then rerun docli generate {DOTNET_PROJECT_FLAG}",
+            csproj.display(),
+            timeout.as_secs()
+        ),
+    )
+}
+
+fn kill_child_tree(child: &mut Child) {
+    #[cfg(unix)]
+    {
+        extern "C" {
+            fn kill(pid: i32, sig: i32) -> i32;
+        }
+        if let Ok(pid) = i32::try_from(child.id()) {
+            // SAFETY: `pid` is the child spawned as a new process-group leader.
+            // A negative pid delivers SIGKILL (9) to that group, including
+            // processes the child started in the same group.
+            unsafe {
+                let _ = kill(-pid, 9);
+            }
+        }
+    }
+    #[cfg(windows)]
+    {
+        let _ = Command::new("taskkill")
+            .args(["/F", "/T", "/PID", &child.id().to_string()])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+    }
+    let _ = child.kill();
 }
 
 fn start_failure(command: &Command, err: std::io::Error, csproj: &Path) -> ErrorBody {
@@ -399,45 +541,77 @@ fn command_for_dotnet_project(csproj: &Path) -> Result<Command, ErrorBody> {
 }
 
 fn missing_dotnet_tool(csproj: &Path, expected_dll: Option<PathBuf>) -> ErrorBody {
-    let location = match &expected_dll {
-        Some(dll) => format!(
-            "docli-dotnet was not on PATH and {} was not found",
-            dll.display()
+    let (location, action) = match &expected_dll {
+        Some(dll) => (
+            format!(
+                "docli-dotnet was not on PATH and {} was not found",
+                dll.display()
+            ),
+            format!(
+                "Build with `dotnet build dotnet/Docli.sln -c Release` from the docli repo, or install docli-dotnet on PATH, then rerun docli generate {DOTNET_PROJECT_FLAG} for {}",
+                csproj.display()
+            ),
         ),
-        None => "docli-dotnet was not on PATH and the repo root could not be resolved".to_owned(),
+        None => (
+            "docli-dotnet was not on PATH and the repo root could not be resolved".to_owned(),
+            format!(
+                "Install docli-dotnet on PATH, then rerun docli generate {DOTNET_PROJECT_FLAG} for {}",
+                csproj.display()
+            ),
+        ),
     };
-    ErrorBody::io_with_action(
-        "docli-dotnet was not found",
-        location,
-        format!(
-            "Build with `dotnet build dotnet/Docli.sln -c Release` or install docli-dotnet on PATH, then rerun docli generate {DOTNET_PROJECT_FLAG} for {}",
-            csproj.display()
-        ),
-    )
+    ErrorBody::io_with_action("docli-dotnet was not found", location, action)
 }
 
 fn docli_dotnet_on_path() -> Option<PathBuf> {
-    let path_var = std::env::var_os("PATH")?;
+    std::env::var_os("PATH").and_then(|path_var| executable_docli_dotnet_on_path(&path_var))
+}
+
+fn executable_docli_dotnet_on_path(path_var: &std::ffi::OsStr) -> Option<PathBuf> {
     let file_name = if cfg!(windows) {
         "docli-dotnet.exe"
     } else {
         "docli-dotnet"
     };
-    std::env::split_paths(&path_var)
+    std::env::split_paths(path_var)
         .map(|dir| dir.join(file_name))
-        .find(|candidate| candidate.is_file())
+        .find(|candidate| is_executable_file(candidate))
+}
+
+fn is_executable_file(path: &Path) -> bool {
+    let Ok(metadata) = std::fs::metadata(path) else {
+        return false;
+    };
+    if !metadata.is_file() {
+        return false;
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        metadata.permissions().mode() & 0o111 != 0
+    }
+    #[cfg(not(unix))]
+    {
+        true
+    }
 }
 
 fn find_repo_root() -> Option<PathBuf> {
     let mut starts = Vec::new();
-    if let Ok(cwd) = std::env::current_dir() {
-        starts.push(cwd);
-    }
+    // The binary's checkout wins. cwd is the fallback for a `docli` that is
+    // not sitting inside a checkout (for example `cargo install`).
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             starts.push(parent.to_path_buf());
         }
     }
+    if let Ok(cwd) = std::env::current_dir() {
+        starts.push(cwd);
+    }
+    repo_root_from(&starts)
+}
+
+fn repo_root_from(starts: &[PathBuf]) -> Option<PathBuf> {
     for start in starts {
         for ancestor in start.ancestors() {
             if ancestor.join("Cargo.toml").is_file()
@@ -520,12 +694,12 @@ fn dotnet_project_temp_json() -> PathBuf {
 }
 
 fn one_line(text: &str) -> String {
-    const MAX: usize = 240;
     let collapsed = text.split_whitespace().collect::<Vec<_>>().join(" ");
-    if collapsed.len() <= MAX {
+    let count = collapsed.chars().count();
+    if count <= DIAGNOSTIC_CHARS {
         collapsed
     } else {
-        collapsed.chars().take(MAX).collect()
+        collapsed.chars().skip(count - DIAGNOSTIC_CHARS).collect()
     }
 }
 
@@ -1015,7 +1189,11 @@ mod tests {
         let missing = missing_dotnet_tool(csproj, None);
         assert_eq!(missing.code, ErrorCode::Io);
         assert_eq!(missing.message, "docli-dotnet was not found");
-        assert!(missing.suggested_action.contains("dotnet build"));
+        assert!(missing
+            .suggested_action
+            .contains("Install docli-dotnet on PATH"));
+        assert!(!missing.suggested_action.contains("dotnet/Docli.sln"));
+        assert!(missing.suggested_action.contains("sample.csproj"));
         assert!(!missing.message.contains("failed to read or write"));
         assert!(!missing.suggested_action.contains("fixing access"));
 
@@ -1025,6 +1203,8 @@ mod tests {
             .as_str()
             .unwrap()
             .contains("Docli.Tool.dll"));
+        assert!(missing_dll.suggested_action.contains("dotnet build"));
+        assert!(missing_dll.suggested_action.contains("dotnet/Docli.sln"));
 
         let exited = project_exit_error(csproj, 2, "build failed");
         assert_eq!(exited.code, ErrorCode::Io);
@@ -1057,6 +1237,17 @@ mod tests {
         );
         assert_eq!(other.code, ErrorCode::Io);
 
+        let long = format!(
+            "docli-dotnet: json parse failed: {} unexpected trailing",
+            "x".repeat(DIAGNOSTIC_CHARS + 20)
+        );
+        let long_parse = project_exit_error(csproj, 2, &long);
+        assert_eq!(long_parse.code, ErrorCode::InputInvalid);
+        let cause = long_parse.details["cause"].as_str().unwrap();
+        assert!(cause.contains("unexpected trailing"), "{cause}");
+        assert!(!cause.contains("json parse failed"), "{cause}");
+        assert!(cause.chars().count() <= DIAGNOSTIC_CHARS);
+
         let mut command = Command::new("dotnet");
         let started = start_failure(&command, std::io::Error::other("no such file"), csproj);
         assert_eq!(started.message, "failed to start dotnet");
@@ -1064,6 +1255,93 @@ mod tests {
         command = Command::new("docli-dotnet");
         let started = start_failure(&command, std::io::Error::other("denied"), csproj);
         assert_eq!(started.message, "failed to start docli-dotnet");
+    }
+
+    #[test]
+    fn diagnostic_tail_keeps_the_compiler_error() {
+        let text = format!(
+            "HEADLINE {} error CS1002: ; expected [/tmp/host.csproj]",
+            "x".repeat(DIAGNOSTIC_CHARS + 50)
+        );
+        let tail = one_line(&text);
+        assert!(tail.contains("error CS1002"), "{tail}");
+        assert!(!tail.contains("HEADLINE"), "{tail}");
+        assert!(tail.chars().count() <= DIAGNOSTIC_CHARS);
+    }
+
+    #[test]
+    fn timeout_from_env_rejects_missing_and_out_of_range() {
+        assert_eq!(timeout_from_env(None), DOTNET_PROJECT_TIMEOUT);
+        assert_eq!(timeout_from_env(Some("0")), DOTNET_PROJECT_TIMEOUT);
+        assert_eq!(timeout_from_env(Some("nope")), DOTNET_PROJECT_TIMEOUT);
+        assert_eq!(timeout_from_env(Some("999999")), DOTNET_PROJECT_TIMEOUT);
+        assert_eq!(timeout_from_env(Some(" 12 ")), Duration::from_secs(12));
+    }
+
+    #[test]
+    fn repo_root_prefers_the_running_binary_checkout() {
+        let root = std::env::temp_dir().join(format!(
+            "docli-repo-root-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|duration| duration.as_nanos())
+                .unwrap_or(0)
+        ));
+        let exe_repo = root.join("exe-checkout");
+        let cwd_repo = root.join("cwd-checkout");
+        for repo in [&exe_repo, &cwd_repo] {
+            std::fs::create_dir_all(repo.join("dotnet/src/Docli.Tool")).expect("dirs");
+            std::fs::write(repo.join("Cargo.toml"), "[package]\nname = \"x\"\n").expect("toml");
+            std::fs::write(
+                repo.join("dotnet/src/Docli.Tool/Docli.Tool.csproj"),
+                "<Project></Project>",
+            )
+            .expect("csproj");
+        }
+        let exe_bin = exe_repo.join("target/debug");
+        std::fs::create_dir_all(&exe_bin).expect("bin");
+        let found = repo_root_from(&[exe_bin, cwd_repo.clone()]).expect("repo");
+        assert_eq!(found, exe_repo);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn path_probe_skips_non_executable_file() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let root = std::env::temp_dir().join(format!(
+            "docli-path-probe-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|duration| duration.as_nanos())
+                .unwrap_or(0)
+        ));
+        let stale = root.join("stale");
+        let real = root.join("real");
+        std::fs::create_dir_all(&stale).expect("stale");
+        std::fs::create_dir_all(&real).expect("real");
+        let stale_bin = stale.join("docli-dotnet");
+        let real_bin = real.join("docli-dotnet");
+        std::fs::write(&stale_bin, "#!/bin/sh\nexit 9\n").expect("stale file");
+        std::fs::write(&real_bin, "#!/bin/sh\nexit 0\n").expect("real file");
+        let mut stale_mode = std::fs::metadata(&stale_bin).expect("meta").permissions();
+        stale_mode.set_mode(0o644);
+        std::fs::set_permissions(&stale_bin, stale_mode).expect("chmod stale");
+        let mut real_mode = std::fs::metadata(&real_bin).expect("meta").permissions();
+        real_mode.set_mode(0o755);
+        std::fs::set_permissions(&real_bin, real_mode).expect("chmod real");
+
+        let both = std::env::join_paths([&stale, &real]).expect("path");
+        assert_eq!(
+            executable_docli_dotnet_on_path(&both).expect("executable"),
+            real_bin
+        );
+        let only_stale = std::env::join_paths([&stale]).expect("path");
+        assert!(executable_docli_dotnet_on_path(&only_stale).is_none());
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]
