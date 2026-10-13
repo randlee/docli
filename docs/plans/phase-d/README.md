@@ -28,9 +28,9 @@ This planning branch does not edit [`docs/requirements.md`](../../requirements.m
 
 ## What Phase D closes
 
-- `REQ-DOCLI-NET-002`: a `System.CommandLine` tree becomes `CliModel` JSON, and Rust `docli generate` renders it. This is an id split of the adapter half of `REQ-DOCLI-NET-001`, not a new feature. Portions: d.2 JSON types and schema field names; d.3 `FromCommand`; d.4 the tool's own `docli model` JSON; d.5 the sample proof; d.6 `docli generate --dotnet-project` orchestrating `docli-dotnet project`. d.1 writes the requirement and `ADR-005` text and does not implement the adapter.
+- `REQ-DOCLI-NET-002`: a `System.CommandLine` tree becomes `CliModel` JSON, and Rust `docli generate` renders it. This is an id split of the adapter half of `REQ-DOCLI-NET-001`, not a new feature. Portions: d.2 JSON types and schema field names; d.3 `FromCommand`; d.4 the tool's own `docli-dotnet model` JSON; d.5 the sample proof; d.6 `docli generate --dotnet-project` orchestrating `docli-dotnet project`. d.1 writes the requirement and `ADR-005` text and does not implement the adapter.
 - The tool's own `docli-dotnet model` JSON, proven when Rust `docli generate --input` writes `index.html` from that file (d.4). Global tool command name is `docli-dotnet`.
-- A sample-library proof: the sample calls `FromCommand`, then Rust `docli generate` writes HTML and still accepts `--markdown` (d.5). d.5 depends on d.4 because it calls `RustDocli.Generate`, which d.4 owns. This proof does not invoke the tool and does not read `docli model` output.
+- A sample-library proof: the sample calls `FromCommand`, then Rust `docli generate` writes HTML and still accepts `--markdown` (d.5). d.5 depends on d.4 because it calls `RustDocli.Generate`, which d.4 owns. This proof does not invoke the tool and does not read `docli-dotnet model` output.
 - d.1 adds the decision record (`ADR-005`) and `ARCH-RULE-010` for that boundary.
 
 ## What Phase D does not close
@@ -43,7 +43,7 @@ This planning branch does not edit [`docs/requirements.md`](../../requirements.m
 - The renderer sentence of `REQ-DOCLI-NET-001` (that id stays later)
 - `REQ-DOCLI-GEN-003`
 - NuGet publish (`dotnet nuget push` or a packed feed)
-- A tool that walks a third-party app (no assembly loader; `docli model` documents only the tool's own tree)
+- A tool that walks a third-party app (no assembly loader; `docli-dotnet model` documents only the tool's own tree)
 - A .NET CI job. `.github/workflows/ci.yml` stays Rust-only. A .NET CI job is a deliberate later item. The host gate below is the only .NET gate
 
 No sprint Closes section marks those items done. [`phase-c/README.md`](../phase-c/README.md) stays a retired bookmark: there is no Phase C release.
@@ -56,7 +56,7 @@ No sprint Closes section marks those items done. [`phase-c/README.md`](../phase-
 | d.1 | [d1-normative-baselines.md](d1-normative-baselines.md) | `ADR-005`, `ARCH-RULE-010` |
 | d.2 | [d2-cli-model-json.md](d2-cli-model-json.md) | `REQ-DOCLI-NET-002` JSON types and schema field names |
 | d.3 | [d3-commandline-walker.md](d3-commandline-walker.md) | `REQ-DOCLI-NET-002` `FromCommand` walker |
-| d.4 | [d4-dotnet-tool-json.md](d4-dotnet-tool-json.md) | `REQ-DOCLI-NET-002` tool `docli model` JSON |
+| d.4 | [d4-dotnet-tool-json.md](d4-dotnet-tool-json.md) | `REQ-DOCLI-NET-002` tool `docli-dotnet model` JSON |
 | d.5 | [d5-sample-rust-html-proof.md](d5-sample-rust-html-proof.md) | `REQ-DOCLI-NET-002` sample tree + Rust HTML proof |
 | d.6 | [d6-generate-docli-dotnet.md](d6-generate-docli-dotnet.md) | `REQ-DOCLI-NET-002` Rust `generate --dotnet-project` + `docli-dotnet project` |
 
