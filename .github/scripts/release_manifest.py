@@ -262,6 +262,11 @@ def _assert_workspace_inherited_version(workspace_toml: Path, relative_path: str
     path = _resolve_workspace_path(workspace_toml, relative_path)
     data = tomllib.loads(path.read_text(encoding="utf-8"))
     value = data.get("package", {}).get("version")
+    if path.resolve() == workspace_toml.resolve():
+        if value == workspace_version(workspace_toml):
+            return
+        if isinstance(value, dict) and value.get("workspace") is True:
+            return
     if "workspace" in data and path.resolve() != workspace_toml.resolve():
         actual = data["workspace"].get("package", {}).get("version") if isinstance(value, dict) else value
         if actual != workspace_version(workspace_toml):
