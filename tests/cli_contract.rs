@@ -639,8 +639,8 @@ fn license_is_mit() {
         .as_array()
         .expect("packages")
         .iter()
-        .find(|pkg| pkg["name"] == "docli")
-        .expect("docli package")["license"]
+        .find(|pkg| pkg["name"] == "sc-docli")
+        .expect("sc-docli package")["license"]
         .as_str()
         .expect("license string");
     assert_eq!(license, "MIT");
