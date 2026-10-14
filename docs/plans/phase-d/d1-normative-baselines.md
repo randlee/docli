@@ -66,7 +66,7 @@ This planning branch (`plan/phase-d`) does not edit `docs/requirements.md` or `d
 - Rust render and `docli generate --input` failures stay on the section 9 `DOCLI.*` contract (ADR-003). This ADR adds no codes.
 - Dotnet adapter and tool human stderr and exit semantics are closed in sprint d.4 (`docs/plans/phase-d/d4-dotnet-tool-json.md`). The dotnet tool is not the Rust version `"1"` envelope.
 - An exception from `DefaultValueFactory` propagates unchanged from `FromCommand`, per sprint d.3 (`docs/plans/phase-d/d3-commandline-walker.md`).
-- This phase's tests and proofs invoke the built DLL or a local tool path, not a global install. The tool command `docli-dotnet` does not shadow the Rust `docli` binary. `REQ-DOCLI-PRODUCT-004` stays later and must document NuGet install alongside `cargo install docli`.
+- This phase's tests and proofs invoke the built DLL or a local tool path, not a global install. The tool command `docli-dotnet` does not shadow the Rust `docli` binary. `REQ-DOCLI-PRODUCT-004` stays later and must document NuGet install alongside `cargo install sc-docli`.
 - A .NET renderer, a template-engine port, Go, Python, and MCP need a later ADR.
 ```
 

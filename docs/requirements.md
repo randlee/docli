@@ -74,8 +74,8 @@ implementations of the same generator and the same command contract.
   API. Package metadata MUST include `description`, `license`, `repository`,
   `readme`, and `keywords`. Published sources MUST include `templates/html/`
   so `include_dir!` embeds `default` and `cli-doc` when a user runs
-  `cargo install docli`; that install MUST NOT read those packs from disk.
-  After the first publish, `cargo install docli` is the primary install.
+  `cargo install sc-docli`; that install MUST NOT read those packs from disk.
+  After publish, `cargo install sc-docli` is the primary install (commands on PATH remain `docli` and `cargo-docli`).
   `cargo publish` runs only after this work merges to `develop`
   (`docs/release-first-crates-io.md`). Publish-readiness means
   `cargo publish --dry-run` succeeds and `cargo package --list` includes
@@ -225,7 +225,7 @@ CI (`cargo test`, including `tests/repo_fixtures.rs`) reads only the committed f
 
 Live capture may differ from committed JSON when upstream help text is empty. That difference is a refresh pull request, not a silent verify success.
 
-When `DOCLI_BIN` is unset, the script builds `target/release/docli` with `cargo build --release` and uses that binary. That is the pre-publish default. After `cargo install docli`, set `DOCLI_BIN` to the installed path, or to the bare command name `docli` so `PATH` is searched (`DOCLI_BIN=docli` or `DOCLI_BIN="$(command -v docli)"`). A set `DOCLI_BIN` skips `cargo build --release`. `gen-fixtures` still runs via `cargo run` in this checkout unless `DOCLI_SKIP_GEN_FIXTURES=1`.
+When `DOCLI_BIN` is unset, the script builds `target/release/docli` with `cargo build --release` and uses that binary. That is the pre-publish default. After `cargo install sc-docli`, set `DOCLI_BIN` to the installed path, or to the bare command name `docli` so `PATH` is searched (`DOCLI_BIN=docli` or `DOCLI_BIN="$(command -v docli)"`). A set `DOCLI_BIN` skips `cargo build --release`. `gen-fixtures` still runs via `cargo run` in this checkout unless `DOCLI_SKIP_GEN_FIXTURES=1`.
 
 ## 9. CLI Contract
 

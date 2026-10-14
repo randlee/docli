@@ -81,7 +81,7 @@ fi
 - A sc-observability clap model or `fixtures/repos/sc-observability.json`
 - Pinning those repos to a docli git SHA or crates.io version
 - Treating a live `gen-fixtures` diff as success
-- `cargo install docli` (b.11)
+- `cargo install sc-docli` (b.11)
 
 ## Acceptance Criteria
 

@@ -90,7 +90,7 @@ else
   resolved_bin="$(command -v "$DOCLI_BIN" || true)"
   if [[ -z "$resolved_bin" || ! -x "$resolved_bin" ]]; then
     echo "DOCLI_BIN is not executable on PATH: $DOCLI_BIN" >&2
-    echo "hint: cargo install docli, then DOCLI_BIN=docli or DOCLI_BIN=\"\$(command -v docli)\"; unset DOCLI_BIN to build target/release/docli" >&2
+    echo "hint: cargo install sc-docli, then DOCLI_BIN=docli or DOCLI_BIN=\"\$(command -v docli)\"; unset DOCLI_BIN to build target/release/docli" >&2
     exit 1
   fi
   DOCLI="$resolved_bin"

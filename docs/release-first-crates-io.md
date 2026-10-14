@@ -21,7 +21,7 @@ show these:
 | `fixtures/contract/**`, `fixtures/repos/**` | render, template, and repo fixture tests |
 | `examples/sample.json` | sample neutral model |
 
-`cargo install docli` builds the default binaries from those sources. The
+`cargo install sc-docli` builds the default binaries (`docli`, `cargo-docli`) from those sources. The
 embedded packs are inside the binary. The install does not read `default` or
 `cli-doc` from disk. `gen-fixtures` is behind the `gen-fixtures` feature, so
 a default install does not ship that binary.
@@ -85,7 +85,7 @@ git diff --check
 
 ```sh
 cargo publish
-cargo install docli --version 0.1.0
+cargo install sc-docli --version 0.2.0
 docli templates list --json
 docli generate --input fixtures/contract/model.json --preview --json
 cargo test --test error_contract

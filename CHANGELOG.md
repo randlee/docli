@@ -1,20 +1,27 @@
 # Changelog
 
-`docli` is version `0.1.0`. Until `CHANGELOG.md` declares a stable API, versions
-follow semver **0.x**: a minor bump (`0.2.0`) may change the CLI, the JSON
-envelope, or the library surface. Pin an install with
-`cargo install docli --version 0.1.0` when you need a fixed binary. `1.0.0` is
-the stable-API release. It is not this version.
+The Rust crate is **`sc-docli`**; CLI binaries remain **`docli`** and
+**`cargo-docli`**. Current version **`0.2.0`**. Until `CHANGELOG.md` declares
+a stable API, versions follow semver **0.x**. Pin with
+`cargo install sc-docli --version 0.2.0` when you need a fixed binary.
+`1.0.0` is the stable-API release. It is not this version.
 
 Uploading to crates.io is a maintainer step after `integrate/phase-b` merges
 to `develop`. This file records what `0.1.0` contains. The commands to run
 before and after that upload are in
 [docs/release-first-crates-io.md](docs/release-first-crates-io.md).
 
-## [0.1.0] — Unreleased
+## [0.2.0] — Unreleased
 
-First crates.io release. The published crate embeds the HTML template packs.
-`cargo install docli` is the primary install after that publish.
+- Publish on crates.io as **`sc-docli`** (the `docli` crate name is owned elsewhere).
+- CLI commands unchanged: `docli`, `cargo-docli`.
+- GitHub Release archives keep the **`docli`** product prefix; only the crates.io package id is **`sc-docli`**.
+
+## [0.1.0] — 2026-10-14
+
+First public GitHub Release (`v0.1.0`); crates.io publish blocked on crate name.
+The published crate embeds the HTML template packs.
+`cargo install sc-docli` is the primary install after the 0.2.0 publish.
 
 ### Phase A
 

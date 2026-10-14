@@ -12,7 +12,7 @@ target: integrate/phase-b
 ## Goal
 
 - Close the **registry install** slice of `REQ-DOCLI-PRODUCT-001` and switch
-  maintainer scripts from path deps to **`cargo install docli`** where appropriate.
+  maintainer scripts from path deps to **`cargo install sc-docli`** where appropriate.
 - First publish includes **bundled HTML template packs** (b.7–b.10).
 
 ## Hard Dependencies
@@ -30,7 +30,7 @@ Phase-end **quality-mgr** runs **after** this sprint merges, then **`integrate/p
 - [`README.md`](../../../README.md) — install from crates.io after publish; link to `docli templates`, `AGENT-PREVIEW.md`, error contract tests
 - Release checklist (in CHANGELOG or `docs/release-first-crates-io.md`):
   - `cargo publish --dry-run`
-  - `cargo install docli --version …` smoke: `docli templates list --json`, one preview generate, `cargo test --test error_contract`
+  - `cargo install sc-docli --version …` smoke: `docli templates list --json`, one preview generate, `cargo test --test error_contract`
 - **Publish execution** is explicit human/team-lead step after merge to `develop`; sprint closes when repo is publish-ready, not necessarily when crates.io has the crate
 
 ## Out of Scope
@@ -41,7 +41,7 @@ Phase-end **quality-mgr** runs **after** this sprint merges, then **`integrate/p
 ## Acceptance Criteria
 
 - `cargo publish --dry-run` succeeds from repo root; packaged crate includes bundled templates
-- README documents `cargo install docli` as primary install after first publish
+- README documents `cargo install sc-docli` as primary install after first publish
 - Verify script documents both pre-publish (built binary) and post-publish (`docli` on PATH) modes
 - All Phase B CI gate commands pass on integration branch
 

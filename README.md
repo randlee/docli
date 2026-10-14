@@ -37,8 +37,10 @@ Every `DOCLI.*` error code is integration-tested in
 After the first crates.io publish, this is the primary install:
 
 ```sh
-cargo install docli
+cargo install sc-docli
 ```
+
+The commands on your PATH remain `docli` and `cargo-docli`.
 
 The installed binary embeds the `default` and `cli-doc` HTML packs. It does
 not need this checkout to render them. Until that publish, install from a
@@ -113,7 +115,7 @@ paths resolve in order: the env var, `../<repo>` next to docli, then
 `gen-fixtures` and run `generate` / `show` against committed JSON only.
 
 By default the script runs `cargo build --release` and uses
-`target/release/docli` (pre-publish). After `cargo install docli`, set
+`target/release/docli` (pre-publish). After `cargo install sc-docli`, set
 `DOCLI_BIN` to that binary or to the command name on `PATH`
 (`DOCLI_BIN=docli` or `DOCLI_BIN="$(command -v docli)"`). That skips the
 release build. `gen-fixtures` still builds from this checkout unless

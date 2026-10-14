@@ -6,7 +6,7 @@
     "description": "Language-agnostic CLI documentation generator: HTML + Markdown from a neutral command-tree JSON",
     "homepage": "https://github.com/randlee/docli",
     "license": "MIT",
-    "readme_dependency_crate": "docli",
+    "readme_dependency_crate": "sc-docli",
     "workspace_toml": "Cargo.toml",
     "rust_toolchain": "1.94.1",
     "renderer_archive_path": "bin/docli"
@@ -40,8 +40,8 @@
   ],
   "crates": [
     {
-      "artifact": "docli",
-      "package": "docli",
+      "artifact": "sc-docli",
+      "package": "sc-docli",
       "cargo_toml": "Cargo.toml",
       "required": true,
       "publish": true,
