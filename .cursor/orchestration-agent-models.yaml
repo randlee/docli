@@ -15,7 +15,7 @@ version: 1
 
 agents:
   rust-developer:
-    model: cursor-grok-4.6-high-fast
+    model: grok-4.7-high-fast
     alternates:
       - composer-2.5-fast
     notes: Implement/fix loops; default grok unless user prefers composer
@@ -29,11 +29,11 @@ agents:
     notes: Structured deliverable checklist
 
   arch-qa:
-    model: cursor-grok-4.6-high-fast
+    model: grok-4.7-high-fast
     notes: Precision / boundary gate; Grok per team preference
 
   rust-qa-agent:
-    model: cursor-grok-4.6-high-fast
+    model: grok-4.7-high-fast
     notes: Normal QA rounds; see phase-ending override in cursor-quality-mgr.md
 
   rust-best-practices-agent:

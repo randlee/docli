@@ -222,3 +222,7 @@ dotnet/**/obj/
 # Vendored sc-publish kit checkout. The pin lives in release/sc-publish-pin.toml.
 .sc-publish-kit/
 .venv-sc-publish/
+
+# Local sc-worktree / sc-compose machine state (not product source).
+.sc/
+.sc-compose/logs/
