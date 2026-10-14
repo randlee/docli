@@ -34,23 +34,6 @@ Every `DOCLI.*` error code is integration-tested in
 
 ## Install
 
-### crates.io (Rust)
-
-```sh
-cargo install sc-docli
-```
-
-The commands on your PATH are `docli` and `cargo-docli`. Pin a release if you
-need a specific version, for example `cargo install sc-docli --version 0.2.0`.
-
-### GitHub Releases (prebuilt binaries)
-
-Download the archive for your platform from
-[GitHub Releases](https://github.com/randlee/docli/releases/latest)
-(`docli_*` tarballs on macOS/Linux, `.zip` on Windows). Extract it and put the
-`bin/` directory on your `PATH` (`docli` and `cargo-docli`). Each release
-includes a `checksums.txt` you can use to verify downloads.
-
 ### Homebrew (macOS and Linux)
 
 ```sh
@@ -67,6 +50,23 @@ scoop install randlee/docli
 ```
 
 Bucket: [randlee/scoop-bucket](https://github.com/randlee/scoop-bucket).
+
+### crates.io (Rust)
+
+```sh
+cargo install sc-docli
+```
+
+The commands on your PATH are `docli` and `cargo-docli`. Pin a release if you
+need a specific version, for example `cargo install sc-docli --version 0.2.0`.
+
+### GitHub Releases (prebuilt binaries)
+
+Download the archive for your platform from
+[GitHub Releases](https://github.com/randlee/docli/releases/latest)
+(`docli_*` tarballs on macOS/Linux, `.zip` on Windows). Extract it and put the
+`bin/` directory on your `PATH` (`docli` and `cargo-docli`). Each release
+includes a `checksums.txt` you can use to verify downloads.
 
 ### winget (Windows)
 
