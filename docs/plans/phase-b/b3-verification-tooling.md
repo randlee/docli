@@ -91,7 +91,7 @@ fn live_candidate_repos_generate_show() {
 - Default CI running live candidate repos or `verify-candidate-repos.sh`
 - Fail-closed fixture drift and `DOCLI_REFRESH_FIXTURES` (b.5)
 - Opening pull requests in consumer repos
-- `DOCLI_BIN` / `cargo install docli` (b.11)
+- `DOCLI_BIN` / `cargo install sc-docli` (b.11)
 - Rewriting committed `fixtures/repos/*.json` as a success path
 
 ## Acceptance Criteria

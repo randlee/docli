@@ -1,6 +1,6 @@
 [package]
-name = "docli"
-version = "0.1.0"
+name = "sc-docli"
+version = "0.2.0"
 edition = "2021"
 description = "Language-agnostic CLI documentation generator: HTML + Markdown from a neutral command-tree JSON"
 license = "MIT"
